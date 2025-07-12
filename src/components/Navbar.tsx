@@ -1,21 +1,27 @@
 
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Menu, X } from "lucide-react";
 import Logo from "./Logo";
+import LanguageSelector from "./LanguageSelector";
 
 const Navbar = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems = [
-    { name: "Home", path: "/" },
-    { name: "About", path: "/about" },
-    { name: "Services", path: "/services" },
-    { name: "Projects", path: "/projects" },
-    { name: "Book Property", path: "/booking" },
-    { name: "Announcements", path: "/announcements" },
-    { name: "Contact", path: "/contact" },
+    { name: t("nav.home"), path: "/" },
+    { name: t("nav.about"), path: "/about" },
+    { name: t("nav.services"), path: "/services" },
+    { name: t("nav.projects"), path: "/projects" },
+    { name: t("nav.virtualTour"), path: "/virtual-tour" },
+    { name: t("nav.booking"), path: "/booking" },
+    { name: t("nav.announcements"), path: "/announcements" },
+    { name: t("nav.contact"), path: "/contact" },
+    { name: t("nav.maps"), path: "/maps" },
+    { name: t("nav.admin"), path: "/admin" },
   ];
 
   return (
@@ -29,12 +35,12 @@ const Navbar = () => {
           </Link>
           
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex space-x-8">
+          <div className="hidden xl:flex space-x-6">
             {navItems.map((item) => (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`transition-colors ${
+                className={`transition-colors text-sm ${
                   location.pathname === item.path
                     ? "text-primary font-semibold"
                     : "text-foreground hover:text-primary"
@@ -45,18 +51,23 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            className="lg:hidden p-2 rounded-md text-foreground hover:text-primary hover:bg-muted"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Language Selector and Mobile Menu */}
+          <div className="flex items-center gap-4">
+            <LanguageSelector />
+            
+            {/* Mobile menu button */}
+            <button
+              className="xl:hidden p-2 rounded-md text-foreground hover:text-primary hover:bg-muted"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="lg:hidden">
+          <div className="xl:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-background border-t border-border">
               {navItems.map((item) => (
                 <Link

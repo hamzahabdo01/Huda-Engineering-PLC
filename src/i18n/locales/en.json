@@ -1,0 +1,138 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "services": "Services", 
+    "projects": "Projects",
+    "booking": "Book Property",
+    "announcements": "Announcements",
+    "contact": "Contact",
+    "virtualTour": "Virtual Tour",
+    "admin": "Admin",
+    "maps": "Location"
+  },
+  "hero": {
+    "badge": "REAL ESTATE",
+    "title": "Discover Your Future:",
+    "subtitle": "Find The Perfect Property",
+    "description": "We build modern residential, commercial, and mixed-use buildings in Ethiopia with a focus on quality, safety, and timely delivery.",
+    "exploreNow": "Explore Now",
+    "viewProperties": "View Properties",
+    "location": "Location",
+    "pricing": "Pricing",
+    "locationValue": "Addis Ababa, Ethiopia",
+    "pricingValue": "3M - 15M ETB"
+  },
+  "whyChoose": {
+    "title": "Why Choose Huda Engineering?",
+    "description": "We bring together expertise, integrity, and innovation to deliver exceptional construction projects across Ethiopia.",
+    "quality": {
+      "title": "Quality & Safety",
+      "description": "Zero litigation history demonstrates our unwavering commitment to quality construction and complete client satisfaction in every project we undertake."
+    },
+    "expert": {
+      "title": "Expert Team", 
+      "description": "Professional engineers, architects, and skilled foremen backed by our own comprehensive tools and heavy machinery for complete project control."
+    },
+    "timely": {
+      "title": "Timely Delivery",
+      "description": "We prioritize clear communication and realistic project timelines to ensure on-time completion without compromising on quality standards."
+    },
+    "local": {
+      "title": "Local Expertise",
+      "description": "Deep understanding of Ethiopian construction standards, local terrain, logistics, and regulatory requirements for seamless project execution."
+    },
+    "modern": {
+      "title": "Modern Technology",
+      "description": "We leverage cutting-edge construction technologies and modern building techniques to deliver innovative, efficient, and sustainable structures."
+    },
+    "fullService": {
+      "title": "Full-Service",
+      "description": "From initial design and planning to final construction and handover, we provide comprehensive end-to-end construction services."
+    }
+  },
+  "services": {
+    "title": "Our Services",
+    "description": "Comprehensive construction solutions for all your building needs in Ethiopia.",
+    "residential": {
+      "title": "Residential Construction",
+      "description": "From luxury homes to high-rise apartment buildings, we create modern living spaces that combine comfort, functionality, and aesthetic appeal."
+    },
+    "commercial": {
+      "title": "Commercial Development", 
+      "description": "Professional office buildings, retail spaces, and commercial complexes designed to meet modern business requirements and standards."
+    },
+    "viewAll": "View All Services"
+  },
+  "projects": {
+    "title": "Featured Projects",
+    "description": "Showcasing our commitment to excellence through completed projects across Ethiopia.",
+    "viewAll": "View All Projects"
+  },
+  "process": {
+    "title": "Our Construction Process",
+    "description": "A systematic approach to ensure quality, efficiency, and client satisfaction in every project.",
+    "consultation": {
+      "title": "Consultation & Planning",
+      "description": "Initial project assessment, requirements gathering, and comprehensive planning phase."
+    },
+    "design": {
+      "title": "Design & Engineering", 
+      "description": "Detailed architectural design, structural engineering, and technical specifications."
+    },
+    "construction": {
+      "title": "Construction & Execution",
+      "description": "Professional construction execution with quality control and safety management."
+    },
+    "completion": {
+      "title": "Completion & Handover",
+      "description": "Final inspections, quality assurance, and smooth project handover to clients."
+    }
+  },
+  "testimonials": {
+    "title": "What Our Clients Say",
+    "description": "Real feedback from satisfied clients who have trusted us with their construction projects."
+  },
+  "cta": {
+    "title": "Ready to Start Your Project?",
+    "description": "Join the 50+ satisfied clients who have trusted us with their construction needs. Let's build your vision together.",
+    "consultation": "Get Free Consultation",
+    "portfolio": "View Our Portfolio"
+  },
+  "virtualTour": {
+    "title": "Virtual Tour",
+    "description": "Explore our properties in immersive 3D virtual reality",
+    "selectRoom": "Select a room to start your virtual tour",
+    "bedroom": "Bedroom",
+    "kitchen": "Kitchen", 
+    "livingRoom": "Living Room",
+    "bathroom": "Bathroom",
+    "balcony": "Balcony",
+    "startTour": "Start Virtual Tour"
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "dashboard": "Dashboard",
+    "bookings": "Manage Bookings",
+    "announcements": "Manage Announcements", 
+    "contacts": "Contact Submissions",
+    "properties": "Manage Properties",
+    "addProperty": "Add New Property",
+    "editProperty": "Edit Property",
+    "deleteProperty": "Delete Property"
+  },
+  "maps": {
+    "title": "Our Location",
+    "description": "Find us on the map and visit our office"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel", 
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "loading": "Loading...",
+    "submit": "Submit",
+    "back": "Back"
+  }
+}
