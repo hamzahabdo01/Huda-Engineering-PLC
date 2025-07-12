@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,21 +13,21 @@ const Index = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary/10 via-accent/5 to-background py-24 lg:py-32 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden" style={{ backgroundColor: '#00555b' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
-            <div className="space-y-8">
+            <div className="space-y-8 text-white">
               <div className="space-y-6">
-                <Badge className="mb-4 bg-accent text-accent-foreground hover:bg-accent/90 text-sm">
+                <Badge className="mb-4 bg-white/20 text-white hover:bg-white/30 text-sm border-white/30">
                   <Calendar className="w-4 h-4 mr-2" />
                   REAL ESTATE
                 </Badge>
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight text-foreground">
+                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
                   Discover Your Future:
                   <span className="block text-accent mt-2">Find The Perfect Property</span>
                 </h1>
-                <p className="text-xl lg:text-2xl text-muted-foreground max-w-2xl leading-relaxed">
+                <p className="text-xl lg:text-2xl text-white/90 max-w-2xl leading-relaxed">
                   We build modern residential, commercial, and mixed-use buildings in Ethiopia with a focus on quality, safety, and timely delivery.
                 </p>
               </div>
@@ -41,7 +40,7 @@ const Index = () => {
                   </Button>
                 </Link>
                 <Link to="/projects">
-                  <Button size="lg" variant="outline" className="px-8 py-4 text-lg">
+                  <Button size="lg" variant="outline" className="px-8 py-4 text-lg border-white/30 text-white hover:bg-white/10">
                     View Properties
                   </Button>
                 </Link>
@@ -49,29 +48,25 @@ const Index = () => {
 
               {/* Property Search Filters */}
               <div className="grid grid-cols-2 gap-4 pt-8">
-                <div className="bg-card backdrop-blur-sm rounded-lg p-4 border border-border shadow-sm">
-                  <div className="text-sm text-muted-foreground mb-1">Location</div>
-                  <div className="text-foreground font-medium">Addis Ababa, Ethiopia</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <div className="text-sm text-white/70 mb-1">Location</div>
+                  <div className="text-white font-medium">Addis Ababa, Ethiopia</div>
                 </div>
-                <div className="bg-card backdrop-blur-sm rounded-lg p-4 border border-border shadow-sm">
-                  <div className="text-sm text-muted-foreground mb-1">Pricing</div>
-                  <div className="text-foreground font-medium">3M - 15M ETB</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <div className="text-sm text-white/70 mb-1">Pricing</div>
+                  <div className="text-white font-medium">3M - 15M ETB</div>
                 </div>
               </div>
             </div>
 
             {/* Right Content - Property Image */}
             <div className="relative">
-              <div className="relative w-full h-96 lg:h-[500px] bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden shadow-2xl">
-                {/* Property Image Placeholder */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-                
-                {/* Modern Building Visual Representation */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-full h-full bg-gray-300 flex items-center justify-center">
-                    <Building2 className="w-24 h-24 text-gray-500" />
-                  </div>
-                </div>
+              <div className="relative w-full h-96 lg:h-[500px] rounded-2xl overflow-hidden shadow-2xl">
+                <img
+                  src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop"
+                  alt="Luxury Apartment Complex"
+                  className="w-full h-full object-cover"
+                />
                 
                 {/* Property Details Overlay */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
@@ -87,7 +82,7 @@ const Index = () => {
               </div>
               
               {/* Floating Stats */}
-              <div className="absolute -bottom-6 -left-6 bg-card rounded-xl p-4 shadow-lg border border-border">
+              <div className="absolute -bottom-6 -left-6 bg-white rounded-xl p-4 shadow-lg border">
                 <div className="text-2xl font-bold text-foreground">50+</div>
                 <div className="text-sm text-muted-foreground">Projects Completed</div>
               </div>

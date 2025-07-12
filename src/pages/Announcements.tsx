@@ -1,12 +1,9 @@
 
-import { useState } from "react";
-import { Calendar, Clock, Tag, Search, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, Clock, Tag, ChevronDown, ChevronUp } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 interface Announcement {
   id: string;
@@ -15,7 +12,7 @@ interface Announcement {
   category: "New Projects" | "Construction Progress" | "Sales" | "Company News";
   shortDescription: string;
   fullContent: string;
-  image?: string;
+  image: string;
 }
 
 const announcements: Announcement[] = [
@@ -26,7 +23,7 @@ const announcements: Announcement[] = [
     category: "New Projects",
     shortDescription: "We're excited to announce the grand opening of our newest luxury residential complex featuring 50 premium units with modern amenities.",
     fullContent: "We're thrilled to announce the grand opening of our newest luxury residential complex in the heart of Bole district. This state-of-the-art development features 50 premium residential units, each designed with modern living in mind. The complex includes a swimming pool, fitness center, children's playground, and 24/7 security. Units range from 2-bedroom apartments to 4-bedroom penthouses, all featuring high-end finishes and smart home technology. Early bird pricing is available for the first 20 buyers.",
-    image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=250&fit=crop"
+    image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&h=400&fit=crop"
   },
   {
     id: "2",
@@ -35,7 +32,7 @@ const announcements: Announcement[] = [
     category: "Construction Progress",
     shortDescription: "Our Sarbet Heights project is now 75% complete. We're on track to deliver all units by March 2024.",
     fullContent: "We're pleased to update you on the significant progress of our Sarbet Heights residential project. The construction is now 75% complete, with all structural work finished and interior finishing well underway. The landscaping and external amenities installation has begun. We remain on schedule to deliver all 80 units by March 2024. Site visits are available for interested buyers every weekend from 9 AM to 5 PM.",
-    image: "https://images.unsplash.com/photo-1541976590-713941681591?w=400&h=250&fit=crop"
+    image: "https://images.unsplash.com/photo-1541976590-713941681591?w=600&h=400&fit=crop"
   },
   {
     id: "3",
@@ -44,7 +41,7 @@ const announcements: Announcement[] = [
     category: "Sales",
     shortDescription: "Limited time offer: Get up to 15% discount on selected properties during our holiday sales campaign.",
     fullContent: "This holiday season, we're offering exceptional discounts on selected properties across our portfolio. Enjoy up to 15% off on apartments in our Kazanchis development, and 10% off on villa units in Old Airport area. This promotion is valid until January 31st, 2024, and includes flexible payment plans. Additional benefits include free interior design consultation and one-year maintenance package. Contact our sales team to learn more about eligibility and terms.",
-    image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=250&fit=crop"
+    image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop"
   },
   {
     id: "4",
@@ -53,7 +50,7 @@ const announcements: Announcement[] = [
     category: "Company News",
     shortDescription: "We're honored to receive the Real Estate Excellence Award for our commitment to quality and innovation in property development.",
     fullContent: "We're proud to announce that Huda Engineering PLC has been awarded the prestigious Real Estate Excellence Award 2023 by the Ethiopian Real Estate Association. This recognition highlights our commitment to delivering high-quality residential and commercial properties while maintaining the highest standards of construction and customer service. The award ceremony took place at the Skylight Hotel, where we were recognized alongside other industry leaders. This achievement motivates us to continue our mission of transforming Ethiopia's real estate landscape.",
-    image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400&h=250&fit=crop"
+    image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=600&h=400&fit=crop"
   },
   {
     id: "5",
@@ -62,23 +59,13 @@ const announcements: Announcement[] = [
     category: "New Projects",
     shortDescription: "Introducing our affordable housing program designed to make homeownership accessible to middle-income families.",
     fullContent: "We're excited to launch our new affordable housing initiative, aimed at making quality homes accessible to middle-income families in Addis Ababa. This program offers 2 and 3-bedroom apartments starting from 2.8 million ETB, with flexible financing options and down payments as low as 20%. The first phase includes 120 units in the Lebu area, featuring modern amenities while maintaining affordability. Registration is now open, and we're partnering with local banks to provide attractive mortgage rates for qualified buyers.",
-    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=250&fit=crop"
+    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&h=400&fit=crop"
   }
 ];
 
 const Announcements = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [expandedCard, setExpandedCard] = useState<string | null>(null);
-
-  const categories = ["all", "New Projects", "Construction Progress", "Sales", "Company News"];
-
-  const filteredAnnouncements = announcements.filter(announcement => {
-    const matchesSearch = announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         announcement.shortDescription.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || announcement.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -99,8 +86,55 @@ const Announcements = () => {
     }
   };
 
+  const scrollToNext = () => {
+    if (currentIndex < announcements.length - 1 && !isScrolling) {
+      setIsScrolling(true);
+      setCurrentIndex(prev => prev + 1);
+      setTimeout(() => setIsScrolling(false), 800);
+    }
+  };
+
+  const scrollToPrev = () => {
+    if (currentIndex > 0 && !isScrolling) {
+      setIsScrolling(true);
+      setCurrentIndex(prev => prev - 1);
+      setTimeout(() => setIsScrolling(false), 800);
+    }
+  };
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (e.deltaY > 0) {
+        scrollToNext();
+      } else {
+        scrollToPrev();
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown' || e.key === ' ') {
+        e.preventDefault();
+        scrollToNext();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        scrollToPrev();
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [currentIndex, isScrolling]);
+
+  const currentAnnouncement = announcements[currentIndex];
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
       
       {/* Sticky Header Banner */}
@@ -113,107 +147,109 @@ const Announcements = () => {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Company Announcements
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Stay updated with our latest projects, construction progress, and company news
-          </p>
-        </div>
-
-        {/* Search and Filter */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              type="text"
-              placeholder="Search announcements..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-background border-input"
-            />
-          </div>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full md:w-48 bg-background border-input">
-              <SelectValue placeholder="Filter by category" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover">
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category === "all" ? "All Categories" : category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Announcements Grid */}
-        <div className="grid gap-6">
-          {filteredAnnouncements.map((announcement) => (
-            <Card key={announcement.id} className="transition-all duration-300 hover:shadow-lg">
-              <div className="flex flex-col lg:flex-row">
-                {announcement.image && (
-                  <div className="lg:w-1/3">
-                    <img
-                      src={announcement.image}
-                      alt={announcement.title}
-                      className="w-full h-48 lg:h-full object-cover rounded-t-lg lg:rounded-l-lg lg:rounded-t-none"
-                    />
+      {/* Main Content */}
+      <div className="relative h-[calc(100vh-8rem)] overflow-hidden">
+        {/* Announcement Display */}
+        <div 
+          className={`h-full transition-all duration-700 ease-in-out transform ${
+            isScrolling ? 'opacity-0 translate-y-8' : 'opacity-100 translate-y-0'
+          }`}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+            <div className="grid lg:grid-cols-2 gap-12 w-full items-center">
+              {/* Image Section */}
+              <div className="relative">
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
+                  <img
+                    src={currentAnnouncement.image}
+                    alt={currentAnnouncement.title}
+                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <Badge className={`${getCategoryColor(currentAnnouncement.category)} border-0`}>
+                      <Tag className="w-3 h-3 mr-1" />
+                      {currentAnnouncement.category}
+                    </Badge>
                   </div>
-                )}
-                <div className={`${announcement.image ? 'lg:w-2/3' : 'w-full'} p-6`}>
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(announcement.category)}`}>
-                          <Tag className="w-3 h-3 inline mr-1" />
-                          {announcement.category}
-                        </span>
-                        <div className="flex items-center text-muted-foreground text-sm">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          {formatDate(announcement.date)}
-                        </div>
-                      </div>
-                      <h3 className="text-xl font-semibold text-foreground mb-2">
-                        {announcement.title}
-                      </h3>
-                    </div>
-                  </div>
-                  
-                  <p className="text-muted-foreground mb-4">
-                    {expandedCard === announcement.id 
-                      ? announcement.fullContent 
-                      : announcement.shortDescription
-                    }
-                  </p>
-                  
-                  <Button
-                    variant="ghost"
-                    onClick={() => setExpandedCard(
-                      expandedCard === announcement.id ? null : announcement.id
-                    )}
-                    className="text-primary hover:text-primary/80 hover:bg-primary/10 p-0 h-auto font-medium"
-                  >
-                    {expandedCard === announcement.id ? "Show Less" : "Read More"}
-                    <ChevronRight className={`w-4 h-4 ml-1 transition-transform ${
-                      expandedCard === announcement.id ? "rotate-90" : ""
-                    }`} />
-                  </Button>
                 </div>
               </div>
-            </Card>
+
+              {/* Content Section */}
+              <div className="space-y-6 lg:pl-8">
+                <div className="flex items-center text-muted-foreground text-sm mb-4">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  {formatDate(currentAnnouncement.date)}
+                </div>
+                
+                <h1 className="text-3xl lg:text-4xl font-bold text-foreground leading-tight">
+                  {currentAnnouncement.title}
+                </h1>
+                
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  {currentAnnouncement.shortDescription}
+                </p>
+                
+                <div className="pt-4">
+                  <p className="text-foreground leading-relaxed">
+                    {currentAnnouncement.fullContent}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Indicators */}
+        <div className="absolute right-8 top-1/2 transform -translate-y-1/2 flex flex-col space-y-2">
+          {announcements.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                if (!isScrolling) {
+                  setIsScrolling(true);
+                  setCurrentIndex(index);
+                  setTimeout(() => setIsScrolling(false), 800);
+                }
+              }}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                index === currentIndex 
+                  ? 'bg-primary scale-125' 
+                  : 'bg-gray-300 hover:bg-gray-400'
+              }`}
+            />
           ))}
         </div>
 
-        {filteredAnnouncements.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">No announcements found matching your criteria.</p>
+        {/* Scroll Hints */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center space-y-2 text-muted-foreground">
+          <div className="text-sm text-center">
+            <div>{currentIndex + 1} of {announcements.length}</div>
+            <div className="text-xs">Scroll or use arrow keys to navigate</div>
           </div>
-        )}
-      </main>
+          <div className="flex space-x-4">
+            {currentIndex > 0 && (
+              <button
+                onClick={scrollToPrev}
+                className="flex items-center space-x-1 text-xs hover:text-primary transition-colors"
+                disabled={isScrolling}
+              >
+                <ChevronUp className="w-4 h-4" />
+                <span>Previous</span>
+              </button>
+            )}
+            {currentIndex < announcements.length - 1 && (
+              <button
+                onClick={scrollToNext}
+                className="flex items-center space-x-1 text-xs hover:text-primary transition-colors"
+                disabled={isScrolling}
+              >
+                <span>Next</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       <Footer />
     </div>
