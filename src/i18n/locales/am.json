@@ -9,7 +9,8 @@
     "contact": "ያነጋግሩን",
     "virtualTour": "ቨርቹዋል ጉብኝት",
     "admin": "አስተዳዳሪ",
-    "maps": "አካባቢ"
+    "maps": "አካባቢ",
+    "business": "ንግድ"
   },
   "hero": {
     "badge": "ሪል እስቴት",
@@ -134,5 +135,35 @@
     "loading": "በመጫን ላይ...",
     "submit": "አስረክብ",
     "back": "ወደ ኋላ"
+  },
+  "auth": {
+    "adminLogin": "የአስተዳዳሪ መግባት",
+    "adminSignup": "የአስተዳዳሪ ምዝገባ",
+    "signIn": "ግባ",
+    "signUp": "ይመዝገቡ",
+    "logout": "ውጣ",
+    "loginDescription": "የአስተዳዳሪ ዳሽቦርድዎን ይድረሱ",
+    "signupDescription": "አዲስ የአስተዳዳሪ መለያ ይፍጠሩ",
+    "enterCredentials": "የአስተዳዳሪ ፓነል ለመድረስ ምስክሮችዎን ያስገቡ",
+    "createAccount": "መለያ ፍጠር",
+    "fillDetails": "መለያ ለመፍጠር ዝርዝሮችዎን ይሙሉ",
+    "email": "ኢሜይል",
+    "password": "የመሰውሪ ቃል",
+    "confirmPassword": "የመሰውሪ ቃል ደግመው ያስገቡ",
+    "fullName": "ሙሉ ስም",
+    "emailPlaceholder": "ኢሜይልዎን ያስገቡ",
+    "passwordPlaceholder": "የመሰውሪ ቃልዎን ያስገቡ",
+    "confirmPasswordPlaceholder": "የመሰውሪ ቃልዎን ደግመው ያስገቡ",
+    "namePlaceholder": "ሙሉ ስምዎን ያስገቡ",
+    "invalidCredentials": "ልክ ያልሆነ ኢሜይል ወይም የመሰውሪ ቃል",
+    "loginError": "መግባት አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+    "signupError": "ምዝገባ አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+    "userExists": "በዚህ ኢሜይል ተጠቃሚ አስቀድሞ አለ",
+    "passwordMismatch": "የመሰውሪ ቃሎች አይዛመዱም",
+    "passwordTooShort": "የመሰውሪ ቃል ቢያንስ 6 ቁምፊዎች መሆን አለበት",
+    "noAccount": "መለያ የለዎትም?",
+    "haveAccount": "መለያ አለዎት?",
+    "backToHome": "← ወደ ቤት ይመለሱ",
+    "demoCredentials": "ምሳሌ ምስክሮች"
   }
 }
