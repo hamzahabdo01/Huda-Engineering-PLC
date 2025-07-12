@@ -9,8 +9,7 @@
     "contact": "Contact",
     "virtualTour": "Virtual Tour",
     "admin": "Admin",
-    "maps": "Location",
-    "business": "Business"
+    "maps": "Location"
   },
   "hero": {
     "badge": "REAL ESTATE",
@@ -135,35 +134,5 @@
     "loading": "Loading...",
     "submit": "Submit",
     "back": "Back"
-  },
-  "auth": {
-    "adminLogin": "Admin Login",
-    "adminSignup": "Admin Signup",
-    "signIn": "Sign In",
-    "signUp": "Sign Up",
-    "logout": "Logout",
-    "loginDescription": "Access your admin dashboard",
-    "signupDescription": "Create a new admin account",
-    "enterCredentials": "Enter your credentials to access the admin panel",
-    "createAccount": "Create Account",
-    "fillDetails": "Fill in your details to create an account",
-    "email": "Email",
-    "password": "Password",
-    "confirmPassword": "Confirm Password",
-    "fullName": "Full Name",
-    "emailPlaceholder": "Enter your email",
-    "passwordPlaceholder": "Enter your password",
-    "confirmPasswordPlaceholder": "Confirm your password",
-    "namePlaceholder": "Enter your full name",
-    "invalidCredentials": "Invalid email or password",
-    "loginError": "Login failed. Please try again.",
-    "signupError": "Signup failed. Please try again.",
-    "userExists": "User already exists with this email",
-    "passwordMismatch": "Passwords do not match",
-    "passwordTooShort": "Password must be at least 6 characters",
-    "noAccount": "Don't have an account?",
-    "haveAccount": "Already have an account?",
-    "backToHome": "← Back to Home",
-    "demoCredentials": "Demo Credentials"
   }
 }
