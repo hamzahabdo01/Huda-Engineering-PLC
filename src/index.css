@@ -94,5 +94,26 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-sans;
   }
+
+  /* Ensure button text is always visible */
+  button {
+    @apply text-current;
+  }
+  
+  /* Fix white button text visibility */
+  .bg-white button,
+  .bg-white [role="button"] {
+    @apply text-gray-900;
+  }
+  
+  /* Ensure primary buttons have proper contrast */
+  .bg-primary {
+    @apply text-primary-foreground;
+  }
+  
+  /* Ensure secondary buttons have proper contrast */
+  .bg-secondary {
+    @apply text-secondary-foreground;
+  }
 }
 
