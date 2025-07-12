@@ -14,22 +14,21 @@ const Index = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white py-24 lg:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative bg-gradient-to-br from-primary/10 via-accent/5 to-background py-24 lg:py-32 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <div className="space-y-8">
-              <div className="space-y-2">
+              <div className="space-y-6">
                 <Badge className="mb-4 bg-accent text-accent-foreground hover:bg-accent/90 text-sm">
                   <Calendar className="w-4 h-4 mr-2" />
                   REAL ESTATE
                 </Badge>
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
+                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight text-foreground">
                   Discover Your Future:
-                  <span className="block text-accent">Find The Perfect Property</span>
+                  <span className="block text-accent mt-2">Find The Perfect Property</span>
                 </h1>
-                <p className="text-xl lg:text-2xl text-gray-300 max-w-2xl leading-relaxed mt-6">
+                <p className="text-xl lg:text-2xl text-muted-foreground max-w-2xl leading-relaxed">
                   We build modern residential, commercial, and mixed-use buildings in Ethiopia with a focus on quality, safety, and timely delivery.
                 </p>
               </div>
@@ -42,7 +41,7 @@ const Index = () => {
                   </Button>
                 </Link>
                 <Link to="/projects">
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-black px-8 py-4 text-lg">
+                  <Button size="lg" variant="outline" className="px-8 py-4 text-lg">
                     View Properties
                   </Button>
                 </Link>
@@ -50,42 +49,45 @@ const Index = () => {
 
               {/* Property Search Filters */}
               <div className="grid grid-cols-2 gap-4 pt-8">
-                <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-                  <div className="text-sm text-gray-400 mb-1">Location</div>
-                  <div className="text-white font-medium">Addis Ababa, Ethiopia</div>
+                <div className="bg-card backdrop-blur-sm rounded-lg p-4 border border-border shadow-sm">
+                  <div className="text-sm text-muted-foreground mb-1">Location</div>
+                  <div className="text-foreground font-medium">Addis Ababa, Ethiopia</div>
                 </div>
-                <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-                  <div className="text-sm text-gray-400 mb-1">Pricing</div>
-                  <div className="text-white font-medium">3M - 15M ETB</div>
+                <div className="bg-card backdrop-blur-sm rounded-lg p-4 border border-border shadow-sm">
+                  <div className="text-sm text-muted-foreground mb-1">Pricing</div>
+                  <div className="text-foreground font-medium">3M - 15M ETB</div>
                 </div>
               </div>
             </div>
 
-            {/* Right Content - Modern Building Visual */}
+            {/* Right Content - Property Image */}
             <div className="relative">
-              <div className="relative w-full h-96 lg:h-[500px] bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl overflow-hidden shadow-2xl">
-                {/* Modern Building Illustration */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <Building2 className="w-8 h-8 text-accent" />
-                      <div>
-                        <div className="text-white font-semibold text-lg">Modern Architecture</div>
-                        <div className="text-gray-300 text-sm">Contemporary Design & Premium Finishes</div>
-                      </div>
-                    </div>
+              <div className="relative w-full h-96 lg:h-[500px] bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden shadow-2xl">
+                {/* Property Image Placeholder */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                
+                {/* Modern Building Visual Representation */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+                    <Building2 className="w-24 h-24 text-gray-500" />
                   </div>
                 </div>
                 
-                {/* Decorative Elements */}
-                <div className="absolute top-8 right-8 w-20 h-20 bg-accent/20 rounded-full blur-xl"></div>
-                <div className="absolute bottom-20 right-12 w-12 h-12 bg-white/10 rounded-full"></div>
-                <div className="absolute top-1/2 left-8 w-6 h-6 bg-accent rounded-full"></div>
+                {/* Property Details Overlay */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                  <div className="text-white space-y-2">
+                    <h3 className="text-xl font-bold">Luxury Apartment Complex</h3>
+                    <p className="text-gray-200 text-sm">Modern 3BR apartment with premium finishes</p>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="bg-accent text-accent-foreground px-3 py-1 rounded-full">Available</span>
+                      <span>B+G+9 Floors</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               {/* Floating Stats */}
-              <div className="absolute -bottom-6 -left-6 bg-white rounded-xl p-4 shadow-lg">
+              <div className="absolute -bottom-6 -left-6 bg-card rounded-xl p-4 shadow-lg border border-border">
                 <div className="text-2xl font-bold text-foreground">50+</div>
                 <div className="text-sm text-muted-foreground">Projects Completed</div>
               </div>
