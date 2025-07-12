@@ -23,24 +23,24 @@ const Maps = () => {
   const contactInfo = [
     {
       icon: Phone,
-      title: "Phone",
+      title: t("maps.phone"),
       value: "+251 11 123 4567",
       action: "tel:+251111234567"
     },
     {
       icon: Mail,
-      title: "Email", 
+      title: t("maps.email"), 
       value: "info@hudaengineering.com",
       action: "mailto:info@hudaengineering.com"
     },
     {
       icon: Clock,
-      title: "Business Hours",
+      title: t("maps.businessHours"),
       value: "Mon-Fri: 8:00 AM - 6:00 PM"
     },
     {
       icon: MapPin,
-      title: "Address",
+      title: t("maps.address"),
       value: companyLocation.address
     }
   ];
@@ -75,7 +75,7 @@ const Maps = () => {
             <div class="h-96 bg-muted rounded-lg flex items-center justify-center">
               <div class="text-center">
                 <MapPin class="h-12 w-12 text-primary mx-auto mb-4" />
-                <h3 class="text-lg font-semibold">Map unavailable</h3>
+                <h3 class="text-lg font-semibold">${t("maps.mapUnavailable")}</h3>
                 <p class="text-muted-foreground">Please visit us at ${companyLocation.address}</p>
               </div>
             </div>
@@ -85,7 +85,7 @@ const Maps = () => {
     };
 
     initializeMap();
-  }, []);
+  }, [t]);
 
   const openInGoogleMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${companyLocation.lat},${companyLocation.lng}`;
@@ -113,11 +113,11 @@ const Maps = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button onClick={openInGoogleMaps} size="lg">
               <MapPin className="h-5 w-5 mr-2" />
-              Open in Google Maps
+              {t("maps.openInMaps")}
             </Button>
             <Button onClick={getDirections} variant="outline" size="lg">
               <Navigation className="h-5 w-5 mr-2" />
-              Get Directions
+              {t("maps.getDirections")}
             </Button>
           </div>
         </div>
@@ -145,7 +145,7 @@ const Maps = () => {
                       <div className="h-full flex items-center justify-center">
                         <div className="text-center">
                           <MapPin className="h-12 w-12 text-primary mx-auto mb-4" />
-                          <p className="text-muted-foreground">Loading map...</p>
+                          <p className="text-muted-foreground">{t("maps.loadingMap")}</p>
                         </div>
                       </div>
                     )}
@@ -168,7 +168,7 @@ const Maps = () => {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Contact Information</CardTitle>
+                  <CardTitle>{t("maps.contactInfo")}</CardTitle>
                   <CardDescription>Get in touch with us</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -200,7 +200,7 @@ const Maps = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Office Features</CardTitle>
+                  <CardTitle>{t("maps.officeFeatures")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ const Maps = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Nearby Landmarks</CardTitle>
+                  <CardTitle>{t("maps.nearbyLandmarks")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <p>• Bole International Airport (15 min drive)</p>
@@ -239,7 +239,7 @@ const Maps = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-              Visit Our Office
+              {t("maps.visitOffice")}
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Our centrally located office in Addis Ababa makes it convenient for clients 

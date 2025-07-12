@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, Users, MessageSquare, Building, Plus, Edit, Trash2, Eye, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, Users, MessageSquare, Building, Plus, Edit, Trash2, Eye, CheckCircle, LogOut, User } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 const Admin = () => {
   const { t } = useTranslation();
+  const { user, logout } = useAuth();
   const [selectedTab, setSelectedTab] = useState("dashboard");
 
   // Mock data - in real app this would come from API
@@ -62,6 +64,10 @@ const Admin = () => {
     setProperties(properties.filter(p => p.id !== id));
   };
 
+  const handleLogout = () => {
+    logout();
+  };
+
   const stats = [
     { title: "Total Bookings", value: bookings.length, icon: Calendar, color: "text-blue-600" },
     { title: "Active Properties", value: properties.length, icon: Building, color: "text-green-600" },
@@ -76,12 +82,26 @@ const Admin = () => {
       {/* Header */}
       <section className="py-12 bg-gradient-to-br from-primary/10 to-accent/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            {t("admin.title")}
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Manage your property business efficiently
-          </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-4">
+                {t("admin.title")}
+              </h1>
+              <p className="text-xl text-muted-foreground">
+                {t("admin.welcome")}, {user?.fullName}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="h-4 w-4" />
+                {user?.email}
+              </div>
+              <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                {t("admin.logout")}
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
 

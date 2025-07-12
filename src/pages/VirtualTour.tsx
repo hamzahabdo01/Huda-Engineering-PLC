@@ -89,7 +89,7 @@ const VirtualTour = () => {
         <div className="absolute top-4 left-4 z-50 flex gap-2">
           <Button onClick={exitVR} variant="secondary" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Exit VR
+            {t("virtualTour.exitVR")}
           </Button>
           <Button 
             onClick={() => setViewAngle({ x: 0, y: 0 })} 
@@ -145,7 +145,7 @@ const VirtualTour = () => {
         {/* Instructions */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50">
           <Badge variant="secondary" className="bg-black/80 text-white">
-            Move mouse to look around • Use zoom controls to get closer
+            {t("virtualTour.instructions")}
           </Badge>
         </div>
       </div>
