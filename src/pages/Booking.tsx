@@ -76,6 +76,7 @@ const Booking = () => {
     fullName: "",
     email: "",
     phone: "",
+    nationalId: "",
     property: "",
     moveInDate: "",
     notes: ""
@@ -104,6 +105,7 @@ const Booking = () => {
       fullName: "",
       email: "",
       phone: "",
+      nationalId: "",
       property: "",
       moveInDate: "",
       notes: ""
@@ -235,6 +237,20 @@ const Booking = () => {
                       required
                       value={formData.phone}
                       onChange={handleInputChange}
+                      className="bg-background border-input"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="nationalId">National ID *</Label>
+                    <Input
+                      id="nationalId"
+                      name="nationalId"
+                      type="text"
+                      required
+                      value={formData.nationalId}
+                      onChange={handleInputChange}
+                      placeholder="Enter your national ID number"
                       className="bg-background border-input"
                     />
                   </div>
