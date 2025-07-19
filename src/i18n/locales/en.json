@@ -123,27 +123,64 @@
     },
     "residential": {
       "title": "Residential Construction",
-      "description": "Modern apartments, luxury homes, and residential complexes designed for Ethiopian families. From single-family homes to high-rise apartment buildings up to 2B+G+13 floors."
+      "description": "Modern apartments, luxury homes, and residential complexes designed for Ethiopian families. From single-family homes to high-rise apartment buildings up to 2B+G+13 floors.",
+      "badge": "Popular",
+      "features": [
+        "Luxury apartment complexes",
+        "Single-family residences",
+        "High-rise developments",
+        "Affordable housing projects"
+      ]
     },
     "commercial": {
       "title": "Commercial Buildings",
-      "description": "Office complexes, retail spaces, and commercial buildings that meet modern business needs with cutting-edge design and functionality."
+      "description": "Office complexes, retail spaces, and commercial buildings that meet modern business needs with cutting-edge design and functionality.",
+      "features": [
+        "Office complexes",
+        "Retail centers", 
+        "Business parks",
+        "Corporate headquarters"
+      ]
     },
     "mixedUse": {
       "title": "Mixed-Use Development",
-      "description": "Integrated developments combining residential, commercial, and office spaces to create vibrant urban communities."
+      "description": "Integrated developments combining residential, commercial, and office spaces to create vibrant urban communities.",
+      "features": [
+        "Residential-commercial combos",
+        "Urban development projects",
+        "Community centers",
+        "Multi-purpose complexes"
+      ]
     },
     "management": {
       "title": "Construction Management",
-      "description": "End-to-end project management services ensuring quality, safety, and timely delivery of all construction projects."
+      "description": "End-to-end project management services ensuring quality, safety, and timely delivery of all construction projects.",
+      "features": [
+        "Project planning & scheduling",
+        "Quality control",
+        "Safety management",
+        "Budget oversight"
+      ]
     },
     "design": {
       "title": "Design & Planning",
-      "description": "Comprehensive architectural design and engineering services from concept to detailed construction drawings."
+      "description": "Comprehensive architectural design and engineering services from concept to detailed construction drawings.",
+      "features": [
+        "Architectural design",
+        "Structural engineering", 
+        "Interior design",
+        "Landscape planning"
+      ]
     },
     "utility": {
       "title": "Utility Systems",
-      "description": "Complete utility infrastructure including electrical, plumbing, HVAC, and telecommunications systems integration."
+      "description": "Complete utility infrastructure including electrical, plumbing, HVAC, and telecommunications systems integration.",
+      "features": [
+        "Electrical systems",
+        "Plumbing & water systems",
+        "HVAC installation",
+        "Telecommunications setup"
+      ]
     },
     "why": {
       "title": "Why Choose Huda Engineering?",
@@ -188,7 +225,13 @@
       "messagePlaceholder": "Tell us about your project requirements, timeline, and any specific needs...",
       "send": "Send Message",
       "selectProject": "Select project type",
-      "selectBudget": "Select budget range"
+      "selectBudget": "Select budget range",
+      "yourFirstName": "Your first name",
+      "yourLastName": "Your last name",
+      "yourEmail": "Your email address",
+      "yourPhone": "Your phone number",
+      "tellUs": "Tell us about your project...",
+      "submit": "Send Message"
     },
     "info": {
       "phone": "Phone",
@@ -197,13 +240,60 @@
       "emailDesc": "Send us your project details",
       "location": "Location",
       "locationDesc": "Serving all of Ethiopia",
-      "hours": "Business Hours"
+      "hours": "Business Hours",
+      "contactInfo": "Contact Information",
+      "mondayFriday": "Monday - Friday: 8:00 AM - 6:00 PM",
+      "saturday": "Saturday: 9:00 AM - 4:00 PM",
+      "sunday": "Sunday: Closed"
     },
     "cta": {
       "title": "Ready to Start Your Project?",
       "description": "Join the 50+ satisfied clients who have trusted us with their construction needs",
       "quote": "Request a Quote",
-      "consultation": "Schedule Consultation"
+      "consultation": "Schedule Consultation",
+      "completed": "successfully completed projects"
+    }
+  },
+  "projectsPage": {
+    "hero": {
+      "title": "Our Projects",
+      "subtitle": "Showcasing our expertise in Ethiopian construction and development"
+    },
+    "featured": {
+      "title": "Featured Projects",
+      "description": "Our most notable construction achievements"
+    },
+    "all": {
+      "title": "All Projects", 
+      "description": "Our complete portfolio of construction projects"
+    },
+    "details": {
+      "location": "Location",
+      "completed": "Completed",
+      "floors": "Floors",
+      "units": "Units",
+      "projectValue": "Project Value",
+      "flagshipBadge": "Flagship",
+      "completedBadge": "Completed",
+      "activeBadge": "Active"
+    }
+  },
+  "mapsPage": {
+    "openInGoogleMaps": "Open in Google Maps",
+    "viewInMaps": "View in Maps",
+    "contactInformation": "Contact Information",
+    "directions": "Get Directions",
+    "easyContact": "Easy Contact"
+  },
+  "announcementsPage": {
+    "title": "Company Announcements",
+    "subtitle": "Stay updated with our latest news and project developments",
+    "latestUpdates": "Latest Company Updates & Announcements",
+    "categories": {
+      "newProjects": "New Projects",
+      "construction": "Construction Progress", 
+      "sales": "Sales",
+      "companyNews": "Company News"
     }
   },
   "booking": {
@@ -389,7 +479,15 @@
     "properties": "Manage Properties",
     "addProperty": "Add New Property",
     "editProperty": "Edit Property",
-    "deleteProperty": "Delete Property"
+    "deleteProperty": "Delete Property",
+    "newContacts": "New Contacts",
+    "publishedAnnouncements": "Published Announcements",
+    "newContact": "New contact form submission from Solomon",
+    "createAndManage": "Create and manage announcements",
+    "viewAndRespond": "View and respond to contact form submissions",
+    "name": "Name",
+    "status": "Status",
+    "new": "new"
   },
   "maps": {
     "title": "Our Location",
@@ -403,6 +501,9 @@
     "add": "Add",
     "loading": "Loading...",
     "submit": "Submit",
-    "back": "Back"
+    "back": "Back",
+    "actions": "Actions",
+    "message": "Message",
+    "date": "Date"
   }
 }

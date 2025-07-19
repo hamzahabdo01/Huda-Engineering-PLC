@@ -4,8 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, Calendar, Users } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useTranslation } from "react-i18next";
 
 const Projects = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -13,9 +16,9 @@ const Projects = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">Our Projects</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">{t("projectsPage.hero.title")}</h1>
           <p className="text-xl text-primary-foreground/90 max-w-3xl mx-auto">
-            Showcasing our expertise in Ethiopian construction and development
+            {t("projectsPage.hero.subtitle")}
           </p>
         </div>
       </section>
@@ -24,8 +27,8 @@ const Projects = () => {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-foreground mb-4">Featured Projects</h2>
-            <p className="text-xl text-muted-foreground">Our most notable construction achievements</p>
+            <h2 className="text-3xl font-bold text-foreground mb-4">{t("projectsPage.featured.title")}</h2>
+            <p className="text-xl text-muted-foreground">{t("projectsPage.featured.description")}</p>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
@@ -36,10 +39,10 @@ const Projects = () => {
               </div>
               <CardHeader>
                 <div className="flex justify-between items-start mb-2">
-                  <CardTitle className="text-2xl">Huda Apartment Building</CardTitle>
-                  <Badge className="bg-accent text-accent-foreground">Flagship</Badge>
+                  <CardTitle className="text-2xl">{t("projects.hudaApartment.title")}</CardTitle>
+                  <Badge className="bg-accent text-accent-foreground">{t("projectsPage.details.flagshipBadge")}</Badge>
                 </div>
-                <CardDescription className="text-lg">B+G+9 Residential Complex</CardDescription>
+                <CardDescription className="text-lg">{t("projects.hudaApartment.floors")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -49,19 +52,15 @@ const Projects = () => {
                   </div>
                   <div className="flex items-center space-x-2 text-muted-foreground">
                     <Calendar className="w-4 h-4" />
-                    <span>Completed 2023</span>
+                    <span>{t("projectsPage.details.completed")}: 2023</span>
                   </div>
                   <div className="flex items-center space-x-2 text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span>120+ Family Units</span>
+                    <Building2 className="w-4 h-4" />
+                    <span>{t("projectsPage.details.projectValue")}: 251M ETB</span>
                   </div>
-                  <div className="pt-4">
-                    <div className="text-2xl font-bold text-primary mb-2">251M ETB</div>
-                    <p className="text-muted-foreground">
-                      A modern residential complex featuring basement parking, ground floor commercial space, 
-                      and 9 floors of luxury apartments with modern amenities.
-                    </p>
-                  </div>
+                  <p className="text-muted-foreground">
+                    {t("projects.hudaApartment.description")}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -73,10 +72,10 @@ const Projects = () => {
               </div>
               <CardHeader>
                 <div className="flex justify-between items-start mb-2">
-                  <CardTitle className="text-2xl">SYS Luxury Apartments</CardTitle>
-                  <Badge className="bg-primary text-primary-foreground">Premium</Badge>
+                  <CardTitle className="text-2xl">{t("projects.sysLuxury.title")}</CardTitle>
+                  <Badge variant="secondary">{t("projectsPage.details.completedBadge")}</Badge>
                 </div>
-                <CardDescription className="text-lg">2B+G+13 High-Rise Complex</CardDescription>
+                <CardDescription className="text-lg">{t("projects.sysLuxury.floors")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -86,19 +85,15 @@ const Projects = () => {
                   </div>
                   <div className="flex items-center space-x-2 text-muted-foreground">
                     <Calendar className="w-4 h-4" />
-                    <span>Completed 2024</span>
+                    <span>{t("projectsPage.details.completed")}: 2022</span>
                   </div>
                   <div className="flex items-center space-x-2 text-muted-foreground">
                     <Users className="w-4 h-4" />
-                    <span>200+ Luxury Units</span>
+                    <span>156 {t("projectsPage.details.units")}</span>
                   </div>
-                  <div className="pt-4">
-                    <div className="text-lg font-semibold text-primary mb-2">Premium Development</div>
-                    <p className="text-muted-foreground">
-                      Our tallest residential project featuring two basement levels, ground floor amenities, 
-                      and 13 floors of luxury apartments with panoramic city views.
-                    </p>
-                  </div>
+                  <p className="text-muted-foreground">
+                    {t("projects.sysLuxury.description")}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -110,152 +105,161 @@ const Projects = () => {
       <section className="py-20 bg-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-foreground mb-4">All Projects</h2>
-            <p className="text-xl text-muted-foreground">Our complete portfolio of construction projects</p>
+            <h2 className="text-3xl font-bold text-foreground mb-4">{t("projectsPage.all.title")}</h2>
+            <p className="text-xl text-muted-foreground">{t("projectsPage.all.description")}</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Tokoma Office Building */}
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="bg-gradient-to-br from-primary/20 to-accent/20 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-primary" />
+            <Card className="hover:shadow-lg transition-shadow">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 h-48 flex items-center justify-center">
+                <Building2 className="w-16 h-16 text-white" />
               </div>
               <CardHeader>
-                <CardTitle className="text-xl">Tokoma Office Building</CardTitle>
-                <CardDescription>B+G+5 Mixed Office Complex</CardDescription>
+                <CardTitle className="text-lg">{t("projects.tokomaOffice.title")}</CardTitle>
+                <CardDescription>{t("projects.tokomaOffice.floors")}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>Completed 2022</span>
-                  </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-2">
                     <MapPin className="w-3 h-3" />
                     <span>Addis Ababa</span>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-3 h-3" />
+                    <span>2021</span>
+                  </div>
                 </div>
-                <Badge variant="secondary">Commercial</Badge>
+                <p className="text-sm text-muted-foreground mt-3">
+                  {t("projects.tokomaOffice.description")}
+                </p>
               </CardContent>
             </Card>
 
-            {/* Residential Project 1 */}
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="bg-gradient-to-br from-accent/20 to-primary/20 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-primary" />
+            {/* Additional Project Cards */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <div className="bg-gradient-to-br from-green-500 to-green-600 h-48 flex items-center justify-center">
+                <Building2 className="w-16 h-16 text-white" />
               </div>
               <CardHeader>
-                <CardTitle className="text-xl">Megenagna Residences</CardTitle>
-                <CardDescription>G+6 Apartment Complex</CardDescription>
+                <CardTitle className="text-lg">Megenagna Commercial Complex</CardTitle>
+                <CardDescription>B+G+7 {t("projectsPage.details.floors")}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>Completed 2021</span>
-                  </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-2">
                     <MapPin className="w-3 h-3" />
                     <span>Addis Ababa</span>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-3 h-3" />
+                    <span>2020</span>
+                  </div>
                 </div>
-                <Badge variant="secondary">Residential</Badge>
+                <p className="text-sm text-muted-foreground mt-3">
+                  Mixed-use commercial and residential development in prime location.
+                </p>
               </CardContent>
             </Card>
 
-            {/* Commercial Project */}
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="bg-gradient-to-br from-primary/30 to-accent/30 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-primary" />
+            <Card className="hover:shadow-lg transition-shadow">
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 h-48 flex items-center justify-center">
+                <Building2 className="w-16 h-16 text-white" />
               </div>
               <CardHeader>
-                <CardTitle className="text-xl">Bole Commercial Center</CardTitle>
-                <CardDescription>G+4 Retail Complex</CardDescription>
+                <CardTitle className="text-lg">Bole Residential Tower</CardTitle>
+                <CardDescription>B+G+12 {t("projectsPage.details.floors")}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>Completed 2020</span>
-                  </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-2">
                     <MapPin className="w-3 h-3" />
                     <span>Addis Ababa</span>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-3 h-3" />
+                    <span>2024</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs">{t("projectsPage.details.activeBadge")}</Badge>
                 </div>
-                <Badge variant="secondary">Commercial</Badge>
+                <p className="text-sm text-muted-foreground mt-3">
+                  Luxury residential tower with modern amenities and city views.
+                </p>
               </CardContent>
             </Card>
 
-            {/* Mixed Use Project */}
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="bg-gradient-to-br from-accent/25 to-primary/25 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-primary" />
+            <Card className="hover:shadow-lg transition-shadow">
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 h-48 flex items-center justify-center">
+                <Building2 className="w-16 h-16 text-white" />
               </div>
               <CardHeader>
-                <CardTitle className="text-xl">Kirkos Mixed Development</CardTitle>
-                <CardDescription>B+G+8 Mixed-Use</CardDescription>
+                <CardTitle className="text-lg">Lafto Shopping Mall</CardTitle>
+                <CardDescription>B+G+4 {t("projectsPage.details.floors")}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>Completed 2019</span>
-                  </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-2">
                     <MapPin className="w-3 h-3" />
                     <span>Addis Ababa</span>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-3 h-3" />
+                    <span>2019</span>
+                  </div>
                 </div>
-                <Badge variant="secondary">Mixed-Use</Badge>
+                <p className="text-sm text-muted-foreground mt-3">
+                  Modern shopping center with retail spaces and entertainment facilities.
+                </p>
               </CardContent>
             </Card>
 
-            {/* Luxury Homes */}
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="bg-gradient-to-br from-primary/15 to-accent/15 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-primary" />
+            <Card className="hover:shadow-lg transition-shadow">
+              <div className="bg-gradient-to-br from-teal-500 to-teal-600 h-48 flex items-center justify-center">
+                <Building2 className="w-16 h-16 text-white" />
               </div>
               <CardHeader>
-                <CardTitle className="text-xl">CMC Luxury Villas</CardTitle>
-                <CardDescription>Premium Single Family Homes</CardDescription>
+                <CardTitle className="text-lg">Gerji Office Complex</CardTitle>
+                <CardDescription>B+G+8 {t("projectsPage.details.floors")}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>Completed 2023</span>
-                  </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-2">
                     <MapPin className="w-3 h-3" />
                     <span>Addis Ababa</span>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-3 h-3" />
+                    <span>2018</span>
+                  </div>
                 </div>
-                <Badge variant="secondary">Luxury</Badge>
+                <p className="text-sm text-muted-foreground mt-3">
+                  Professional office building with modern facilities and parking.
+                </p>
               </CardContent>
             </Card>
 
-            {/* Ongoing Project */}
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow border-accent">
-              <div className="bg-gradient-to-br from-accent/30 to-primary/30 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-primary" />
+            <Card className="hover:shadow-lg transition-shadow">
+              <div className="bg-gradient-to-br from-red-500 to-red-600 h-48 flex items-center justify-center">
+                <Building2 className="w-16 h-16 text-white" />
               </div>
               <CardHeader>
-                <CardTitle className="text-xl">Sarbet Towers</CardTitle>
-                <CardDescription>2B+G+12 Residential</CardDescription>
+                <CardTitle className="text-lg">Atlas Villa Project</CardTitle>
+                <CardDescription>G+2 {t("projectsPage.details.floors")}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>In Progress</span>
-                  </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-2">
                     <MapPin className="w-3 h-3" />
                     <span>Addis Ababa</span>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-3 h-3" />
+                    <span>2017</span>
+                  </div>
                 </div>
-                <Badge className="bg-accent text-accent-foreground">Ongoing</Badge>
+                <p className="text-sm text-muted-foreground mt-3">
+                  Luxury villa development with premium finishes and landscaping.
+                </p>
               </CardContent>
             </Card>
           </div>

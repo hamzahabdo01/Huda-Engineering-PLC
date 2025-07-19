@@ -12,36 +12,32 @@ const Maps = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  // Huda Engineering PLC location in Addis Ababa (example coordinates)
+  // Company location coordinates (Addis Ababa, Ethiopia)
   const companyLocation = {
-    lat: 9.0192,
-    lng: 38.7525,
-    name: "Huda Engineering PLC",
-    address: "Bole Road, Addis Ababa, Ethiopia"
+    lat: 9.005401,
+    lng: 38.763611,
+    address: "Bole Sub City, Wereda 03, Addis Ababa, Ethiopia"
   };
 
+  // Contact information
   const contactInfo = [
     {
       icon: Phone,
-      title: "Phone",
-      value: "+251 11 123 4567",
-      action: "tel:+251111234567"
+      label: t("contact.info.phone"),
+      primary: "+251 91 123 4567",
+      secondary: "+251 11 234 5678"
     },
     {
       icon: Mail,
-      title: "Email", 
-      value: "info@hudaengineering.com",
-      action: "mailto:info@hudaengineering.com"
+      label: t("contact.info.email"),
+      primary: "info@hudaengineering.com",
+      secondary: "projects@hudaengineering.com"
     },
     {
       icon: Clock,
-      title: "Business Hours",
-      value: "Mon-Fri: 8:00 AM - 6:00 PM"
-    },
-    {
-      icon: MapPin,
-      title: "Address",
-      value: companyLocation.address
+      label: t("contact.info.hours"),
+      primary: t("contact.info.mondayFriday"),
+      secondary: t("contact.info.saturday")
     }
   ];
 
@@ -87,11 +83,13 @@ const Maps = () => {
     initializeMap();
   }, []);
 
+  // Open Google Maps
   const openInGoogleMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${companyLocation.lat},${companyLocation.lng}`;
     window.open(url, '_blank');
   };
 
+  // Get directions
   const getDirections = () => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${companyLocation.lat},${companyLocation.lng}`;
     window.open(url, '_blank');
@@ -102,62 +100,57 @@ const Maps = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="py-20 lg:py-32 bg-gradient-to-br from-primary/10 to-accent/10">
+      <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">
             {t("maps.title")}
           </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-primary-foreground/90 max-w-3xl mx-auto mb-8">
             {t("maps.description")}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button onClick={openInGoogleMaps} size="lg">
-              <MapPin className="h-5 w-5 mr-2" />
-              Open in Google Maps
-            </Button>
-            <Button onClick={getDirections} variant="outline" size="lg">
-              <Navigation className="h-5 w-5 mr-2" />
-              Get Directions
-            </Button>
-          </div>
+          <Button onClick={openInGoogleMaps} size="lg">
+            <MapPin className="mr-2 h-5 w-5" />
+            {t("mapsPage.openInGoogleMaps")}
+          </Button>
         </div>
       </section>
 
       {/* Map and Contact Info */}
-      <section className="py-20 lg:py-32 bg-background">
+      <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            {/* Map */}
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            
+            {/* Interactive Map Container */}
+            <div className="space-y-6">
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-primary" />
-                    Our Location
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-2">
+                    <MapPin className="w-5 h-5 text-primary" />
+                    <span>{t("hero.location")}</span>
                   </CardTitle>
-                  <CardDescription>
-                    Visit our office in Addis Ababa for consultations and project discussions
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div ref={mapRef} className="w-full h-96 bg-muted rounded-lg">
-                    {!mapLoaded && (
-                      <div className="h-full flex items-center justify-center">
-                        <div className="text-center">
-                          <MapPin className="h-12 w-12 text-primary mx-auto mb-4" />
-                          <p className="text-muted-foreground">Loading map...</p>
-                        </div>
-                      </div>
-                    )}
+                  {/* Embedded Google Maps */}
+                  <div className="w-full h-96 bg-muted rounded-lg overflow-hidden">
+                    <iframe
+                      src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3940.6177614537234!2d${companyLocation.lng}!3d${companyLocation.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zOcKwMDAnMTkuNCJOIDM4wrA0NSc0OS4wIkU!5e0!3m2!1sen!2set!4v1635000000000!5m2!1sen!2set`}
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
                   </div>
-                  <div className="mt-4 flex gap-2">
+                  
+                  <div className="mt-4 flex flex-col sm:flex-row gap-3">
                     <Button onClick={openInGoogleMaps} variant="outline" size="sm">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      View in Maps
+                      <MapPin className="mr-2 h-4 w-4" />
+                      {t("mapsPage.viewInMaps")}
                     </Button>
                     <Button onClick={getDirections} variant="outline" size="sm">
-                      <Navigation className="h-4 w-4 mr-2" />
-                      Directions
+                      <Navigation className="mr-2 h-4 w-4" />
+                      {t("mapsPage.directions")}
                     </Button>
                   </div>
                 </CardContent>
@@ -168,121 +161,62 @@ const Maps = () => {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Contact Information</CardTitle>
-                  <CardDescription>Get in touch with us</CardDescription>
+                  <CardTitle>{t("mapsPage.contactInformation")}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   {contactInfo.map((info, index) => {
                     const IconComponent = info.icon;
                     return (
-                      <div key={index} className="flex items-start gap-3">
-                        <IconComponent className="h-5 w-5 text-primary mt-0.5" />
-                        <div className="flex-1">
-                          <h4 className="font-medium text-sm text-muted-foreground">
-                            {info.title}
-                          </h4>
-                          {info.action ? (
-                            <a 
-                              href={info.action}
-                              className="text-foreground hover:text-primary transition-colors"
-                            >
-                              {info.value}
-                            </a>
-                          ) : (
-                            <p className="text-foreground">{info.value}</p>
+                      <div key={index} className="flex items-start space-x-4">
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <IconComponent className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-foreground mb-1">{info.label}</h3>
+                          <p className="text-muted-foreground">{info.primary}</p>
+                          {info.secondary && (
+                            <p className="text-muted-foreground">{info.secondary}</p>
                           )}
                         </div>
                       </div>
                     );
                   })}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Office Features</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">Parking Available</Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">Wheelchair Accessible</Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">Public Transport Access</Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">Meeting Rooms</Badge>
+                  
+                  {/* Address */}
+                  <div className="flex items-start space-x-4">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1">{t("contact.info.location")}</h3>
+                      <p className="text-muted-foreground">{companyLocation.address}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
+              {/* Quick Contact CTA */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Nearby Landmarks</CardTitle>
+                  <CardTitle>{t("mapsPage.easyContact")}</CardTitle>
+                  <CardDescription>
+                    {t("contact.hero.subtitle")}
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <p>• Bole International Airport (15 min drive)</p>
-                  <p>• Edna Mall (5 min walk)</p>
-                  <p>• Commercial Bank of Ethiopia (2 min walk)</p>
-                  <p>• Bole Medhanialem Church (10 min walk)</p>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Button className="w-full" onClick={() => window.location.href = 'tel:+251911234567'}>
+                      <Phone className="mr-2 h-4 w-4" />
+                      {t("contact.info.phone")}
+                    </Button>
+                    <Button variant="outline" className="w-full" onClick={() => window.location.href = 'mailto:info@hudaengineering.com'}>
+                      <Mail className="mr-2 h-4 w-4" />
+                      {t("contact.info.email")}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Additional Location Info */}
-      <section className="py-20 bg-muted">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-              Visit Our Office
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Our centrally located office in Addis Ababa makes it convenient for clients 
-              to visit us for consultations, project discussions, and property viewings.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="text-center">
-              <CardHeader>
-                <MapPin className="h-12 w-12 text-primary mx-auto mb-4" />
-                <CardTitle>Prime Location</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Located in the heart of Bole, easily accessible from all parts of Addis Ababa
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center">
-              <CardHeader>
-                <Clock className="h-12 w-12 text-primary mx-auto mb-4" />
-                <CardTitle>Flexible Hours</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Extended business hours to accommodate your schedule, including weekend appointments
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center">
-              <CardHeader>
-                <Phone className="h-12 w-12 text-primary mx-auto mb-4" />
-                <CardTitle>Easy Contact</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Multiple ways to reach us - phone, email, or visit in person for immediate assistance
-                </CardDescription>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </section>

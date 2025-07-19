@@ -7,8 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Phone, Mail, MapPin, Clock, MessageSquare } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useTranslation } from "react-i18next";
 
 const Contact = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -16,9 +19,9 @@ const Contact = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">Contact Us</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">{t("contact.hero.title")}</h1>
           <p className="text-xl text-primary-foreground/90 max-w-3xl mx-auto">
-            Ready to start your construction project? Get in touch with our expert team
+            {t("contact.hero.subtitle")}
           </p>
         </div>
       </section>
@@ -32,173 +35,129 @@ const Contact = () => {
               <CardHeader>
                 <CardTitle className="text-2xl flex items-center space-x-2">
                   <MessageSquare className="w-6 h-6 text-primary" />
-                  <span>Send us a Message</span>
+                  <span>{t("contact.form.title")}</span>
                 </CardTitle>
                 <CardDescription>
-                  Fill out the form below and we'll get back to you within 24 hours
+                  {t("contact.form.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" placeholder="Your first name" />
+                      <Label htmlFor="firstName">{t("contact.form.firstName")}</Label>
+                      <Input id="firstName" placeholder={t("contact.form.yourFirstName")} />
                     </div>
                     <div>
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" placeholder="Your last name" />
+                      <Label htmlFor="lastName">{t("contact.form.lastName")}</Label>
+                      <Input id="lastName" placeholder={t("contact.form.yourLastName")} />
                     </div>
                   </div>
-                  
                   <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="your@email.com" />
+                    <Label htmlFor="email">{t("contact.form.email")}</Label>
+                    <Input id="email" type="email" placeholder={t("contact.form.yourEmail")} />
                   </div>
-                  
                   <div>
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" placeholder="+251-XXX-XXXX" />
+                    <Label htmlFor="phone">{t("contact.form.phone")}</Label>
+                    <Input id="phone" placeholder={t("contact.form.yourPhone")} />
                   </div>
-                  
-                  <div>
-                    <Label htmlFor="projectType">Project Type</Label>
-                    <select 
-                      id="projectType" 
-                      className="w-full p-2 border border-input rounded-md bg-background"
-                    >
-                      <option value="">Select project type</option>
-                      <option value="residential">Residential Building</option>
-                      <option value="commercial">Commercial Building</option>
-                      <option value="mixed-use">Mixed-Use Development</option>
-                      <option value="renovation">Renovation</option>
-                      <option value="consultation">Consultation</option>
-                    </select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="projectType">{t("contact.form.projectType")}</Label>
+                      <select className="w-full border border-input bg-background px-3 py-2 rounded-md text-sm">
+                        <option value="">{t("contact.form.selectProject")}</option>
+                        <option value="residential">{t("servicesPage.residential.title")}</option>
+                        <option value="commercial">{t("servicesPage.commercial.title")}</option>
+                        <option value="mixed-use">{t("servicesPage.mixedUse.title")}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="budget">{t("contact.form.budget")}</Label>
+                      <select className="w-full border border-input bg-background px-3 py-2 rounded-md text-sm">
+                        <option value="">{t("contact.form.selectBudget")}</option>
+                        <option value="under-5m">Under 5M ETB</option>
+                        <option value="5m-15m">5M - 15M ETB</option>
+                        <option value="15m-50m">15M - 50M ETB</option>
+                        <option value="over-50m">Over 50M ETB</option>
+                      </select>
+                    </div>
                   </div>
-                  
                   <div>
-                    <Label htmlFor="budget">Estimated Budget</Label>
-                    <select 
-                      id="budget" 
-                      className="w-full p-2 border border-input rounded-md bg-background"
-                    >
-                      <option value="">Select budget range</option>
-                      <option value="under-50m">Under 50M ETB</option>
-                      <option value="50m-100m">50M - 100M ETB</option>
-                      <option value="100m-250m">100M - 250M ETB</option>
-                      <option value="250m-500m">250M - 500M ETB</option>
-                      <option value="over-500m">Over 500M ETB</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="message">Project Details</Label>
-                    <Textarea 
-                      id="message" 
-                      placeholder="Tell us about your project requirements, timeline, and any specific needs..."
+                    <Label htmlFor="message">{t("contact.form.message")}</Label>
+                    <Textarea
+                      id="message"
+                      placeholder={t("contact.form.messagePlaceholder")}
                       className="min-h-[120px]"
                     />
                   </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                  >
-                    Send Message
+                  <Button type="submit" className="w-full">
+                    {t("contact.form.submit")}
                   </Button>
                 </form>
               </CardContent>
             </Card>
 
             {/* Contact Information */}
-            <div className="space-y-6">
+            <div className="space-y-8">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
+                  <CardTitle className="text-xl flex items-center space-x-2">
                     <Phone className="w-5 h-5 text-primary" />
-                    <span>Phone</span>
+                    <span>{t("contact.info.phone")}</span>
                   </CardTitle>
+                  <CardDescription>
+                    {t("contact.info.phoneDesc")}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-lg font-semibold">+251-XXX-XXXX</p>
-                  <p className="text-muted-foreground">Call us for immediate assistance</p>
+                  <p className="text-lg font-medium">+251 91 123 4567</p>
+                  <p className="text-lg font-medium">+251 11 234 5678</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
+                  <CardTitle className="text-xl flex items-center space-x-2">
                     <Mail className="w-5 h-5 text-primary" />
-                    <span>Email</span>
+                    <span>{t("contact.info.email")}</span>
                   </CardTitle>
+                  <CardDescription>
+                    {t("contact.info.emailDesc")}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-lg font-semibold">info@hudaengineering.com</p>
-                  <p className="text-muted-foreground">Send us your project details</p>
+                  <p className="text-lg font-medium">info@hudaengineering.com</p>
+                  <p className="text-lg font-medium">projects@hudaengineering.com</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
+                  <CardTitle className="text-xl flex items-center space-x-2">
                     <MapPin className="w-5 h-5 text-primary" />
-                    <span>Location</span>
+                    <span>{t("contact.info.location")}</span>
                   </CardTitle>
+                  <CardDescription>
+                    {t("contact.info.locationDesc")}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-lg font-semibold">Addis Ababa, Ethiopia</p>
-                  <p className="text-muted-foreground">Serving all of Ethiopia</p>
+                  <p className="text-lg font-medium">Addis Ababa, Ethiopia</p>
+                  <p className="text-muted-foreground">Bole Sub City, Wereda 03</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
+                  <CardTitle className="text-xl flex items-center space-x-2">
                     <Clock className="w-5 h-5 text-primary" />
-                    <span>Business Hours</span>
+                    <span>{t("contact.info.hours")}</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Monday - Friday:</span>
-                      <span className="font-semibold">8:00 AM - 6:00 PM</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Saturday:</span>
-                      <span className="font-semibold">9:00 AM - 4:00 PM</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Sunday:</span>
-                      <span className="font-semibold">Closed</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-primary/10 to-accent/10">
-                <CardHeader>
-                  <CardTitle>Why Choose Us?</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3 text-sm">
-                    <li className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      <span>7+ years of experience in Ethiopian construction</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      <span>50+ successfully completed projects</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      <span>Zero litigation history</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      <span>Own equipment and professional team</span>
-                    </li>
-                  </ul>
+                <CardContent className="space-y-2">
+                  <p className="text-base">{t("contact.info.mondayFriday")}</p>
+                  <p className="text-base">{t("contact.info.saturday")}</p>
+                  <p className="text-base">{t("contact.info.sunday")}</p>
                 </CardContent>
               </Card>
             </div>
@@ -208,18 +167,24 @@ const Contact = () => {
 
       {/* CTA Section */}
       <section className="py-20 bg-muted">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-foreground mb-4">Ready to Start Your Project?</h2>
-          <p className="text-xl text-muted-foreground mb-8">
-            Join the 50+ satisfied clients who have trusted us with their construction needs
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold text-foreground mb-6">{t("contact.cta.title")}</h2>
+          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+            {t("contact.cta.description")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3">
-              Request a Quote
+            <Button size="lg" className="px-8 py-4 text-lg">
+              {t("contact.cta.quote")}
             </Button>
-            <Button size="lg" variant="outline" className="px-8 py-3">
-              Schedule Consultation
+            <Button size="lg" variant="outline" className="px-8 py-4 text-lg">
+              {t("contact.cta.consultation")}
             </Button>
+          </div>
+          <div className="mt-8 flex items-center justify-center space-x-2 text-muted-foreground">
+            <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
+              <span className="text-sm font-bold text-accent-foreground">50+</span>
+            </div>
+            <span>{t("contact.cta.completed")}</span>
           </div>
         </div>
       </section>
