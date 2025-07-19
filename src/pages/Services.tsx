@@ -1,14 +1,14 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Home, Briefcase, Layers, Wrench, Cog } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Home, Briefcase, Layers, Wrench, PenTool, Zap } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useTranslation } from "react-i18next";
 
 const Services = () => {
   const { t } = useTranslation();
-  
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -16,7 +16,9 @@ const Services = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">{t("servicesPage.hero.title")}</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">
+            {t("servicesPage.hero.title")}
+          </h1>
           <p className="text-xl text-primary-foreground/90 max-w-3xl mx-auto">
             {t("servicesPage.hero.subtitle")}
           </p>
@@ -30,19 +32,17 @@ const Services = () => {
             <Card className="hover:shadow-xl transition-shadow">
               <CardHeader>
                 <Home className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Residential Construction</CardTitle>
-                <Badge className="w-fit bg-accent text-accent-foreground">Popular</Badge>
+                <CardTitle className="text-xl">{t("servicesPage.residential.title")}</CardTitle>
+                <Badge className="w-fit bg-accent text-accent-foreground">{t("servicesPage.residential.badge")}</Badge>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Modern apartments, luxury homes, and residential complexes designed for Ethiopian families. 
-                  From single-family homes to high-rise apartment buildings up to 2B+G+13 floors.
+                  {t("servicesPage.residential.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <li>• Luxury apartment complexes</li>
-                  <li>• Single-family residences</li>
-                  <li>• High-rise developments</li>
-                  <li>• Affordable housing projects</li>
+                  {t("servicesPage.residential.features", { returnObjects: true }).map((feature, index) => (
+                    <li key={index}>• {feature}</li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
@@ -50,18 +50,16 @@ const Services = () => {
             <Card className="hover:shadow-xl transition-shadow">
               <CardHeader>
                 <Briefcase className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Commercial Buildings</CardTitle>
+                <CardTitle className="text-xl">{t("servicesPage.commercial.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Office complexes, retail spaces, and commercial buildings that meet modern business needs 
-                  with cutting-edge design and functionality.
+                  {t("servicesPage.commercial.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <li>• Office complexes</li>
-                  <li>• Retail centers</li>
-                  <li>• Business parks</li>
-                  <li>• Corporate headquarters</li>
+                  {t("servicesPage.commercial.features", { returnObjects: true }).map((feature, index) => (
+                    <li key={index}>• {feature}</li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
@@ -69,18 +67,16 @@ const Services = () => {
             <Card className="hover:shadow-xl transition-shadow">
               <CardHeader>
                 <Layers className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Mixed-Use Development</CardTitle>
+                <CardTitle className="text-xl">{t("servicesPage.mixedUse.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Integrated developments combining residential, commercial, and office spaces 
-                  to create vibrant urban communities.
+                  {t("servicesPage.mixedUse.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <li>• Residential-commercial combos</li>
-                  <li>• Urban development projects</li>
-                  <li>• Community centers</li>
-                  <li>• Multi-purpose complexes</li>
+                  {t("servicesPage.mixedUse.features", { returnObjects: true }).map((feature, index) => (
+                    <li key={index}>• {feature}</li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
@@ -88,56 +84,50 @@ const Services = () => {
             <Card className="hover:shadow-xl transition-shadow">
               <CardHeader>
                 <Wrench className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Construction Management</CardTitle>
+                <CardTitle className="text-xl">{t("servicesPage.management.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  End-to-end project management services ensuring quality, safety, and timely delivery 
-                  of all construction projects.
+                  {t("servicesPage.management.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <li>• Project planning & scheduling</li>
-                  <li>• Quality control</li>
-                  <li>• Safety management</li>
-                  <li>• Budget oversight</li>
+                  {t("servicesPage.management.features", { returnObjects: true }).map((feature, index) => (
+                    <li key={index}>• {feature}</li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-xl transition-shadow">
               <CardHeader>
-                <Building2 className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Design & Planning</CardTitle>
+                <PenTool className="w-12 h-12 text-primary mb-4" />
+                <CardTitle className="text-xl">{t("servicesPage.design.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Comprehensive architectural design and engineering services from concept 
-                  to detailed construction drawings.
+                  {t("servicesPage.design.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <li>• Architectural design</li>
-                  <li>• Structural engineering</li>
-                  <li>• Urban planning</li>
-                  <li>• 3D visualization</li>
+                  {t("servicesPage.design.features", { returnObjects: true }).map((feature, index) => (
+                    <li key={index}>• {feature}</li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-xl transition-shadow">
               <CardHeader>
-                <Cog className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Utility Systems</CardTitle>
+                <Zap className="w-12 h-12 text-primary mb-4" />
+                <CardTitle className="text-xl">{t("servicesPage.utility.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Complete utility infrastructure including electrical, plumbing, HVAC, 
-                  and telecommunications systems integration.
+                  {t("servicesPage.utility.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <li>• Electrical systems</li>
-                  <li>• Plumbing & water systems</li>
-                  <li>• HVAC installation</li>
-                  <li>• Telecommunications</li>
+                  {t("servicesPage.utility.features", { returnObjects: true }).map((feature, index) => (
+                    <li key={index}>• {feature}</li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
@@ -149,77 +139,106 @@ const Services = () => {
       <section className="py-20 bg-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-foreground mb-4">Why Choose Huda Engineering?</h2>
-            <p className="text-xl text-muted-foreground">What sets us apart in Ethiopian construction</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("servicesPage.why.title")}</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              {t("servicesPage.why.subtitle")}
+            </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
-              <h3 className="text-2xl font-bold text-foreground mb-6">Our Advantages</h3>
-              <ul className="space-y-4">
-                <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                  <div>
-                    <strong className="text-foreground">Own Equipment & Machinery:</strong>
-                    <p className="text-muted-foreground">We own our construction equipment and heavy machinery, ensuring project control and cost efficiency.</p>
-                  </div>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                  <div>
-                    <strong className="text-foreground">Professional Team:</strong>
-                    <p className="text-muted-foreground">Experienced engineers, architects, and skilled foremen with deep local expertise.</p>
-                  </div>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                  <div>
-                    <strong className="text-foreground">Zero Litigation:</strong>
-                    <p className="text-muted-foreground">Our clean legal record demonstrates our commitment to quality and client satisfaction.</p>
-                  </div>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                  <div>
-                    <strong className="text-foreground">Local Knowledge:</strong>
-                    <p className="text-muted-foreground">Deep understanding of Ethiopian construction standards, terrain, and logistics.</p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="bg-gradient-to-br from-primary/10 to-accent/10 p-8 rounded-lg">
-              <h3 className="text-2xl font-bold text-foreground mb-6">Our Process</h3>
+              <h3 className="text-2xl font-bold text-foreground mb-8">{t("servicesPage.why.advantages")}</h3>
               <div className="space-y-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold">1</div>
+                <div className="flex items-start space-x-4">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Wrench className="w-4 h-4 text-primary-foreground" />
+                  </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Consultation & Planning</h4>
-                    <p className="text-muted-foreground text-sm">Understanding your vision and requirements</p>
+                    <h4 className="text-lg font-semibold text-foreground mb-2">{t("servicesPage.why.ownEquipment")}</h4>
+                    <p className="text-muted-foreground">{t("servicesPage.why.ownEquipmentDesc")}</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold">2</div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Home className="w-4 h-4 text-primary-foreground" />
+                  </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Design & Engineering</h4>
-                    <p className="text-muted-foreground text-sm">Creating detailed plans and specifications</p>
+                    <h4 className="text-lg font-semibold text-foreground mb-2">{t("servicesPage.why.professional")}</h4>
+                    <p className="text-muted-foreground">{t("servicesPage.why.professionalDesc")}</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold">3</div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Badge className="w-4 h-4 text-primary-foreground" />
+                  </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Construction</h4>
-                    <p className="text-muted-foreground text-sm">Professional execution with quality control</p>
+                    <h4 className="text-lg font-semibold text-foreground mb-2">{t("servicesPage.why.zero")}</h4>
+                    <p className="text-muted-foreground">{t("servicesPage.why.zeroDesc")}</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold">4</div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Layers className="w-4 h-4 text-primary-foreground" />
+                  </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Delivery & Support</h4>
-                    <p className="text-muted-foreground text-sm">Timely completion with ongoing support</p>
+                    <h4 className="text-lg font-semibold text-foreground mb-2">{t("servicesPage.why.localKnowledge")}</h4>
+                    <p className="text-muted-foreground">{t("servicesPage.why.localKnowledgeDesc")}</p>
                   </div>
                 </div>
               </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg p-8 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-primary mb-4">50+</div>
+                <p className="text-lg text-muted-foreground">{t("contact.cta.completed")}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Process Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("servicesPage.process.title")}</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary-foreground">1</span>
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">{t("servicesPage.process.consultation")}</h3>
+              <p className="text-muted-foreground">{t("servicesPage.process.consultationDesc")}</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary-foreground">2</span>
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">{t("servicesPage.process.designEng")}</h3>
+              <p className="text-muted-foreground">{t("servicesPage.process.designEngDesc")}</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary-foreground">3</span>
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">{t("servicesPage.process.construction")}</h3>
+              <p className="text-muted-foreground">{t("servicesPage.process.constructionDesc")}</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary-foreground">4</span>
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">{t("servicesPage.process.delivery")}</h3>
+              <p className="text-muted-foreground">{t("servicesPage.process.deliveryDesc")}</p>
             </div>
           </div>
         </div>

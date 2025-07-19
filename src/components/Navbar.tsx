@@ -21,7 +21,7 @@ const Navbar = () => {
     { name: t("nav.home"), path: "/" },
     { name: t("nav.about"), path: "/about" },
     { name: t("nav.services"), path: "/services" },
-    { name: t("nav.contact"), path: "/contact" },
+    { name: t("nav.booking"), path: "/booking" },
   ];
 
   const viewItems = [
@@ -87,16 +87,16 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Book Property Link */}
+            {/* Contact Link */}
             <Link
-              to="/booking"
+              to="/contact"
               className={`transition-all duration-300 text-sm font-medium px-4 py-2 rounded-lg ${
-                location.pathname === "/booking"
+                location.pathname === "/contact"
                   ? "text-white bg-primary shadow-lg"
                   : "text-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/20"
               }`}
             >
-              {t("nav.booking")}
+              {t("nav.contact")}
             </Link>
           </div>
 
@@ -154,17 +154,17 @@ const Navbar = () => {
                 ))}
               </div>
 
-              {/* Mobile Book Property Link */}
+              {/* Mobile Contact Link */}
               <Link
-                to="/booking"
+                to="/contact"
                 className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                  location.pathname === "/booking"
+                  location.pathname === "/contact"
                     ? "text-primary bg-primary/10"
                     : "text-foreground hover:text-primary hover:bg-muted"
                 }`}
                 onClick={() => setIsMenuOpen(false)}
               >
-                {t("nav.booking")}
+                {t("nav.contact")}
               </Link>
             </div>
           </div>

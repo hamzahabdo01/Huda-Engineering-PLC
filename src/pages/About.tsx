@@ -36,27 +36,21 @@ const About = () => {
             <div>
               <Badge className="mb-6 bg-accent text-accent-foreground text-base">
                 <Calendar className="w-4 h-4 mr-2" />
-                Founded 2009 E.C (2017 G.C)
+                {t("about.story.badge")}
               </Badge>
-              <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">Our Story</h2>
+              <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("about.story.title")}</h2>
               <p className="text-muted-foreground text-lg leading-relaxed mb-6">
-                Huda Engineering PLC was established with a bold vision to transform Ethiopia's construction landscape. 
-                Based in the heart of Addis Ababa, we have grown from a small construction company to a leading force in 
-                residential, commercial, and mixed-use development across the nation.
+                {t("about.story.p1")}
               </p>
               <p className="text-muted-foreground text-lg leading-relaxed mb-6">
-                Our journey began with a simple principle: never compromise on quality. This commitment has guided every 
-                project we've undertaken, from luxury residential homes to towering commercial complexes. Today, we stand 
-                proud with over 50 completed projects and a spotless record of zero litigation.
+                {t("about.story.p2")}
               </p>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                What sets us apart is not just our technical expertise, but our deep understanding of Ethiopia's unique 
-                construction challenges, local regulations, and the dreams of our clients. We don't just build structures; 
-                we build relationships, communities, and futures.
+                {t("about.story.p3")}
               </p>
             </div>
             <div className="bg-gradient-to-br from-primary/10 to-accent/10 h-96 lg:h-[500px] rounded-lg flex items-center justify-center">
-              <Logo size="lg" className="text-primary w-32 h-32 lg:w-40 lg:h-40" />
+              <Building2 className="text-primary w-32 h-32 lg:w-40 lg:h-40" />
             </div>
           </div>
 
@@ -65,11 +59,11 @@ const About = () => {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="text-4xl font-bold text-primary mb-2">7+</div>
-                <CardTitle className="text-lg">Years of Excellence</CardTitle>
+                <CardTitle className="text-lg">{t("about.stats.years")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Continuous growth and improvement in the Ethiopian construction industry
+                  {t("about.stats.yearsDesc")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -77,11 +71,11 @@ const About = () => {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="text-4xl font-bold text-primary mb-2">50+</div>
-                <CardTitle className="text-lg">Completed Projects</CardTitle>
+                <CardTitle className="text-lg">{t("about.stats.projects")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Successfully delivered projects ranging from residential to commercial developments
+                  {t("about.stats.projectsDesc")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -89,11 +83,11 @@ const About = () => {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="text-4xl font-bold text-primary mb-2">0</div>
-                <CardTitle className="text-lg">Legal Disputes</CardTitle>
+                <CardTitle className="text-lg">{t("about.stats.disputes")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Perfect track record demonstrating our commitment to quality and client satisfaction
+                  {t("about.stats.disputesDesc")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -101,11 +95,11 @@ const About = () => {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="text-4xl font-bold text-primary mb-2">100%</div>
-                <CardTitle className="text-lg">Client Satisfaction</CardTitle>
+                <CardTitle className="text-lg">{t("about.stats.satisfaction")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Every project completed to the highest standards with full client approval
+                  {t("about.stats.satisfactionDesc")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -117,9 +111,9 @@ const About = () => {
       <section className="py-20 lg:py-32 bg-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">Our Core Values</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("about.values.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              The fundamental principles that guide every decision we make and every project we undertake
+              {t("about.values.description")}
             </p>
           </div>
           
@@ -127,12 +121,11 @@ const About = () => {
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Target className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Quality First</CardTitle>
+                <CardTitle className="text-xl">{t("about.values.quality.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  We never compromise on quality. Every material we use, every process we follow, and every detail 
-                  we execute meets the highest standards of construction excellence. Quality is not just a goal—it's our guarantee.
+                  {t("about.values.quality.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -140,12 +133,11 @@ const About = () => {
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <CheckCircle className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Integrity</CardTitle>
+                <CardTitle className="text-xl">{t("about.values.integrity.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Our zero litigation history speaks volumes about our honest business practices and commitment to 
-                  transparent communication with all stakeholders. We build trust through consistent, ethical actions.
+                  {t("about.values.integrity.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -153,12 +145,11 @@ const About = () => {
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Zap className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Innovation</CardTitle>
+                <CardTitle className="text-xl">{t("about.values.innovation.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  We embrace modern construction techniques and cutting-edge technologies to deliver buildings that 
-                  meet contemporary needs while setting new standards for the industry.
+                  {t("about.values.innovation.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -166,12 +157,11 @@ const About = () => {
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Users className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Teamwork</CardTitle>
+                <CardTitle className="text-xl">{t("about.values.teamwork.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Our professional engineers, architects, and skilled foremen work together seamlessly to ensure 
-                  every project not only meets but exceeds client expectations through collaborative excellence.
+                  {t("about.values.teamwork.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -179,12 +169,11 @@ const About = () => {
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Award className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Excellence</CardTitle>
+                <CardTitle className="text-xl">{t("about.values.excellence.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  We strive for excellence in every aspect of our work, from initial design consultations to final 
-                  project delivery and beyond. Excellence is not an act, but a habit we've cultivated.
+                  {t("about.values.excellence.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -192,12 +181,11 @@ const About = () => {
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Building2 className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">Sustainability</CardTitle>
+                <CardTitle className="text-xl">{t("about.values.sustainability.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  We build for the future, incorporating sustainable practices and environmentally conscious materials 
-                  that benefit both our clients and the Ethiopian environment for generations to come.
+                  {t("about.values.sustainability.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -209,37 +197,37 @@ const About = () => {
       <section className="py-20 lg:py-32 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">Our Professional Team</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("about.team.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Meet the experts who bring your construction dreams to life with skill, dedication, and unwavering commitment to excellence
+              {t("about.team.description")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
             {[
               {
-                title: "Licensed Engineers",
-                description: "Structural and civil engineers with extensive experience in Ethiopian construction standards and international best practices.",
+                title: t("about.team.engineers.title"),
+                description: t("about.team.engineers.description"),
                 icon: Target,
-                count: "Professional"
+                count: t("about.team.engineers.count")
               },
               {
-                title: "Certified Architects", 
-                description: "Creative designers who blend functionality with aesthetic appeal to create buildings that inspire and endure.",
+                title: t("about.team.architects.title"), 
+                description: t("about.team.architects.description"),
                 icon: Building2,
-                count: "Expert"
+                count: t("about.team.architects.count")
               },
               {
-                title: "Skilled Foremen",
-                description: "Experienced supervisors who ensure quality control and safety compliance throughout every phase of construction.",
+                title: t("about.team.foremen.title"),
+                description: t("about.team.foremen.description"),
                 icon: Shield,
-                count: "Experienced"
+                count: t("about.team.foremen.count")
               },
               {
-                title: "Safety Specialists",
-                description: "Dedicated professionals who maintain the highest safety standards and ensure zero-accident work environments.",
+                title: t("about.team.safety.title"),
+                description: t("about.team.safety.description"),
                 icon: CheckCircle,
-                count: "Certified"
+                count: t("about.team.safety.count")
               }
             ].map((member, index) => (
               <Card key={index} className="text-center hover:shadow-lg transition-all duration-300">
@@ -263,9 +251,9 @@ const About = () => {
       <section className="py-20 lg:py-32 bg-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">Our Equipment & Resources</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("about.equipment.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              We own and maintain a comprehensive fleet of modern construction equipment and tools, ensuring project independence and quality control
+              {t("about.equipment.description")}
             </p>
           </div>
 
@@ -273,11 +261,11 @@ const About = () => {
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <Building2 className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-2xl">Heavy Machinery</CardTitle>
+                <CardTitle className="text-2xl">{t("about.equipment.heavy.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base mb-4">
-                  Our fleet includes excavators, bulldozers, cranes, and other heavy equipment necessary for large-scale construction projects.
+                  {t("about.equipment.heavy.description")}
                 </CardDescription>
                 <ul className="text-sm space-y-2 text-muted-foreground">
                   <li>• Tower cranes for high-rise construction</li>
@@ -292,7 +280,7 @@ const About = () => {
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <Target className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-2xl">Precision Tools</CardTitle>
+                <CardTitle className="text-2xl">{t("about.equipment.precision.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base mb-4">
@@ -315,36 +303,36 @@ const About = () => {
       <section className="py-20 lg:py-32 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">Why Clients Trust Us</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("about.advantages.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Beyond our technical expertise, discover what makes Huda Engineering the preferred choice for construction projects across Ethiopia
+              {t("about.advantages.description")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h3 className="text-2xl font-bold text-foreground mb-6">Our Competitive Advantages</h3>
+              <h3 className="text-2xl font-bold text-foreground mb-6">{t("about.advantages.competitive")}</h3>
               <div className="space-y-6">
                 {[
                   {
                     icon: Globe,
-                    title: "Local Market Expertise",
-                    description: "Deep understanding of Ethiopian construction regulations, local suppliers, and market conditions."
+                    title: t("about.advantages.local.title"),
+                    description: t("about.advantages.local.description")
                   },
                   {
                     icon: Clock,
-                    title: "Proven Track Record",
-                    description: "7+ years of consistent delivery with zero legal disputes and 100% client satisfaction rate."
+                    title: t("about.advantages.proven.title"),
+                    description: t("about.advantages.proven.description")
                   },
                   {
                     icon: Shield,
-                    title: "Risk Management",
-                    description: "Comprehensive insurance coverage and risk mitigation strategies for all projects."
+                    title: t("about.advantages.risk.title"),
+                    description: t("about.advantages.risk.description")
                   },
                   {
                     icon: TrendingUp,
-                    title: "Value Engineering",
-                    description: "Cost-effective solutions that maximize value without compromising quality or safety."
+                    title: t("about.advantages.value.title"),
+                    description: t("about.advantages.value.description")
                   }
                 ].map((advantage, index) => (
                   <div key={index} className="flex items-start space-x-4">
@@ -361,7 +349,7 @@ const About = () => {
               <div className="text-center">
                 <Star className="w-16 h-16 text-accent mx-auto mb-4" />
                 <div className="text-3xl font-bold text-primary mb-2">100%</div>
-                <div className="text-muted-foreground">Client Satisfaction</div>
+                <div className="text-muted-foreground">{t("about.advantages.satisfaction")}</div>
               </div>
             </div>
           </div>
@@ -378,13 +366,13 @@ const About = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/contact">
               <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-4 text-lg">
-                Get Free Consultation
+                {t("nav.contact")}
                 <Phone className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link to="/projects">
               <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg">
-                View Our Work
+                {t("nav.projects")}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
