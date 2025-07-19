@@ -60,8 +60,7 @@ const Index = () => {
               
               <Button 
                 size="lg" 
-                variant="outline" 
-                className="border-white/40 text-white hover:bg-white/10 backdrop-blur-sm"
+                className="bg-white text-[#00555b] hover:bg-white/90 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
                 asChild
               >
                 <Link to="/virtual-tour" className="flex items-center gap-2">
@@ -75,15 +74,15 @@ const Index = () => {
             <div className="grid grid-cols-3 gap-6 pt-8 animate-fade-in">
               <div className="text-center">
                 <div className="text-3xl font-bold text-white mb-1">50+</div>
-                <div className="text-sm text-white/70">Projects Completed</div>
+                <div className="text-sm text-white/70">{t("hero.projectsCompleted")}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-white mb-1">100%</div>
-                <div className="text-sm text-white/70">Client Satisfaction</div>
+                <div className="text-sm text-white/70">{t("hero.clientSatisfaction")}</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-white mb-1">15+</div>
-                <div className="text-sm text-white/70">Years Experience</div>
+                <div className="text-sm text-white/70">{t("hero.yearsExperience")}</div>
               </div>
             </div>
           </div>
@@ -93,9 +92,9 @@ const Index = () => {
             {/* Featured Property Card */}
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl animate-fade-in">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white">Featured Property</h3>
+                <h3 className="text-xl font-bold text-white">{t("hero.featuredProperty")}</h3>
                 <span className="bg-green-400/20 text-green-300 text-sm font-medium px-3 py-1 rounded-full backdrop-blur-sm">
-                  Available Now
+                  {t("hero.availableNow")}
                 </span>
               </div>
               
@@ -103,22 +102,22 @@ const Index = () => {
                 <div className="grid grid-cols-2 gap-4 text-white/80">
                   <div className="bg-white/5 rounded-lg p-3 text-center">
                     <div className="text-2xl font-bold text-white">4</div>
-                    <div className="text-sm">Bedrooms</div>
+                    <div className="text-sm">{t("hero.bedrooms")}</div>
                   </div>
                   <div className="bg-white/5 rounded-lg p-3 text-center">
                     <div className="text-2xl font-bold text-white">3</div>
-                    <div className="text-sm">Bathrooms</div>
+                    <div className="text-sm">{t("hero.bathrooms")}</div>
                   </div>
                 </div>
                 
                 <div className="flex items-center justify-between pt-4">
                   <div>
-                    <div className="text-sm text-white/70">Starting from</div>
+                    <div className="text-sm text-white/70">{t("hero.startingFrom")}</div>
                     <div className="text-3xl font-bold text-white">8.5M ETB</div>
                   </div>
                   <Button className="bg-white/20 hover:bg-white/30 text-white border-white/30" asChild>
                     <Link to="/projects">
-                      View Details
+                      {t("hero.viewDetails")}
                       <ArrowUpRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
@@ -150,9 +149,9 @@ const Index = () => {
       <section className="py-20 lg:py-32 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Why Choose Huda Engineering?</h2>
+            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("whyChoose.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              We bring together expertise, integrity, and innovation to deliver exceptional construction projects across Ethiopia.
+              {t("whyChoose.description")}
             </p>
           </div>
           
@@ -160,11 +159,11 @@ const Index = () => {
             <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Shield className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">Quality & Safety</CardTitle>
+                <CardTitle className="text-xl">{t("whyChoose.quality.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Zero litigation history demonstrates our unwavering commitment to quality construction and complete client satisfaction in every project we undertake.
+                  {t("whyChoose.quality.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -172,11 +171,11 @@ const Index = () => {
             <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Users className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">Expert Team</CardTitle>
+                <CardTitle className="text-xl">{t("whyChoose.expert.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Professional engineers, architects, and skilled foremen backed by our own comprehensive tools and heavy machinery for complete project control.
+                  {t("whyChoose.expert.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -184,11 +183,11 @@ const Index = () => {
             <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Clock className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">Timely Delivery</CardTitle>
+                <CardTitle className="text-xl">{t("whyChoose.timely.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  We prioritize clear communication and realistic project timelines to ensure on-time completion without compromising on quality standards.
+                  {t("whyChoose.timely.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -196,11 +195,11 @@ const Index = () => {
             <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Target className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">Local Expertise</CardTitle>
+                <CardTitle className="text-xl">{t("whyChoose.local.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Deep understanding of Ethiopian construction standards, local terrain, logistics, and regulatory requirements for seamless project execution.
+                  {t("whyChoose.local.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -208,11 +207,11 @@ const Index = () => {
             <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Zap className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">Modern Technology</CardTitle>
+                <CardTitle className="text-xl">{t("whyChoose.modern.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  We leverage cutting-edge construction technologies and modern building techniques to deliver innovative, efficient, and sustainable structures.
+                  {t("whyChoose.modern.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -220,11 +219,11 @@ const Index = () => {
             <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">Full-Service</CardTitle>
+                <CardTitle className="text-xl">{t("whyChoose.fullService.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  From initial design and planning to final construction and handover, we provide comprehensive end-to-end construction services.
+                  {t("whyChoose.fullService.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -236,9 +235,9 @@ const Index = () => {
       <section className="py-20 lg:py-32 bg-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Our Services</h2>
+            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("services.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Comprehensive construction solutions for all your building needs in Ethiopia.
+              {t("services.description")}
             </p>
           </div>
 
@@ -246,17 +245,16 @@ const Index = () => {
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <Building2 className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-2xl">Residential Construction</CardTitle>
+                <CardTitle className="text-2xl">{t("services.residential.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base mb-4">
-                  From luxury homes to high-rise apartment buildings, we create modern living spaces that combine comfort, functionality, and aesthetic appeal.
+                  {t("services.residential.description")}
                 </CardDescription>
                 <ul className="text-sm space-y-2">
-                  <li>• Single-family luxury homes</li>
-                  <li>• Multi-story apartment buildings</li>
-                  <li>• Residential complexes</li>
-                  <li>• Custom home designs</li>
+                  {t("services.residential.features", { returnObjects: true }).map((feature, index) => (
+                    <li key={index}>• {feature}</li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
@@ -264,17 +262,16 @@ const Index = () => {
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <Globe className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-2xl">Commercial Development</CardTitle>
+                <CardTitle className="text-2xl">{t("services.commercial.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base mb-4">
-                  Professional office buildings, retail spaces, and commercial complexes designed to meet modern business requirements and standards.
+                  {t("services.commercial.description")}
                 </CardDescription>
                 <ul className="text-sm space-y-2">
-                  <li>• Office buildings and complexes</li>
-                  <li>• Retail and shopping centers</li>
-                  <li>• Industrial facilities</li>
-                  <li>• Mixed-use developments</li>
+                  {t("services.commercial.features", { returnObjects: true }).map((feature, index) => (
+                    <li key={index}>• {feature}</li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
@@ -283,7 +280,7 @@ const Index = () => {
           <div className="text-center">
             <Link to="/services">
               <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4">
-                View All Services
+                {t("services.viewAll")}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -295,9 +292,9 @@ const Index = () => {
       <section className="py-20 lg:py-32 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Featured Projects</h2>
+            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("projects.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Showcasing our commitment to excellence through completed projects across Ethiopia.
+              {t("projects.description")}
             </p>
           </div>
 
@@ -307,12 +304,12 @@ const Index = () => {
                 <Building2 className="w-16 h-16 text-primary" />
               </div>
               <CardHeader>
-                <CardTitle>Huda Apartment Building</CardTitle>
-                <Badge className="w-fit">B+G+9 Floors</Badge>
+                <CardTitle>{t("projects.hudaApartment.title")}</CardTitle>
+                <Badge className="w-fit">{t("projects.hudaApartment.floors")}</Badge>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  A modern 9-story residential building featuring contemporary design, premium finishes, and modern amenities. Project value: 251M ETB.
+                  {t("projects.hudaApartment.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -322,12 +319,12 @@ const Index = () => {
                 <Building2 className="w-16 h-16 text-primary" />
               </div>
               <CardHeader>
-                <CardTitle>SYS Luxury Apartments</CardTitle>
-                <Badge className="w-fit">2B+G+13 Floors</Badge>
+                <CardTitle>{t("projects.sysLuxury.title")}</CardTitle>
+                <Badge className="w-fit">{t("projects.sysLuxury.floors")}</Badge>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Premium high-rise apartment complex with luxury amenities, underground parking, and stunning city views. Our tallest completed project.
+                  {t("projects.sysLuxury.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -337,12 +334,12 @@ const Index = () => {
                 <Globe className="w-16 h-16 text-primary" />
               </div>
               <CardHeader>
-                <CardTitle>Tokoma Office Building</CardTitle>
-                <Badge className="w-fit">B+G+5 Floors</Badge>
+                <CardTitle>{t("projects.tokomaOffice.title")}</CardTitle>
+                <Badge className="w-fit">{t("projects.tokomaOffice.floors")}</Badge>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Modern mixed-use office building with commercial spaces, meeting rooms, and contemporary facilities for business operations.
+                  {t("projects.tokomaOffice.description")}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -351,7 +348,7 @@ const Index = () => {
           <div className="text-center">
             <Link to="/projects">
               <Button size="lg" variant="outline" className="px-8 py-4">
-                View All Projects
+                {t("projects.viewAll")}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>

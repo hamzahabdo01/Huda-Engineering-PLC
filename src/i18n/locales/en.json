@@ -240,7 +240,16 @@
     "location": "Location",
     "pricing": "Pricing",
     "locationValue": "Addis Ababa, Ethiopia",
-    "pricingValue": "3M - 15M ETB"
+    "pricingValue": "3M - 15M ETB",
+    "featuredProperty": "Featured Property",
+    "availableNow": "Available Now",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "startingFrom": "Starting from",
+    "viewDetails": "View Details",
+    "projectsCompleted": "Projects Completed",
+    "clientSatisfaction": "Client Satisfaction",
+    "yearsExperience": "Years Experience"
   },
   "whyChoose": {
     "title": "Why Choose Huda Engineering?",
@@ -275,18 +284,45 @@
     "description": "Comprehensive construction solutions for all your building needs in Ethiopia.",
     "residential": {
       "title": "Residential Construction",
-      "description": "From luxury homes to high-rise apartment buildings, we create modern living spaces that combine comfort, functionality, and aesthetic appeal."
+      "description": "From luxury homes to high-rise apartment buildings, we create modern living spaces that combine comfort, functionality, and aesthetic appeal.",
+      "features": [
+        "Single-family luxury homes",
+        "Multi-story apartment buildings", 
+        "Residential complexes",
+        "Custom home designs"
+      ]
     },
     "commercial": {
       "title": "Commercial Development", 
-      "description": "Professional office buildings, retail spaces, and commercial complexes designed to meet modern business requirements and standards."
+      "description": "Professional office buildings, retail spaces, and commercial complexes designed to meet modern business requirements and standards.",
+      "features": [
+        "Office buildings and complexes",
+        "Retail and shopping centers",
+        "Industrial facilities", 
+        "Mixed-use developments"
+      ]
     },
     "viewAll": "View All Services"
   },
   "projects": {
     "title": "Featured Projects",
     "description": "Showcasing our commitment to excellence through completed projects across Ethiopia.",
-    "viewAll": "View All Projects"
+    "viewAll": "View All Projects",
+    "hudaApartment": {
+      "title": "Huda Apartment Building",
+      "floors": "B+G+9 Floors",
+      "description": "A modern 9-story residential building featuring contemporary design, premium finishes, and modern amenities. Project value: 251M ETB."
+    },
+    "sysLuxury": {
+      "title": "SYS Luxury Apartments", 
+      "floors": "2B+G+13 Floors",
+      "description": "Premium high-rise apartment complex with luxury amenities, underground parking, and stunning city views. Our tallest completed project."
+    },
+    "tokomaOffice": {
+      "title": "Tokoma Office Building",
+      "floors": "B+G+5 Floors", 
+      "description": "Modern mixed-use office building with commercial spaces, meeting rooms, and contemporary facilities for business operations."
+    }
   },
   "process": {
     "title": "Our Construction Process",
@@ -317,6 +353,21 @@
     "description": "Join the 50+ satisfied clients who have trusted us with their construction needs. Let's build your vision together.",
     "consultation": "Get Free Consultation",
     "portfolio": "View Our Portfolio"
+  },
+  "footer": {
+    "companyDesc": "We are a leading construction and real estate development company based in Addis Ababa, dedicated to delivering high-quality residential, commercial, and mixed-use buildings with zero litigation history.",
+    "tagline": "Building Ethiopia's Modern Future",
+    "established": "Established 2009 E.C (2017 G.C)",
+    "projectsCompleted": "50+ Projects Completed", 
+    "zeroDisputes": "Zero Legal Disputes",
+    "quickLinks": "Quick Links",
+    "contactInfo": "Contact Info",
+    "home": "Home",
+    "aboutUs": "About Us",
+    "ourServices": "Our Services",
+    "servingEthiopia": "Serving all of Ethiopia",
+    "allRights": "All rights reserved.",
+    "values": "Quality • Safety • Integrity • Excellence"
   },
   "virtualTour": {
     "title": "Virtual Tour",
