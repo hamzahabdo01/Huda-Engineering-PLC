@@ -7,8 +7,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Logo from "@/components/Logo";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const About = () => {
+  const { t } = useTranslation();
+  
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -19,9 +22,9 @@ const About = () => {
           <div className="flex justify-center mb-8">
             <Logo size="lg" className="text-accent w-16 h-16 lg:w-20 lg:h-20" />
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">About Huda Engineering</h1>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">{t("about.hero.title")}</h1>
           <p className="text-xl lg:text-2xl text-primary-foreground/90 max-w-4xl mx-auto">
-            Building Ethiopia's future with quality, integrity, and innovation since 2009 E.C
+            {t("about.hero.subtitle")}
           </p>
         </div>
       </section>

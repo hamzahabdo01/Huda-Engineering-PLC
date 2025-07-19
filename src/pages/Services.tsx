@@ -4,8 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, Home, Briefcase, Layers, Wrench, Cog } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useTranslation } from "react-i18next";
 
 const Services = () => {
+  const { t } = useTranslation();
+  
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -13,9 +16,9 @@ const Services = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">Our Services</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">{t("servicesPage.hero.title")}</h1>
           <p className="text-xl text-primary-foreground/90 max-w-3xl mx-auto">
-            Comprehensive construction solutions from design to delivery
+            {t("servicesPage.hero.subtitle")}
           </p>
         </div>
       </section>
