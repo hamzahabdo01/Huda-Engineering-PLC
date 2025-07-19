@@ -2,9 +2,15 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import Logo from "./Logo";
 import LanguageSelector from "./LanguageSelector";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const { t } = useTranslation();
@@ -15,13 +21,15 @@ const Navbar = () => {
     { name: t("nav.home"), path: "/" },
     { name: t("nav.about"), path: "/about" },
     { name: t("nav.services"), path: "/services" },
+    { name: t("nav.booking"), path: "/booking" },
+    { name: t("nav.contact"), path: "/contact" },
+  ];
+
+  const viewItems = [
     { name: t("nav.projects"), path: "/projects" },
     { name: t("nav.virtualTour"), path: "/virtual-tour" },
-    { name: t("nav.booking"), path: "/booking" },
     { name: t("nav.announcements"), path: "/announcements" },
-    { name: t("nav.contact"), path: "/contact" },
     { name: t("nav.maps"), path: "/maps" },
-    { name: t("nav.admin"), path: "/admin" },
   ];
 
   return (
@@ -35,7 +43,7 @@ const Navbar = () => {
           </Link>
           
           {/* Desktop Navigation */}
-          <div className="hidden xl:flex space-x-6">
+          <div className="hidden xl:flex items-center space-x-6">
             {navItems.map((item) => (
               <Link
                 key={item.name}
@@ -49,6 +57,28 @@ const Navbar = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {/* View Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-foreground hover:text-primary transition-colors">
+                {t("nav.view")}
+                <ChevronDown className="h-3 w-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {viewItems.map((item) => (
+                  <DropdownMenuItem key={item.name} asChild>
+                    <Link
+                      to={item.path}
+                      className={`w-full cursor-pointer ${
+                        location.pathname === item.path ? "bg-accent" : ""
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Language Selector and Mobile Menu */}
@@ -83,6 +113,27 @@ const Navbar = () => {
                   {item.name}
                 </Link>
               ))}
+              
+              {/* Mobile View Section */}
+              <div className="pt-2">
+                <div className="px-3 py-2 text-sm font-medium text-muted-foreground">
+                  {t("nav.view")}
+                </div>
+                {viewItems.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.path}
+                    className={`block px-6 py-2 rounded-md text-base font-medium transition-colors ${
+                      location.pathname === item.path
+                        ? "text-primary bg-primary/10"
+                        : "text-foreground hover:text-primary hover:bg-muted"
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         )}

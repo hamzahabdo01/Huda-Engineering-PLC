@@ -1,99 +1,149 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Calendar, Phone, Mail, MapPin, Award, Shield, Clock, Zap, Target, CheckCircle, ArrowRight, Star, TrendingUp, Globe, Wrench } from "lucide-react";
+import { Building2, Users, Calendar, Phone, Mail, MapPin, Award, Shield, Clock, Zap, Target, CheckCircle, ArrowRight, Star, TrendingUp, Globe, Wrench, Play, ArrowUpRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Logo from "@/components/Logo";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import heroImage from "@/assets/hero-real-estate.jpg";
 
 const Index = () => {
+  const { t } = useTranslation();
+  
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden" style={{ backgroundColor: '#00555b' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="space-y-8 text-white">
-              <div className="space-y-6">
-                <Badge className="mb-4 bg-white/20 text-white hover:bg-white/30 text-sm border-white/30">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  REAL ESTATE
-                </Badge>
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                  Discover Your Future:
-                  <span className="block text-accent mt-2">Find The Perfect Property</span>
-                </h1>
-                <p className="text-xl lg:text-2xl text-white/90 max-w-2xl leading-relaxed">
-                  We build modern residential, commercial, and mixed-use buildings in Ethiopia with a focus on quality, safety, and timely delivery.
-                </p>
+      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+        {/* Background Image with Overlay */}
+        <div className="absolute inset-0">
+          <img 
+            src={heroImage} 
+            alt="Modern real estate" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#00555b]/85 via-[#004147]/80 to-[#002b2f]/90"></div>
+        </div>
+        
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-16 items-center">
+          {/* Left Content */}
+          <div className="text-white space-y-8">
+            <div className="space-y-2">
+              <div className="inline-flex items-center px-4 py-2 bg-white/10 rounded-full backdrop-blur-sm border border-white/20 animate-fade-in">
+                <span className="text-sm font-medium tracking-wide">{t("hero.badge")}</span>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/contact">
-                  <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 py-4 text-lg">
-                    Explore Now
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
+              <h1 className="text-5xl lg:text-7xl font-bold leading-tight animate-fade-in">
+                <span className="block">{t("hero.title")}</span>
+                <span className="block text-white/90 mt-2">{t("hero.subtitle")}</span>
+              </h1>
+            </div>
+            
+            <p className="text-xl text-white/80 leading-relaxed max-w-lg animate-fade-in">
+              {t("hero.description")}
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 animate-fade-in">
+              <Button 
+                size="lg" 
+                className="bg-white text-[#00555b] hover:bg-white/90 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
+                asChild
+              >
+                <Link to="/booking">
+                  {t("hero.exploreNow")}
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
-                <Link to="/projects">
-                  <Button size="lg" variant="outline" className="px-8 py-4 text-lg border-white/30 text-white hover:bg-white/10">
-                    View Properties
-                  </Button>
+              </Button>
+              
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-white/40 text-white hover:bg-white/10 backdrop-blur-sm"
+                asChild
+              >
+                <Link to="/virtual-tour" className="flex items-center gap-2">
+                  <Play className="h-5 w-5" />
+                  {t("virtualTour.title")}
                 </Link>
+              </Button>
+            </div>
+            
+            {/* Statistics */}
+            <div className="grid grid-cols-3 gap-6 pt-8 animate-fade-in">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-1">50+</div>
+                <div className="text-sm text-white/70">Projects Completed</div>
               </div>
-
-              {/* Property Search Filters */}
-              <div className="grid grid-cols-2 gap-4 pt-8">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                  <div className="text-sm text-white/70 mb-1">Location</div>
-                  <div className="text-white font-medium">Addis Ababa, Ethiopia</div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-1">100%</div>
+                <div className="text-sm text-white/70">Client Satisfaction</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-1">15+</div>
+                <div className="text-sm text-white/70">Years Experience</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Right Content - Property Showcase */}
+          <div className="relative space-y-6">
+            {/* Featured Property Card */}
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl animate-fade-in">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white">Featured Property</h3>
+                <span className="bg-green-400/20 text-green-300 text-sm font-medium px-3 py-1 rounded-full backdrop-blur-sm">
+                  Available Now
+                </span>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-white/80">
+                  <div className="bg-white/5 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-white">4</div>
+                    <div className="text-sm">Bedrooms</div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-white">3</div>
+                    <div className="text-sm">Bathrooms</div>
+                  </div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                  <div className="text-sm text-white/70 mb-1">Pricing</div>
-                  <div className="text-white font-medium">3M - 15M ETB</div>
+                
+                <div className="flex items-center justify-between pt-4">
+                  <div>
+                    <div className="text-sm text-white/70">Starting from</div>
+                    <div className="text-3xl font-bold text-white">8.5M ETB</div>
+                  </div>
+                  <Button className="bg-white/20 hover:bg-white/30 text-white border-white/30" asChild>
+                    <Link to="/projects">
+                      View Details
+                      <ArrowUpRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
                 </div>
               </div>
             </div>
-
-            {/* Right Content - Property Image */}
-            <div className="relative">
-              <div className="relative w-full h-96 lg:h-[500px] rounded-2xl overflow-hidden shadow-2xl">
-                <img
-                  src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop"
-                  alt="Luxury Apartment Complex"
-                  className="w-full h-full object-cover"
-                />
-                
-                {/* Property Details Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
-                  <div className="text-white space-y-2">
-                    <h3 className="text-xl font-bold">Luxury Apartment Complex</h3>
-                    <p className="text-gray-200 text-sm">Modern 3BR apartment with premium finishes</p>
-                    <div className="flex items-center gap-4 text-sm">
-                      <span className="bg-accent text-accent-foreground px-3 py-1 rounded-full">Available</span>
-                      <span>B+G+9 Floors</span>
-                    </div>
-                  </div>
-                </div>
+            
+            {/* Property Info Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 animate-fade-in">
+                <h3 className="text-sm font-medium text-white/70 mb-1">{t("hero.location")}</h3>
+                <p className="text-white font-semibold">{t("hero.locationValue")}</p>
               </div>
-              
-              {/* Floating Stats */}
-              <div className="absolute -bottom-6 -left-6 bg-white rounded-xl p-4 shadow-lg border">
-                <div className="text-2xl font-bold text-foreground">50+</div>
-                <div className="text-sm text-muted-foreground">Projects Completed</div>
-              </div>
-              
-              <div className="absolute -top-6 -right-6 bg-accent rounded-xl p-4 shadow-lg">
-                <div className="text-2xl font-bold text-accent-foreground">7+</div>
-                <div className="text-sm text-accent-foreground/80">Years Experience</div>
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 animate-fade-in">
+                <h3 className="text-sm font-medium text-white/70 mb-1">{t("hero.pricing")}</h3>
+                <p className="text-white font-semibold">{t("hero.pricingValue")}</p>
               </div>
             </div>
           </div>
         </div>
+        
+        {/* Floating Elements */}
+        <div className="absolute top-20 left-20 w-32 h-32 bg-white/5 rounded-full blur-2xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-48 h-48 bg-white/5 rounded-full blur-2xl animate-pulse"></div>
+        <div className="absolute top-1/2 right-10 w-24 h-24 bg-white/5 rounded-full blur-xl animate-pulse"></div>
       </section>
 
       {/* Why Choose Us Section */}
