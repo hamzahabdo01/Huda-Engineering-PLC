@@ -21,7 +21,6 @@ const Navbar = () => {
     { name: t("nav.home"), path: "/" },
     { name: t("nav.about"), path: "/about" },
     { name: t("nav.services"), path: "/services" },
-    { name: t("nav.booking"), path: "/booking" },
     { name: t("nav.contact"), path: "/contact" },
   ];
 
@@ -60,17 +59,20 @@ const Navbar = () => {
             
             {/* View Dropdown */}
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-foreground hover:text-primary transition-colors">
+              <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-foreground hover:text-primary transition-colors bg-transparent border-none shadow-none hover:bg-muted/50 px-3 py-2 rounded-md">
                 {t("nav.view")}
                 <ChevronDown className="h-3 w-3" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent 
+                align="end" 
+                className="bg-background border border-border shadow-lg rounded-lg p-2 min-w-[200px] z-50"
+              >
                 {viewItems.map((item) => (
                   <DropdownMenuItem key={item.name} asChild>
                     <Link
                       to={item.path}
-                      className={`w-full cursor-pointer ${
-                        location.pathname === item.path ? "bg-accent" : ""
+                      className={`w-full cursor-pointer px-3 py-2 rounded-md transition-colors hover:bg-muted ${
+                        location.pathname === item.path ? "bg-accent text-accent-foreground" : "text-foreground"
                       }`}
                     >
                       {item.name}
@@ -79,6 +81,18 @@ const Navbar = () => {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Book Property Link */}
+            <Link
+              to="/booking"
+              className={`transition-colors text-sm ${
+                location.pathname === "/booking"
+                  ? "text-primary font-semibold"
+                  : "text-foreground hover:text-primary"
+              }`}
+            >
+              {t("nav.booking")}
+            </Link>
           </div>
 
           {/* Language Selector and Mobile Menu */}
@@ -134,6 +148,19 @@ const Navbar = () => {
                   </Link>
                 ))}
               </div>
+
+              {/* Mobile Book Property Link */}
+              <Link
+                to="/booking"
+                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                  location.pathname === "/booking"
+                    ? "text-primary bg-primary/10"
+                    : "text-foreground hover:text-primary hover:bg-muted"
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t("nav.booking")}
+              </Link>
             </div>
           </div>
         )}

@@ -12,6 +12,224 @@
     "admin": "Admin",
     "maps": "Location"
   },
+  "about": {
+    "hero": {
+      "title": "About Huda Engineering",
+      "subtitle": "Building Ethiopia's future with quality, integrity, and innovation since 2009 E.C"
+    },
+    "story": {
+      "badge": "Founded 2009 E.C (2017 G.C)",
+      "title": "Our Story",
+      "p1": "Huda Engineering PLC was established with a bold vision to transform Ethiopia's construction landscape. Based in the heart of Addis Ababa, we have grown from a small construction company to a leading force in residential, commercial, and mixed-use development across the nation.",
+      "p2": "Our journey began with a simple principle: never compromise on quality. This commitment has guided every project we've undertaken, from luxury residential homes to towering commercial complexes. Today, we stand proud with over 50 completed projects and a spotless record of zero litigation.",
+      "p3": "What sets us apart is not just our technical expertise, but our deep understanding of Ethiopia's unique construction challenges, local regulations, and the dreams of our clients. We don't just build structures; we build relationships, communities, and futures."
+    },
+    "stats": {
+      "years": "Years of Excellence",
+      "yearsDesc": "Continuous growth and improvement in the Ethiopian construction industry",
+      "projects": "Completed Projects", 
+      "projectsDesc": "Successfully delivered projects ranging from residential to commercial developments",
+      "disputes": "Legal Disputes",
+      "disputesDesc": "Perfect track record demonstrating our commitment to quality and client satisfaction",
+      "satisfaction": "Client Satisfaction",
+      "satisfactionDesc": "Every project completed to the highest standards with full client approval"
+    },
+    "values": {
+      "title": "Our Core Values",
+      "description": "The fundamental principles that guide every decision we make and every project we undertake",
+      "quality": {
+        "title": "Quality First",
+        "description": "We never compromise on quality. Every material we use, every process we follow, and every detail we execute meets the highest standards of construction excellence. Quality is not just a goal—it's our guarantee."
+      },
+      "integrity": {
+        "title": "Integrity", 
+        "description": "Our zero litigation history speaks volumes about our honest business practices and commitment to transparent communication with all stakeholders. We build trust through consistent, ethical actions."
+      },
+      "innovation": {
+        "title": "Innovation",
+        "description": "We embrace modern construction techniques and cutting-edge technologies to deliver buildings that meet contemporary needs while setting new standards for the industry."
+      },
+      "teamwork": {
+        "title": "Teamwork",
+        "description": "Our professional engineers, architects, and skilled foremen work together seamlessly to ensure every project not only meets but exceeds client expectations through collaborative excellence."
+      },
+      "excellence": {
+        "title": "Excellence",
+        "description": "We strive for excellence in every aspect of our work, from initial design consultations to final project delivery and beyond. Excellence is not an act, but a habit we've cultivated."
+      },
+      "sustainability": {
+        "title": "Sustainability",
+        "description": "We build for the future, incorporating sustainable practices and environmentally conscious materials that benefit both our clients and the Ethiopian environment for generations to come."
+      }
+    },
+    "team": {
+      "title": "Our Professional Team",
+      "description": "Meet the experts who bring your construction dreams to life with skill, dedication, and unwavering commitment to excellence",
+      "engineers": {
+        "title": "Licensed Engineers",
+        "description": "Structural and civil engineers with extensive experience in Ethiopian construction standards and international best practices."
+      },
+      "architects": {
+        "title": "Certified Architects",
+        "description": "Creative designers who blend functionality with aesthetic appeal to create buildings that inspire and endure."
+      },
+      "foremen": {
+        "title": "Skilled Foremen", 
+        "description": "Experienced supervisors who ensure quality control and safety compliance throughout every phase of construction."
+      },
+      "safety": {
+        "title": "Safety Specialists",
+        "description": "Dedicated professionals who maintain the highest safety standards and ensure zero-accident work environments."
+      }
+    },
+    "equipment": {
+      "title": "Our Equipment & Resources",
+      "description": "We own and maintain a comprehensive fleet of modern construction equipment and tools, ensuring project independence and quality control",
+      "heavy": {
+        "title": "Heavy Machinery",
+        "description": "Our fleet includes excavators, bulldozers, cranes, and other heavy equipment necessary for large-scale construction projects."
+      },
+      "precision": {
+        "title": "Precision Tools", 
+        "description": "Professional-grade tools and equipment for precision work, quality finishing, and detailed construction tasks."
+      }
+    },
+    "advantages": {
+      "title": "Why Clients Trust Us",
+      "description": "Beyond our technical expertise, discover what makes Huda Engineering the preferred choice for construction projects across Ethiopia",
+      "competitive": "Our Competitive Advantages",
+      "local": {
+        "title": "Local Market Expertise",
+        "description": "Deep understanding of Ethiopian construction regulations, local suppliers, and market conditions."
+      },
+      "proven": {
+        "title": "Proven Track Record",
+        "description": "7+ years of consistent delivery with zero legal disputes and 100% client satisfaction rate."
+      },
+      "risk": {
+        "title": "Risk Management",
+        "description": "Comprehensive insurance coverage and risk mitigation strategies for all projects."
+      },
+      "value": {
+        "title": "Value Engineering",
+        "description": "Cost-effective solutions that maximize value without compromising quality or safety."
+      }
+    }
+  },
+  "servicesPage": {
+    "hero": {
+      "title": "Our Services",
+      "subtitle": "Comprehensive construction solutions from design to delivery"
+    },
+    "residential": {
+      "title": "Residential Construction",
+      "description": "Modern apartments, luxury homes, and residential complexes designed for Ethiopian families. From single-family homes to high-rise apartment buildings up to 2B+G+13 floors."
+    },
+    "commercial": {
+      "title": "Commercial Buildings",
+      "description": "Office complexes, retail spaces, and commercial buildings that meet modern business needs with cutting-edge design and functionality."
+    },
+    "mixedUse": {
+      "title": "Mixed-Use Development",
+      "description": "Integrated developments combining residential, commercial, and office spaces to create vibrant urban communities."
+    },
+    "management": {
+      "title": "Construction Management",
+      "description": "End-to-end project management services ensuring quality, safety, and timely delivery of all construction projects."
+    },
+    "design": {
+      "title": "Design & Planning",
+      "description": "Comprehensive architectural design and engineering services from concept to detailed construction drawings."
+    },
+    "utility": {
+      "title": "Utility Systems",
+      "description": "Complete utility infrastructure including electrical, plumbing, HVAC, and telecommunications systems integration."
+    },
+    "why": {
+      "title": "Why Choose Huda Engineering?",
+      "subtitle": "What sets us apart in Ethiopian construction",
+      "advantages": "Our Advantages",
+      "ownEquipment": "Own Equipment & Machinery:",
+      "ownEquipmentDesc": "We own our construction equipment and heavy machinery, ensuring project control and cost efficiency.",
+      "professional": "Professional Team:",
+      "professionalDesc": "Experienced engineers, architects, and skilled foremen with deep local expertise.",
+      "zero": "Zero Litigation:",
+      "zeroDesc": "Our clean legal record demonstrates our commitment to quality and client satisfaction.",
+      "localKnowledge": "Local Knowledge:",
+      "localKnowledgeDesc": "Deep understanding of Ethiopian construction standards, terrain, and logistics."
+    },
+    "process": {
+      "title": "Our Process",
+      "consultation": "Consultation & Planning",
+      "consultationDesc": "Understanding your vision and requirements",
+      "designEng": "Design & Engineering",
+      "designEngDesc": "Creating detailed plans and specifications", 
+      "construction": "Construction",
+      "constructionDesc": "Professional execution with quality control",
+      "delivery": "Delivery & Support",
+      "deliveryDesc": "Timely completion with ongoing support"
+    }
+  },
+  "contact": {
+    "hero": {
+      "title": "Contact Us",
+      "subtitle": "Ready to start your construction project? Get in touch with our expert team"
+    },
+    "form": {
+      "title": "Send us a Message",
+      "description": "Fill out the form below and we'll get back to you within 24 hours",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone Number",
+      "projectType": "Project Type",
+      "budget": "Estimated Budget",
+      "message": "Project Details",
+      "messagePlaceholder": "Tell us about your project requirements, timeline, and any specific needs...",
+      "send": "Send Message",
+      "selectProject": "Select project type",
+      "selectBudget": "Select budget range"
+    },
+    "info": {
+      "phone": "Phone",
+      "phoneDesc": "Call us for immediate assistance",
+      "email": "Email", 
+      "emailDesc": "Send us your project details",
+      "location": "Location",
+      "locationDesc": "Serving all of Ethiopia",
+      "hours": "Business Hours"
+    },
+    "cta": {
+      "title": "Ready to Start Your Project?",
+      "description": "Join the 50+ satisfied clients who have trusted us with their construction needs",
+      "quote": "Request a Quote",
+      "consultation": "Schedule Consultation"
+    }
+  },
+  "booking": {
+    "title": "Book Your Dream Property",
+    "subtitle": "Browse our available properties and submit a booking request to schedule a viewing",
+    "available": "Available Properties",
+    "form": {
+      "title": "Book a Property Viewing",
+      "description": "Fill out the form below to schedule a viewing appointment",
+      "fullName": "Full Name",
+      "email": "Email Address",
+      "phone": "Phone Number", 
+      "nationalId": "National ID",
+      "nationalIdPlaceholder": "Enter your national ID number",
+      "property": "Select Property",
+      "propertyPlaceholder": "Choose a property",
+      "moveInDate": "Preferred Move-in Date",
+      "notes": "Additional Notes",
+      "notesPlaceholder": "Any special requirements or questions...",
+      "submit": "Submit Booking Request"
+    },
+    "toast": {
+      "title": "Booking Request Submitted!",
+      "description": "We'll contact you within 24 hours to confirm your property viewing appointment."
+    }
+  },
   "hero": {
     "badge": "REAL ESTATE",
     "title": "Discover Your Future:",
