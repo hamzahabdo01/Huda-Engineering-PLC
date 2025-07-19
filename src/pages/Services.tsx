@@ -8,7 +8,6 @@ import { useTranslation } from "react-i18next";
 
 const Services = () => {
   const { t } = useTranslation();
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
