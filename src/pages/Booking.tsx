@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface Property {
   id: string;
@@ -72,6 +73,7 @@ const properties: Property[] = [
 
 const Booking = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -96,8 +98,8 @@ const Booking = () => {
     console.log("Booking form submitted:", formData);
     
     toast({
-      title: "Booking Request Submitted!",
-      description: "We'll contact you within 24 hours to confirm your property viewing appointment.",
+      title: t("booking.toast.title"),
+      description: t("booking.toast.description"),
     });
 
     // Reset form
@@ -120,17 +122,17 @@ const Booking = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Book Your Dream Property
+            {t("booking.title")}
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Browse our available properties and submit a booking request to schedule a viewing
+            {t("booking.subtitle")}
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Property Listings */}
           <div>
-            <h2 className="text-2xl font-bold text-foreground mb-6">Available Properties</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-6">{t("booking.available")}</h2>
             <div className="space-y-6">
               {properties.map((property) => (
                 <Card key={property.id} className={`transition-all duration-300 hover:shadow-lg ${
@@ -154,7 +156,7 @@ const Booking = () => {
                             ? "bg-yellow-100 text-yellow-800"
                             : "bg-red-100 text-red-800"
                         }`}>
-                          {property.status}
+                          {t(`booking.status.${property.status.toLowerCase()}`)}
                         </span>
                       </div>
                       
@@ -166,11 +168,11 @@ const Booking = () => {
                       <div className="grid grid-cols-3 gap-4 mb-4 text-sm text-muted-foreground">
                         <div className="flex items-center">
                           <Home className="w-4 h-4 mr-1" />
-                          {property.bedrooms} BR
+                          {property.bedrooms} {t("booking.details.bedrooms")}
                         </div>
                         <div className="flex items-center">
                           <span className="w-4 h-4 mr-1">🚿</span>
-                          {property.bathrooms} Bath
+                          {property.bathrooms} {t("booking.details.bathrooms")}
                         </div>
                         <div className="flex items-center">
                           <span className="w-4 h-4 mr-1">📐</span>
@@ -195,15 +197,15 @@ const Booking = () => {
           <div>
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl">Book a Property Viewing</CardTitle>
+                <CardTitle className="text-2xl">{t("booking.form.title")}</CardTitle>
                 <CardDescription>
-                  Fill out the form below to schedule a viewing appointment
+                  {t("booking.form.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name *</Label>
+                    <Label htmlFor="fullName">{t("booking.form.fullName")} *</Label>
                     <Input
                       id="fullName"
                       name="fullName"
@@ -216,7 +218,7 @@ const Booking = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address *</Label>
+                    <Label htmlFor="email">{t("booking.form.email")} *</Label>
                     <Input
                       id="email"
                       name="email"
@@ -229,7 +231,7 @@ const Booking = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Label htmlFor="phone">{t("booking.form.phone")} *</Label>
                     <Input
                       id="phone"
                       name="phone"
@@ -242,7 +244,7 @@ const Booking = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="nationalId">National ID *</Label>
+                    <Label htmlFor="nationalId">{t("booking.form.nationalId")} *</Label>
                     <Input
                       id="nationalId"
                       name="nationalId"
@@ -250,19 +252,19 @@ const Booking = () => {
                       required
                       value={formData.nationalId}
                       onChange={handleInputChange}
-                      placeholder="Enter your national ID number"
+                      placeholder={t("booking.form.nationalIdPlaceholder")}
                       className="bg-background border-input"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="property">Select Property *</Label>
+                    <Label htmlFor="property">{t("booking.form.property")} *</Label>
                     <Select 
                       value={formData.property} 
                       onValueChange={(value) => setFormData({...formData, property: value})}
                     >
                       <SelectTrigger className="bg-background border-input">
-                        <SelectValue placeholder="Choose a property" />
+                        <SelectValue placeholder={t("booking.form.propertyPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
                         {availableProperties.map((property) => (
@@ -275,7 +277,7 @@ const Booking = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="moveInDate">Preferred Move-in Date</Label>
+                    <Label htmlFor="moveInDate">{t("booking.form.moveInDate")}</Label>
                     <Input
                       id="moveInDate"
                       name="moveInDate"
@@ -287,14 +289,14 @@ const Booking = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="notes">Additional Notes</Label>
+                    <Label htmlFor="notes">{t("booking.form.notes")}</Label>
                     <Textarea
                       id="notes"
                       name="notes"
                       rows={4}
                       value={formData.notes}
                       onChange={handleInputChange}
-                      placeholder="Any special requirements or questions..."
+                      placeholder={t("booking.form.notesPlaceholder")}
                       className="bg-background border-input"
                     />
                   </div>
@@ -304,7 +306,7 @@ const Booking = () => {
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                   >
                     <Calendar className="w-4 h-4 mr-2" />
-                    Submit Booking Request
+                    {t("booking.form.submit")}
                   </Button>
                 </form>
               </CardContent>

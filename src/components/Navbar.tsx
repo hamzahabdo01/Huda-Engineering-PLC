@@ -42,15 +42,15 @@ const Navbar = () => {
           </Link>
           
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-6">
-            {navItems.map((item) => (
+          <div className="hidden lg:flex items-center space-x-1">
+            {navItems.slice(0, 3).map((item) => (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`transition-colors text-sm font-medium ${
+                className={`transition-colors text-sm font-medium px-3 py-2 rounded-lg ${
                   location.pathname === item.path
-                    ? "text-primary font-semibold"
-                    : "text-foreground hover:text-primary"
+                    ? "text-primary font-semibold bg-primary/10"
+                    : "text-foreground hover:text-primary hover:bg-primary/5"
                 }`}
               >
                 {item.name}
@@ -59,7 +59,7 @@ const Navbar = () => {
             
             {/* View Dropdown - Modern UX Style */}
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-all duration-300 bg-gradient-to-r from-transparent to-transparent hover:from-primary/5 hover:to-primary/10 px-4 py-2 rounded-lg border border-transparent hover:border-primary/20 hover:shadow-md backdrop-blur-sm">
+              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-foreground hover:text-primary transition-all duration-300 bg-gradient-to-r from-transparent to-transparent hover:from-primary/5 hover:to-primary/10 px-3 py-2 rounded-lg border border-transparent hover:border-primary/20 hover:shadow-lg backdrop-blur-sm group">
                 {t("nav.view")}
                 <ChevronDown className="h-3 w-3 transition-transform duration-300 group-hover:rotate-180" />
               </DropdownMenuTrigger>
@@ -87,10 +87,22 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Book Property */}
+            <Link
+              to="/booking"
+              className={`transition-colors text-sm font-medium px-3 py-2 rounded-lg ${
+                location.pathname === "/booking"
+                  ? "text-primary font-semibold bg-primary/10"
+                  : "text-foreground hover:text-primary hover:bg-primary/5"
+              }`}
+            >
+              {t("nav.booking")}
+            </Link>
+
             {/* Contact Link */}
             <Link
               to="/contact"
-              className={`transition-all duration-300 text-sm font-medium px-4 py-2 rounded-lg ${
+              className={`transition-all duration-300 text-sm font-medium px-3 py-2 rounded-lg ${
                 location.pathname === "/contact"
                   ? "text-white bg-primary shadow-lg"
                   : "text-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/20"
@@ -101,7 +113,7 @@ const Navbar = () => {
           </div>
 
           {/* Language Selector and Mobile Menu */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <LanguageSelector />
             
             {/* Mobile menu button */}

@@ -60,12 +60,13 @@ const Index = () => {
               
               <Button 
                 size="lg" 
-                className="bg-white text-[#00555b] hover:bg-white/90 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
+                variant="outline"
+                className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
                 asChild
               >
                 <Link to="/virtual-tour" className="flex items-center gap-2">
                   <Play className="h-5 w-5" />
-                  {t("virtualTour.title")}
+                  {t("nav.virtualTour")}
                 </Link>
               </Button>
             </div>
@@ -252,7 +253,7 @@ const Index = () => {
                   {t("services.residential.description")}
                 </CardDescription>
                 <ul className="text-sm space-y-2">
-                  {t("services.residential.features", { returnObjects: true }).map((feature, index) => (
+                  {(t("services.residential.features", { returnObjects: true }) as string[]).map((feature, index) => (
                     <li key={index}>• {feature}</li>
                   ))}
                 </ul>
@@ -269,7 +270,7 @@ const Index = () => {
                   {t("services.commercial.description")}
                 </CardDescription>
                 <ul className="text-sm space-y-2">
-                  {t("services.commercial.features", { returnObjects: true }).map((feature, index) => (
+                  {(t("services.commercial.features", { returnObjects: true }) as string[]).map((feature, index) => (
                     <li key={index}>• {feature}</li>
                   ))}
                 </ul>
@@ -360,9 +361,9 @@ const Index = () => {
       <section className="py-20 lg:py-32 bg-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Our Construction Process</h2>
+            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("constructionProcess.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              A systematic approach to ensure quality, efficiency, and client satisfaction in every project.
+              {t("constructionProcess.description")}
             </p>
           </div>
 
@@ -370,26 +371,26 @@ const Index = () => {
             {[
               {
                 step: "01",
-                title: "Consultation & Planning",
-                description: "Initial project assessment, requirements gathering, and comprehensive planning phase.",
+                title: t("constructionProcess.steps.consultation.title"),
+                description: t("constructionProcess.steps.consultation.description"),
                 icon: Users
               },
               {
                 step: "02", 
-                title: "Design & Engineering",
-                description: "Detailed architectural design, structural engineering, and technical specifications.",
+                title: t("constructionProcess.steps.design.title"),
+                description: t("constructionProcess.steps.design.description"),
                 icon: Target
               },
               {
                 step: "03",
-                title: "Construction & Execution", 
-                description: "Professional construction execution with quality control and safety management.",
+                title: t("constructionProcess.steps.construction.title"), 
+                description: t("constructionProcess.steps.construction.description"),
                 icon: Wrench
               },
               {
                 step: "04",
-                title: "Completion & Handover",
-                description: "Final inspections, quality assurance, and smooth project handover to clients.",
+                title: t("constructionProcess.steps.completion.title"),
+                description: t("constructionProcess.steps.completion.description"),
                 icon: CheckCircle
               }
             ].map((item, index) => (
@@ -414,9 +415,9 @@ const Index = () => {
       <section className="py-20 lg:py-32 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">What Our Clients Say</h2>
+            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("testimonials.title")}</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Real feedback from satisfied clients who have trusted us with their construction projects.
+              {t("testimonials.description")}
             </p>
           </div>
 
@@ -463,20 +464,20 @@ const Index = () => {
       {/* Call to Action */}
       <section className="py-20 lg:py-32 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl lg:text-5xl font-bold mb-6">Ready to Start Your Project?</h2>
+          <h2 className="text-3xl lg:text-5xl font-bold mb-6">{t("cta.title")}</h2>
           <p className="text-xl lg:text-2xl mb-8 text-primary-foreground/90">
-            Join the 50+ satisfied clients who have trusted us with their construction needs. Let's build your vision together.
+            {t("cta.description")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/contact">
-              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-4 text-lg">
-                Get Free Consultation
+              <Button size="lg" className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 px-8 py-4 text-lg">
+                {t("cta.consultation")}
                 <Phone className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link to="/projects">
               <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg">
-                View Our Portfolio
+                {t("cta.portfolio")}
               </Button>
             </Link>
           </div>

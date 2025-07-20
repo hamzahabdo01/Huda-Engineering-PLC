@@ -300,6 +300,16 @@
     "title": "Book Your Dream Property",
     "subtitle": "Browse our available properties and submit a booking request to schedule a viewing",
     "available": "Available Properties",
+    "status": {
+      "available": "Available",
+      "reserved": "Reserved", 
+      "sold": "Sold"
+    },
+    "details": {
+      "bedrooms": "BR",
+      "bathrooms": "Bath",
+      "area": "Area"
+    },
     "form": {
       "title": "Book a Property Viewing",
       "description": "Fill out the form below to schedule a viewing appointment",
@@ -319,6 +329,38 @@
       "title": "Booking Request Submitted!",
       "description": "We'll contact you within 24 hours to confirm your property viewing appointment."
     }
+  },
+  "constructionProcess": {
+    "title": "Our Construction Process",
+    "description": "A systematic approach to ensure quality, efficiency, and client satisfaction in every project.",
+    "steps": {
+      "consultation": {
+        "title": "Consultation & Planning",
+        "description": "Initial project assessment, requirements gathering, and comprehensive planning phase."
+      },
+      "design": {
+        "title": "Design & Engineering", 
+        "description": "Detailed architectural design, structural engineering, and technical specifications."
+      },
+      "construction": {
+        "title": "Construction & Execution",
+        "description": "Professional construction execution with quality control and safety management."
+      },
+      "completion": {
+        "title": "Completion & Handover",
+        "description": "Final inspections, quality assurance, and smooth project handover to clients."
+      }
+    }
+  },
+  "testimonials": {
+    "title": "What Our Clients Say",
+    "description": "Real feedback from satisfied clients who have trusted us with their construction projects."
+  },
+  "cta": {
+    "title": "Ready to Start Your Project?",
+    "description": "Join the 50+ satisfied clients who have trusted us with their construction needs. Let's build your vision together.",
+    "consultation": "Get Free Consultation",
+    "portfolio": "View Our Portfolio"
   },
   "hero": {
     "badge": "REAL ESTATE",

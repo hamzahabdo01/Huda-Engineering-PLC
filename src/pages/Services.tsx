@@ -39,7 +39,7 @@ const Services = () => {
                   {t("servicesPage.residential.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  {t("servicesPage.residential.features", { returnObjects: true }).map((feature, index) => (
+                  {(t("servicesPage.residential.features", { returnObjects: true }) as string[]).map((feature, index) => (
                     <li key={index}>• {feature}</li>
                   ))}
                 </ul>
@@ -56,7 +56,7 @@ const Services = () => {
                   {t("servicesPage.commercial.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  {t("servicesPage.commercial.features", { returnObjects: true }).map((feature, index) => (
+                  {(t("servicesPage.commercial.features", { returnObjects: true }) as string[]).map((feature, index) => (
                     <li key={index}>• {feature}</li>
                   ))}
                 </ul>
@@ -73,7 +73,7 @@ const Services = () => {
                   {t("servicesPage.mixedUse.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  {t("servicesPage.mixedUse.features", { returnObjects: true }).map((feature, index) => (
+                  {(t("servicesPage.mixedUse.features", { returnObjects: true }) as string[]).map((feature, index) => (
                     <li key={index}>• {feature}</li>
                   ))}
                 </ul>
@@ -90,7 +90,7 @@ const Services = () => {
                   {t("servicesPage.management.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  {t("servicesPage.management.features", { returnObjects: true }).map((feature, index) => (
+                  {(t("servicesPage.management.features", { returnObjects: true }) as string[]).map((feature, index) => (
                     <li key={index}>• {feature}</li>
                   ))}
                 </ul>
@@ -107,7 +107,7 @@ const Services = () => {
                   {t("servicesPage.design.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  {t("servicesPage.design.features", { returnObjects: true }).map((feature, index) => (
+                  {(t("servicesPage.design.features", { returnObjects: true }) as string[]).map((feature, index) => (
                     <li key={index}>• {feature}</li>
                   ))}
                 </ul>
@@ -124,7 +124,7 @@ const Services = () => {
                   {t("servicesPage.utility.description")}
                 </CardDescription>
                 <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  {t("servicesPage.utility.features", { returnObjects: true }).map((feature, index) => (
+                  {(t("servicesPage.utility.features", { returnObjects: true }) as string[]).map((feature, index) => (
                     <li key={index}>• {feature}</li>
                   ))}
                 </ul>
