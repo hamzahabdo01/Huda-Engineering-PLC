@@ -7,23 +7,18 @@ import Footer from "@/components/Footer";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import heroImage from "@/assets/hero-real-estate.jpg";
-
 const Index = () => {
-  const { t } = useTranslation();
-  
-  return (
-    <div className="min-h-screen bg-background">
+  const {
+    t
+  } = useTranslation();
+  return <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16 md:pt-0">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0">
-          <img 
-            src={heroImage} 
-            alt="Modern real estate" 
-            className="w-full h-full object-cover"
-          />
+          <img src={heroImage} alt="Modern real estate" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-br from-[#00555b]/85 via-[#004147]/80 to-[#002b2f]/90"></div>
         </div>
         
@@ -46,23 +41,14 @@ const Index = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in">
-              <Button 
-                size="lg" 
-                className="bg-white text-[#00555b] hover:bg-white/90 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
-                asChild
-              >
+              <Button size="lg" className="bg-white text-[#00555b] hover:bg-white/90 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200" asChild>
                 <Link to="/booking">
                   {t("hero.exploreNow")}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
               
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
-                asChild
-              >
+              <Button size="lg" variant="outline" className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200" asChild>
                 <Link to="/virtual-tour" className="flex items-center gap-2">
                   <Play className="h-5 w-5" />
                   {t("nav.virtualTour")}
@@ -252,9 +238,9 @@ const Index = () => {
                   {t("services.residential.description")}
                 </CardDescription>
                 <ul className="text-sm space-y-2">
-                  {(t("services.residential.features", { returnObjects: true }) as string[]).map((feature, index) => (
-                    <li key={index}>• {feature}</li>
-                  ))}
+                  {(t("services.residential.features", {
+                  returnObjects: true
+                }) as string[]).map((feature, index) => <li key={index}>• {feature}</li>)}
                 </ul>
               </CardContent>
             </Card>
@@ -269,9 +255,9 @@ const Index = () => {
                   {t("services.commercial.description")}
                 </CardDescription>
                 <ul className="text-sm space-y-2">
-                  {(t("services.commercial.features", { returnObjects: true }) as string[]).map((feature, index) => (
-                    <li key={index}>• {feature}</li>
-                  ))}
+                  {(t("services.commercial.features", {
+                  returnObjects: true
+                }) as string[]).map((feature, index) => <li key={index}>• {feature}</li>)}
                 </ul>
               </CardContent>
             </Card>
@@ -367,33 +353,27 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                step: "01",
-                title: t("constructionProcess.steps.consultation.title"),
-                description: t("constructionProcess.steps.consultation.description"),
-                icon: Users
-              },
-              {
-                step: "02", 
-                title: t("constructionProcess.steps.design.title"),
-                description: t("constructionProcess.steps.design.description"),
-                icon: Target
-              },
-              {
-                step: "03",
-                title: t("constructionProcess.steps.construction.title"), 
-                description: t("constructionProcess.steps.construction.description"),
-                icon: Wrench
-              },
-              {
-                step: "04",
-                title: t("constructionProcess.steps.completion.title"),
-                description: t("constructionProcess.steps.completion.description"),
-                icon: CheckCircle
-              }
-            ].map((item, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-all duration-300">
+            {[{
+            step: "01",
+            title: t("constructionProcess.steps.consultation.title"),
+            description: t("constructionProcess.steps.consultation.description"),
+            icon: Users
+          }, {
+            step: "02",
+            title: t("constructionProcess.steps.design.title"),
+            description: t("constructionProcess.steps.design.description"),
+            icon: Target
+          }, {
+            step: "03",
+            title: t("constructionProcess.steps.construction.title"),
+            description: t("constructionProcess.steps.construction.description"),
+            icon: Wrench
+          }, {
+            step: "04",
+            title: t("constructionProcess.steps.completion.title"),
+            description: t("constructionProcess.steps.completion.description"),
+            icon: CheckCircle
+          }].map((item, index) => <Card key={index} className="text-center hover:shadow-lg transition-all duration-300">
                 <CardHeader>
                   <div className="text-4xl font-bold text-accent mb-4">{item.step}</div>
                   <item.icon className="w-12 h-12 text-primary mx-auto mb-4" />
@@ -404,8 +384,7 @@ const Index = () => {
                     {item.description}
                   </CardDescription>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -421,32 +400,25 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                name: "Ahmed Hassan",
-                project: "Residential Complex Owner",
-                content: "Huda Engineering delivered our apartment complex on time and within budget. Their attention to detail and professional approach exceeded our expectations.",
-                rating: 5
-              },
-              {
-                name: "Meron Tadesse", 
-                project: "Commercial Building Client",
-                content: "The quality of construction and the professionalism of the team was outstanding. They handled every aspect of our office building project perfectly.",
-                rating: 5
-              },
-              {
-                name: "Solomon Bekele",
-                project: "Luxury Home Owner", 
-                content: "From design to completion, Huda Engineering provided exceptional service. Our dream home became reality thanks to their expertise and dedication.",
-                rating: 5
-              }
-            ].map((testimonial, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
+            {[{
+            name: "Ahmed Hassan",
+            project: "Residential Complex Owner",
+            content: "Huda Engineering delivered our apartment complex on time and within budget. Their attention to detail and professional approach exceeded our expectations.",
+            rating: 5
+          }, {
+            name: "Meron Tadesse",
+            project: "Commercial Building Client",
+            content: "The quality of construction and the professionalism of the team was outstanding. They handled every aspect of our office building project perfectly.",
+            rating: 5
+          }, {
+            name: "Solomon Bekele",
+            project: "Luxury Home Owner",
+            content: "From design to completion, Huda Engineering provided exceptional service. Our dream home became reality thanks to their expertise and dedication.",
+            rating: 5
+          }].map((testimonial, index) => <Card key={index} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-accent text-accent" />
-                    ))}
+                    {[...Array(testimonial.rating)].map((_, i) => <Star key={i} className="w-5 h-5 fill-accent text-accent" />)}
                   </div>
                   <CardTitle className="text-lg">{testimonial.name}</CardTitle>
                   <CardDescription className="text-primary">{testimonial.project}</CardDescription>
@@ -454,8 +426,7 @@ const Index = () => {
                 <CardContent>
                   <p className="text-muted-foreground italic">"{testimonial.content}"</p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -484,8 +455,6 @@ const Index = () => {
       </section>
 
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
