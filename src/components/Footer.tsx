@@ -15,7 +15,7 @@ const Footer = () => {
           {/* Company Info */}
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-3 mb-6">
-              <Logo size="lg" className="text-accent" />
+              <Logo size="lg" variant="icon" />
               <div>
                 <h3 className="text-xl font-bold">Huda Engineering PLC</h3>
                 <p className="text-primary-foreground/80">{t("footer.tagline")}</p>

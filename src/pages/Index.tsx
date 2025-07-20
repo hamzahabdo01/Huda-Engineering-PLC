@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, Users, Calendar, Phone, Mail, MapPin, Award, Shield, Clock, Zap, Target, CheckCircle, ArrowRight, Star, TrendingUp, Globe, Wrench, Play, ArrowUpRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import Logo from "@/components/Logo";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import heroImage from "@/assets/hero-real-estate.jpg";
@@ -16,14 +15,14 @@ const Index = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16 md:pt-0">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0">
           <img src={heroImage} alt="Modern real estate" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-br from-[#00555b]/85 via-[#004147]/80 to-[#002b2f]/90"></div>
         </div>
         
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-16 items-center">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-8 lg:gap-16 items-center py-8 md:py-16">
           {/* Left Content */}
           <div className="text-white space-y-8">
             <div className="space-y-2">
@@ -31,13 +30,13 @@ const Index = () => {
                 <span className="text-sm font-medium tracking-wide">{t("hero.badge")}</span>
               </div>
               
-              <h1 className="text-5xl lg:text-7xl font-bold leading-tight animate-fade-in">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold leading-tight animate-fade-in">
                 <span className="block">{t("hero.title")}</span>
                 <span className="block text-white/90 mt-2">{t("hero.subtitle")}</span>
               </h1>
             </div>
             
-            <p className="text-xl text-white/80 leading-relaxed max-w-lg animate-fade-in">
+            <p className="text-lg md:text-xl text-white/80 leading-relaxed max-w-lg animate-fade-in">
               {t("hero.description")}
             </p>
             
@@ -58,69 +57,69 @@ const Index = () => {
             </div>
             
             {/* Statistics */}
-            <div className="grid grid-cols-3 gap-6 pt-8 animate-fade-in">
+            <div className="grid grid-cols-3 gap-3 sm:gap-6 pt-8 animate-fade-in">
               <div className="text-center">
-                <div className="text-3xl font-bold text-white mb-1">50+</div>
-                <div className="text-sm text-white/70">{t("hero.projectsCompleted")}</div>
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-1">50+</div>
+                <div className="text-xs sm:text-sm text-white/70">{t("hero.projectsCompleted")}</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white mb-1">100%</div>
-                <div className="text-sm text-white/70">{t("hero.clientSatisfaction")}</div>
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-1">100%</div>
+                <div className="text-xs sm:text-sm text-white/70">{t("hero.clientSatisfaction")}</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white mb-1">15+</div>
-                <div className="text-sm text-white/70">{t("hero.yearsExperience")}</div>
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-1">15+</div>
+                <div className="text-xs sm:text-sm text-white/70">{t("hero.yearsExperience")}</div>
               </div>
             </div>
           </div>
           
           {/* Right Content - Property Showcase */}
-          <div className="relative space-y-6">
+          <div className="relative space-y-6 mt-8 lg:mt-0">
             {/* Featured Property Card */}
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl animate-fade-in">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white">{t("hero.featuredProperty")}</h3>
-                <span className="bg-green-400/20 text-green-300 text-sm font-medium px-3 py-1 rounded-full backdrop-blur-sm">
-                  {t("hero.availableNow")}
-                </span>
-              </div>
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6 shadow-2xl animate-fade-in">
+                              <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg sm:text-xl font-bold text-white">{t("hero.featuredProperty")}</h3>
+                  <span className="bg-green-400/20 text-green-300 text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full backdrop-blur-sm">
+                    {t("hero.availableNow")}
+                  </span>
+                </div>
               
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-white/80">
-                  <div className="bg-white/5 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-white">4</div>
-                    <div className="text-sm">{t("hero.bedrooms")}</div>
+                                  <div className="grid grid-cols-2 gap-3 sm:gap-4 text-white/80">
+                    <div className="bg-white/5 rounded-lg p-2 sm:p-3 text-center">
+                      <div className="text-xl sm:text-2xl font-bold text-white">4</div>
+                      <div className="text-xs sm:text-sm">{t("hero.bedrooms")}</div>
+                    </div>
+                    <div className="bg-white/5 rounded-lg p-2 sm:p-3 text-center">
+                      <div className="text-xl sm:text-2xl font-bold text-white">3</div>
+                      <div className="text-xs sm:text-sm">{t("hero.bathrooms")}</div>
+                    </div>
                   </div>
-                  <div className="bg-white/5 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-white">3</div>
-                    <div className="text-sm">{t("hero.bathrooms")}</div>
-                  </div>
-                </div>
                 
-                <div className="flex items-center justify-between pt-4">
-                  <div>
-                    <div className="text-sm text-white/70">{t("hero.startingFrom")}</div>
-                    <div className="text-3xl font-bold text-white">8.5M ETB</div>
+                                  <div className="flex items-center justify-between pt-4">
+                    <div>
+                      <div className="text-xs sm:text-sm text-white/70">{t("hero.startingFrom")}</div>
+                      <div className="text-2xl sm:text-3xl font-bold text-white">8.5M ETB</div>
+                    </div>
+                    <Button className="bg-white/20 hover:bg-white/30 text-white border-white/30 text-sm" asChild>
+                      <Link to="/projects">
+                        {t("hero.viewDetails")}
+                        <ArrowUpRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                      </Link>
+                    </Button>
                   </div>
-                  <Button className="bg-white/20 hover:bg-white/30 text-white border-white/30" asChild>
-                    <Link to="/projects">
-                      {t("hero.viewDetails")}
-                      <ArrowUpRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
               </div>
             </div>
             
             {/* Property Info Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 animate-fade-in">
-                <h3 className="text-sm font-medium text-white/70 mb-1">{t("hero.location")}</h3>
-                <p className="text-white font-semibold">{t("hero.locationValue")}</p>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3 sm:p-4 animate-fade-in">
+                <h3 className="text-xs sm:text-sm font-medium text-white/70 mb-1">{t("hero.location")}</h3>
+                <p className="text-sm sm:text-base text-white font-semibold">{t("hero.locationValue")}</p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 animate-fade-in">
-                <h3 className="text-sm font-medium text-white/70 mb-1">{t("hero.pricing")}</h3>
-                <p className="text-white font-semibold">{t("hero.pricingValue")}</p>
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3 sm:p-4 animate-fade-in">
+                <h3 className="text-xs sm:text-sm font-medium text-white/70 mb-1">{t("hero.pricing")}</h3>
+                <p className="text-sm sm:text-base text-white font-semibold">{t("hero.pricingValue")}</p>
               </div>
             </div>
           </div>
@@ -447,7 +446,7 @@ const Index = () => {
               </Button>
             </Link>
             <Link to="/projects">
-              <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground  px-8 py-4 text-lg bg-teal-800 hover:bg-teal-700">
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary px-8 py-4 text-lg font-semibold">
                 {t("cta.portfolio")}
               </Button>
             </Link>

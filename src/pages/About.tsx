@@ -20,7 +20,7 @@ const About = () => {
       <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex justify-center mb-8">
-            <Logo size="lg" className="text-accent w-16 h-16 lg:w-20 lg:h-20" />
+            <Logo size="lg" variant="icon" className="w-16 h-16 lg:w-20 lg:h-20" />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6">{t("about.hero.title")}</h1>
           <p className="text-xl lg:text-2xl text-primary-foreground/90 max-w-4xl mx-auto">
