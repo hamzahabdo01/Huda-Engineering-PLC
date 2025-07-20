@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Menu, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import Logo from "./Logo";
 import LanguageSelector from "./LanguageSelector";
 import {
@@ -16,7 +16,6 @@ const Navbar = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isMobileViewOpen, setIsMobileViewOpen] = useState(false);
 
   const navItems = [
     { name: t("nav.home"), path: "/" },
@@ -43,7 +42,7 @@ const Navbar = () => {
           </Link>
           
           {/* Desktop/Tablet Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden sm:flex items-center space-x-1">
             {navItems.slice(0, 3).map((item) => (
               <Link
                 key={item.name}
@@ -119,12 +118,9 @@ const Navbar = () => {
             
             {/* Mobile menu button */}
             <button
-              className="md:hidden p-2 rounded-md text-foreground hover:text-primary hover:bg-muted transition-colors"
+              className="sm:hidden p-2 rounded-md text-foreground hover:text-primary hover:bg-muted transition-colors"
               onClick={() => {
                 setIsMenuOpen(!isMenuOpen);
-                if (isMenuOpen) {
-                  setIsMobileViewOpen(false);
-                }
               }}
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -134,7 +130,7 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden">
+          <div className="sm:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-background border-t border-border">
               {navItems.slice(0, 3).map((item) => (
                 <Link
@@ -153,42 +149,35 @@ const Navbar = () => {
               
               {/* Mobile View Dropdown */}
               <div className="pt-2">
-                <button
-                  onClick={() => setIsMobileViewOpen(!isMobileViewOpen)}
-                  className="flex items-center justify-between w-full px-3 py-2 text-base font-medium text-foreground hover:text-primary hover:bg-muted rounded-md transition-colors"
-                >
-                  <span>{t("nav.view")}</span>
-                  {isMobileViewOpen ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center justify-between w-full px-3 py-2 text-base font-medium text-foreground hover:text-primary hover:bg-muted rounded-md transition-colors">
+                    <span>{t("nav.view")}</span>
                     <ChevronDown className="h-4 w-4" />
-                  )}
-                </button>
-                
-                {/* Collapsible View Items */}
-                <div className={`transition-all duration-300 overflow-hidden ${
-                  isMobileViewOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                }`}>
-                  <div className="pl-4 space-y-1 pt-2">
-                    {viewItems.map((item) => (
-                      <Link
-                        key={item.name}
-                        to={item.path}
-                        className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                          location.pathname === item.path
-                            ? "text-primary bg-primary/10"
-                            : "text-foreground hover:text-primary hover:bg-muted"
-                        }`}
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          setIsMobileViewOpen(false);
-                        }}
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    align="start" 
+                    className="bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-xl p-3 min-w-[220px] z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2"
+                  >
+                    <div className="space-y-1">
+                      {viewItems.map((item) => (
+                        <DropdownMenuItem key={item.name} asChild>
+                          <Link
+                            to={item.path}
+                            className={`w-full cursor-pointer px-4 py-3 rounded-lg transition-all duration-200 hover:bg-primary/10 hover:shadow-md flex items-center gap-3 ${
+                              location.pathname === item.path 
+                                ? "bg-primary/15 text-primary shadow-lg border border-primary/20" 
+                                : "text-foreground hover:text-primary"
+                            }`}
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <div className="w-2 h-2 rounded-full bg-current opacity-50"></div>
+                            <span className="font-medium">{item.name}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Mobile Booking Link */}

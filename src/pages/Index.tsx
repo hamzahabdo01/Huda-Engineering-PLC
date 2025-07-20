@@ -16,14 +16,14 @@ const Index = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-screen lg:h-screen flex items-center justify-center overflow-hidden pt-16 lg:pt-0">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0">
           <img src={heroImage} alt="Modern real estate" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-br from-[#00555b]/85 via-[#004147]/80 to-[#002b2f]/90"></div>
         </div>
         
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-16 items-center">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-8 lg:gap-16 items-center py-8 lg:py-0">
           {/* Left Content */}
           <div className="text-white space-y-8">
             <div className="space-y-2">
@@ -447,7 +447,7 @@ const Index = () => {
               </Button>
             </Link>
             <Link to="/projects">
-              <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground  px-8 py-4 text-lg bg-teal-800 hover:bg-teal-700">
+              <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 px-8 py-4 text-lg">
                 {t("cta.portfolio")}
               </Button>
             </Link>
