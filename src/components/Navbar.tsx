@@ -36,8 +36,8 @@ const Navbar = () => {
     <nav className="bg-background shadow-sm border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center space-x-3">
-            <Logo size="md" className="text-primary" />
+          <Link to="/" className="flex items-center">
+            <Logo size="lg" variant="teal" className="text-primary" />
             <span className="text-xl font-bold text-foreground hidden sm:block">Huda Engineering PLC</span>
             <span className="text-lg font-bold text-foreground sm:hidden">Huda</span>
           </Link>

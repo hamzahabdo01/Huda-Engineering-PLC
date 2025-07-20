@@ -1,36 +1,48 @@
-
 import React from 'react';
+
+// 1) Import each pre‑colored logo file
+import logoWhite from '../assets/Huda Engineering Logo Transparent-11.png';
+import logoYellow from '../assets/Huda Engineering Logo Display-09.jpg';
+import logoTeal  from '../assets/Huda Engineering Logo Transparent-10.webp';
+// …and import any others you have
 
 interface LogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  /** 
+   * Choose which colored version of the logo to render.
+   * Must match one of the imported files above.
+   */
+  variant?: 'white' | 'yellow' | 'teal';
 }
 
-const Logo: React.FC<LogoProps> = ({ className = '', size = 'md' }) => {
+const Logo: React.FC<LogoProps> = ({
+  className = '',
+  size = 'md',
+  variant = 'white'
+}) => {
   const sizeClasses = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
     lg: 'w-16 h-16'
   };
 
+  // 2) Map variant names to the imported images
+  const variants: Record<LogoProps['variant'], string> = {
+    white:  logoWhite,
+    yellow: logoYellow,
+    teal:   logoTeal
+  };
+
+  const src = variants[variant];
+
   return (
     <div className={`${sizeClasses[size]} ${className}`}>
-      <svg viewBox="0 0 100 100" className="w-full h-full">
-        {/* Left vertical bar */}
-        <rect x="10" y="10" width="15" height="80" fill="currentColor" />
-        
-        {/* Right vertical bar */}
-        <rect x="75" y="10" width="15" height="80" fill="currentColor" />
-        
-        {/* Top horizontal bar */}
-        <rect x="25" y="10" width="50" height="15" fill="currentColor" />
-        
-        {/* Middle horizontal bar with accent color */}
-        <rect x="25" y="42.5" width="50" height="15" fill="#fbce18" />
-        
-        {/* Bottom horizontal bar */}
-        <rect x="25" y="75" width="50" height="15" fill="currentColor" />
-      </svg>
+      <img
+        src={src}
+        alt={`Logo (${variant})`}
+        className="w-full h-full object-contain"
+      />
     </div>
   );
 };
