@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, ChevronUp } from "lucide-react";
 import Logo from "./Logo";
 import LanguageSelector from "./LanguageSelector";
 import {
@@ -16,6 +16,7 @@ const Navbar = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileViewOpen, setIsMobileViewOpen] = useState(false);
 
   const navItems = [
     { name: t("nav.home"), path: "/" },
@@ -41,8 +42,8 @@ const Navbar = () => {
             <span className="text-lg font-bold text-foreground sm:hidden">Huda</span>
           </Link>
           
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-1">
+          {/* Desktop/Tablet Navigation */}
+          <div className="hidden md:flex items-center space-x-1">
             {navItems.slice(0, 3).map((item) => (
               <Link
                 key={item.name}
@@ -118,8 +119,13 @@ const Navbar = () => {
             
             {/* Mobile menu button */}
             <button
-              className="lg:hidden p-2 rounded-md text-foreground hover:text-primary hover:bg-muted transition-colors"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden p-2 rounded-md text-foreground hover:text-primary hover:bg-muted transition-colors"
+              onClick={() => {
+                setIsMenuOpen(!isMenuOpen);
+                if (isMenuOpen) {
+                  setIsMobileViewOpen(false);
+                }
+              }}
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -128,9 +134,9 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="lg:hidden">
+          <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-background border-t border-border">
-              {navItems.map((item) => (
+              {navItems.slice(0, 3).map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
@@ -145,26 +151,58 @@ const Navbar = () => {
                 </Link>
               ))}
               
-              {/* Mobile View Section */}
+              {/* Mobile View Dropdown */}
               <div className="pt-2">
-                <div className="px-3 py-2 text-sm font-medium text-muted-foreground">
-                  {t("nav.view")}
+                <button
+                  onClick={() => setIsMobileViewOpen(!isMobileViewOpen)}
+                  className="flex items-center justify-between w-full px-3 py-2 text-base font-medium text-foreground hover:text-primary hover:bg-muted rounded-md transition-colors"
+                >
+                  <span>{t("nav.view")}</span>
+                  {isMobileViewOpen ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+                
+                {/* Collapsible View Items */}
+                <div className={`transition-all duration-300 overflow-hidden ${
+                  isMobileViewOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                }`}>
+                  <div className="pl-4 space-y-1 pt-2">
+                    {viewItems.map((item) => (
+                      <Link
+                        key={item.name}
+                        to={item.path}
+                        className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                          location.pathname === item.path
+                            ? "text-primary bg-primary/10"
+                            : "text-foreground hover:text-primary hover:bg-muted"
+                        }`}
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          setIsMobileViewOpen(false);
+                        }}
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-                {viewItems.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.path}
-                    className={`block px-6 py-2 rounded-md text-base font-medium transition-colors ${
-                      location.pathname === item.path
-                        ? "text-primary bg-primary/10"
-                        : "text-foreground hover:text-primary hover:bg-muted"
-                    }`}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
               </div>
+
+              {/* Mobile Booking Link */}
+              <Link
+                to="/booking"
+                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                  location.pathname === "/booking"
+                    ? "text-primary bg-primary/10"
+                    : "text-foreground hover:text-primary hover:bg-muted"
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t("nav.booking")}
+              </Link>
 
               {/* Mobile Contact Link */}
               <Link
