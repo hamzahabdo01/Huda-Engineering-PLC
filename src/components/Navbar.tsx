@@ -1,8 +1,10 @@
 
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Menu, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Menu, X, ChevronDown, ChevronUp, LogOut, User, Settings } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import Logo from "./Logo";
 import LanguageSelector from "./LanguageSelector";
 import {
@@ -10,11 +12,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 const Navbar = () => {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
+  const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileViewOpen, setIsMobileViewOpen] = useState(false);
 
@@ -31,6 +38,23 @@ const Navbar = () => {
     { name: t("nav.announcements"), path: "/announcements" },
     { name: t("nav.maps"), path: "/maps" },
   ];
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Signed out successfully",
+      });
+      navigate("/");
+    }
+  };
 
   return (
     <nav className="bg-background shadow-sm border-b border-border sticky top-0 z-50">
@@ -113,9 +137,63 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Language Selector and Mobile Menu */}
+          {/* Right side items */}
           <div className="flex items-center gap-3">
             <LanguageSelector />
+            
+            {/* Authentication Section */}
+            {user ? (
+              <div className="hidden md:flex items-center gap-2">
+                {/* User Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-all duration-300 bg-gradient-to-r from-transparent to-transparent hover:from-primary/5 hover:to-primary/10 px-3 py-2 rounded-lg border border-transparent hover:border-primary/20 hover:shadow-lg backdrop-blur-sm group">
+                    <User className="h-4 w-4" />
+                    <span className="hidden lg:block">{profile?.full_name || user.email}</span>
+                    <ChevronDown className="h-3 w-3 transition-transform duration-300 group-hover:rotate-180" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    align="end" 
+                    className="bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-xl p-3 min-w-[200px] z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2"
+                  >
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Signed in as <strong>{user.email}</strong>
+                    </div>
+                    <DropdownMenuSeparator />
+                    
+                    {profile?.role === 'admin' && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            to="/admin-dashboard"
+                            className="w-full cursor-pointer px-3 py-2 rounded-lg transition-all duration-200 hover:bg-primary/10 hover:shadow-md flex items-center gap-3 text-foreground hover:text-primary"
+                          >
+                            <Settings className="h-4 w-4" />
+                            <span className="font-medium">Admin Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    
+                    <DropdownMenuItem asChild>
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full cursor-pointer px-3 py-2 rounded-lg transition-all duration-200 hover:bg-red-50 hover:text-red-600 flex items-center gap-3 text-foreground"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span className="font-medium">Sign Out</span>
+                      </button>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <div className="hidden md:flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
+                  Sign In
+                </Button>
+              </div>
+            )}
             
             {/* Mobile menu button */}
             <button
@@ -216,6 +294,53 @@ const Navbar = () => {
               >
                 {t("nav.contact")}
               </Link>
+
+              {/* Mobile Authentication Section */}
+              {user ? (
+                <div className="pt-2 border-t border-border mt-2">
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    Signed in as <strong>{user.email}</strong>
+                  </div>
+                  
+                  {profile?.role === 'admin' && (
+                    <Link
+                      to="/admin-dashboard"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-primary hover:bg-muted transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Admin Dashboard
+                      </div>
+                    </Link>
+                  )}
+                  
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </div>
+                  </button>
+                </div>
+              ) : (
+                <div className="pt-2 border-t border-border mt-2">
+                  <button
+                    onClick={() => {
+                      navigate("/auth");
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-primary hover:bg-muted transition-colors"
+                  >
+                    Sign In
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
