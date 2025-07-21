@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Property {
   id: string;
@@ -93,25 +94,49 @@ const Booking = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Booking form submitted:", formData);
     
-    toast({
-      title: t("booking.toast.title"),
-      description: t("booking.toast.description"),
-    });
+    try {
+      const { error } = await supabase
+        .from('property_bookings')
+        .insert([
+          {
+            property_id: formData.property,
+            full_name: formData.fullName,
+            email: formData.email,
+            phone: formData.phone,
+            national_id: formData.nationalId,
+            move_in_date: formData.moveInDate || null,
+            notes: formData.notes || null,
+          }
+        ]);
 
-    // Reset form
-    setFormData({
-      fullName: "",
-      email: "",
-      phone: "",
-      nationalId: "",
-      property: "",
-      moveInDate: "",
-      notes: ""
-    });
+      if (error) throw error;
+
+      toast({
+        title: t("booking.toast.title"),
+        description: t("booking.toast.description"),
+      });
+
+      // Reset form
+      setFormData({
+        fullName: "",
+        email: "",
+        phone: "",
+        nationalId: "",
+        property: "",
+        moveInDate: "",
+        notes: ""
+      });
+    } catch (error) {
+      console.error('Error submitting booking:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit booking. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

@@ -133,6 +133,36 @@ const Announcements = () => {
 
   const currentAnnouncement = announcements[currentIndex];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading announcements...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (announcements.length === 0) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">No announcements yet</h2>
+            <p className="text-muted-foreground">Check back later for updates.</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
@@ -161,7 +191,7 @@ const Announcements = () => {
               <div className="relative">
                 <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
                   <img
-                    src={currentAnnouncement.image}
+                src={currentAnnouncement.image_url || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop"}
                     alt={currentAnnouncement.title}
                     className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                   />
