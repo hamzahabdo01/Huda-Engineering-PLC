@@ -12,20 +12,14 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
-      if (requireAdmin && (!profile || profile.role !== 'admin')) {
-        navigate('/auth');
-        return;
-      }
+    // Only redirect if we're sure about the auth state
+    if (!loading && !user) {
+      navigate('/auth');
     }
-  }, [user, profile, loading, requireAdmin, navigate]);
+  }, [user, loading, navigate]);
 
-  if (loading) {
+  // Show loading while auth is loading OR while we have a user but no profile yet (when admin required)
+  if (loading || (user && requireAdmin && profile === null)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -36,7 +30,20 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
     );
   }
 
-  if (!user || (requireAdmin && (!profile || profile.role !== 'admin'))) {
+  // If no user, don't render (useEffect will handle redirect)
+  if (!user) {
+    return null;
+  }
+
+  // If admin required and user doesn't have admin role, redirect
+  if (requireAdmin && profile && profile.role !== 'admin') {
+    navigate('/auth');
+    return null;
+  }
+
+  // If admin required but profile failed to load, redirect
+  if (requireAdmin && !loading && profile === null) {
+    navigate('/auth');
     return null;
   }
 
