@@ -82,6 +82,35 @@ const AdminDashboard = () => {
   const [dataLoading, setDataLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
+  // Check authentication and admin role
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+      
+      // Wait for profile to load
+      if (profile === null) {
+        return;
+      }
+      
+      if (profile.role !== 'admin') {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to access this page.",
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
+
+      // If we reach here, user is authenticated and is admin
+      fetchData();
+      setupRealtimeSubscriptions();
+    }
+  }, [user, profile, loading, navigate, toast]);
+
     setDataLoading(true);
     try {
       const [contactsRes, bookingsRes, projectsRes, announcementsRes] = await Promise.all([
