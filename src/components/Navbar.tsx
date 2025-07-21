@@ -142,7 +142,7 @@ const Navbar = () => {
             <LanguageSelector />
             
             {/* Authentication Section */}
-            {user ? (
+            {user && (
               <div className="hidden md:flex items-center gap-2">
                 {/* User Dropdown */}
                 <DropdownMenu>
@@ -182,12 +182,6 @@ const Navbar = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </div>
-            ) : (
-              <div className="hidden md:flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
-                  Sign In
-                </Button>
               </div>
             )}
             
@@ -292,7 +286,7 @@ const Navbar = () => {
               </Link>
 
               {/* Mobile Authentication Section */}
-              {user ? (
+              {user && (
                 <div className="pt-2 border-t border-border mt-2">
                   <div className="px-3 py-2 text-sm text-muted-foreground">
                     Signed in as <strong>{user.email}</strong>
@@ -320,18 +314,6 @@ const Navbar = () => {
                       <LogOut className="h-4 w-4" />
                       Sign Out
                     </div>
-                  </button>
-                </div>
-              ) : (
-                <div className="pt-2 border-t border-border mt-2">
-                  <button
-                    onClick={() => {
-                      navigate("/auth");
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-primary hover:bg-muted transition-colors"
-                  >
-                    Sign In
                   </button>
                 </div>
               )}
