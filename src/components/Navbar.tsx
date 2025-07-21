@@ -169,8 +169,7 @@ const Navbar = () => {
                         <span className="font-medium">Dashboard</span>
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    
+                    <DropdownMenuSeparator />  
                     <DropdownMenuItem asChild>
                       <button
                         onClick={handleSignOut}
@@ -183,6 +182,7 @@ const Navbar = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+
             )}
             
             {/* Mobile menu button */}
