@@ -304,7 +304,7 @@ const AdminDashboard = () => {
     };
   }, [toast]);
 
-  // Check authentication
+  // Check authentication and admin access
   useEffect(() => {
     console.log('🔐 Auth check - Loading:', loading, 'User:', user?.email);
     
@@ -315,12 +315,24 @@ const AdminDashboard = () => {
         return;
       }
 
-      console.log('✅ User authenticated, fetching data and setting up subscriptions');
-      // If we reach here, user is authenticated
+      // Check if user is the authorized admin
+      if (user.email !== 'hudaengineeringrealestate@gmail.com') {
+        console.log('❌ Unauthorized user, redirecting to auth');
+        toast({
+          title: "Access Denied",
+          description: "You are not authorized to access this dashboard.",
+          variant: "destructive",
+        });
+        navigate('/auth');
+        return;
+      }
+
+      console.log('✅ Admin user authenticated, fetching data and setting up subscriptions');
+      // If we reach here, user is the authorized admin
       fetchData();
       setupRealtimeSubscriptions();
     }
-  }, [user, loading, navigate, fetchData, setupRealtimeSubscriptions]);
+  }, [user, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -559,8 +571,9 @@ const AdminDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back, {profile?.full_name || user.email}</p>
+              <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+              <p className="text-muted-foreground">Welcome back, Administrator</p>
+              <p className="text-xs text-muted-foreground">Secure admin portal - {user?.email}</p>
             </div>
             <div className="flex items-center gap-4">
               <Button variant="outline" onClick={fetchData}>
