@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,36 +81,7 @@ const AdminDashboard = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // Check authentication and admin role
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-      
-      // Wait for profile to load
-      if (profile === null) {
-        return;
-      }
-      
-      if (profile.role !== 'admin') {
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access this page.",
-          variant: "destructive",
-        });
-        navigate('/');
-        return;
-      }
-
-      // If we reach here, user is authenticated and is admin
-      fetchData();
-      setupRealtimeSubscriptions();
-    }
-  }, [user, profile, loading, navigate, toast]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setDataLoading(true);
     try {
       const [contactsRes, bookingsRes, projectsRes, announcementsRes] = await Promise.all([
@@ -134,9 +105,9 @@ const AdminDashboard = () => {
     } finally {
       setDataLoading(false);
     }
-  };
+  }, [toast]);
 
-  const setupRealtimeSubscriptions = () => {
+  const setupRealtimeSubscriptions = useCallback(() => {
     // Subscribe to contact submissions
     const contactsSubscription = supabase
       .channel('contact_submissions')
@@ -184,7 +155,36 @@ const AdminDashboard = () => {
       contactsSubscription.unsubscribe();
       bookingsSubscription.unsubscribe();
     };
-  };
+  }, [toast]);
+
+  // Check authentication and admin role
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+      
+      // Wait for profile to load
+      if (profile === null) {
+        return;
+      }
+      
+      if (profile.role !== 'admin') {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to access this page.",
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
+
+      // If we reach here, user is authenticated and is admin
+      fetchData();
+      setupRealtimeSubscriptions();
+    }
+  }, [user, profile, loading, navigate, toast, fetchData, setupRealtimeSubscriptions]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
