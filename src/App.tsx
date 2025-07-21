@@ -9,7 +9,6 @@ import About from "./pages/About";
 import Services from "./pages/Services";
 import Projects from "./pages/Projects";
 import Contact from "./pages/Contact";
-import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import Booking from "./pages/Booking";
@@ -18,6 +17,7 @@ import Maps from "./pages/Maps";
 import VirtualTour from "./pages/VirtualTour";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -35,9 +35,15 @@ function App() {
             <Route path="/services" element={<Services />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/admin" element={<Admin />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route 
+              path="/admin-dashboard" 
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/booking" element={<Booking />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/maps" element={<Maps />} />
