@@ -122,37 +122,13 @@ const AdminDashboard = () => {
   const [featureInput, setFeatureInput] = useState("");
 
   const fetchData = useCallback(async () => {
-  // Check authentication and admin role
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-      
-      // Wait for profile to load
-      if (profile === null) {
-        return;
-      }
-      
-      if (profile.role !== 'admin') {
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access this page.",
-          variant: "destructive",
-        });
-        navigate('/');
-        return;
-      }
-
-      // If we reach here, user is authenticated and is admin
-      fetchData();
-      setupRealtimeSubscriptions();
-    }
-  }, [user, profile, loading, navigate, toast]);
-
+    console.log('🔄 Starting data fetch...');
     setDataLoading(true);
+    
     try {
+      console.log('🔐 Current user:', user?.email);
+      console.log('👤 Current profile:', profile);
+      
       const [contactsRes, bookingsRes, projectsRes, announcementsRes] = await Promise.all([
         supabase.from('contact_submissions').select('*').order('created_at', { ascending: false }),
         supabase.from('property_bookings').select('*').order('created_at', { ascending: false }),
@@ -160,12 +136,61 @@ const AdminDashboard = () => {
         supabase.from('announcements').select('*').order('created_at', { ascending: false }),
       ]);
 
-      if (contactsRes.data) setContacts(contactsRes.data as ContactSubmission[]);
-      if (bookingsRes.data) setBookings(bookingsRes.data as PropertyBooking[]);
-      if (projectsRes.data) setProjects(projectsRes.data as Project[]);
-      if (announcementsRes.data) setAnnouncements(announcementsRes.data as Announcement[]);
+      console.log('📞 Contacts response:', contactsRes);
+      console.log('🏠 Bookings response:', bookingsRes);
+      console.log('🏗️ Projects response:', projectsRes);
+      console.log('📢 Announcements response:', announcementsRes);
+
+      if (contactsRes.error) {
+        console.error('❌ Contacts error:', contactsRes.error);
+        toast({
+          title: "Error fetching contacts",
+          description: contactsRes.error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log(`✅ Setting ${contactsRes.data?.length || 0} contacts`);
+        setContacts(contactsRes.data as ContactSubmission[] || []);
+      }
+
+      if (bookingsRes.error) {
+        console.error('❌ Bookings error:', bookingsRes.error);
+        toast({
+          title: "Error fetching bookings",
+          description: bookingsRes.error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log(`✅ Setting ${bookingsRes.data?.length || 0} bookings`);
+        setBookings(bookingsRes.data as PropertyBooking[] || []);
+      }
+
+      if (projectsRes.error) {
+        console.error('❌ Projects error:', projectsRes.error);
+        toast({
+          title: "Error fetching projects",
+          description: projectsRes.error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log(`✅ Setting ${projectsRes.data?.length || 0} projects`);
+        setProjects(projectsRes.data as Project[] || []);
+      }
+
+      if (announcementsRes.error) {
+        console.error('❌ Announcements error:', announcementsRes.error);
+        toast({
+          title: "Error fetching announcements",
+          description: announcementsRes.error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log(`✅ Setting ${announcementsRes.data?.length || 0} announcements`);
+        setAnnouncements(announcementsRes.data as Announcement[] || []);
+      }
+
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('💥 Error fetching data:', error);
       toast({
         title: "Error",
         description: "Failed to fetch dashboard data",
@@ -173,16 +198,20 @@ const AdminDashboard = () => {
       });
     } finally {
       setDataLoading(false);
+      console.log('✅ Data fetch completed');
     }
-  }, [toast]);
+  }, [user, profile, toast]);
 
   const setupRealtimeSubscriptions = useCallback(() => {
+    console.log('🔄 Setting up real-time subscriptions...');
+    
     // Subscribe to contact submissions
     const contactsSubscription = supabase
       .channel('contact_submissions')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'contact_submissions' },
         (payload) => {
+          console.log('📞 Contact submission change:', payload);
           if (payload.eventType === 'INSERT') {
             const newContact = payload.new as ContactSubmission;
             setContacts(prev => [newContact, ...prev]);
@@ -205,6 +234,7 @@ const AdminDashboard = () => {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'property_bookings' },
         (payload) => {
+          console.log('🏠 Property booking change:', payload);
           if (payload.eventType === 'INSERT') {
             const newBooking = payload.new as PropertyBooking;
             setBookings(prev => [newBooking, ...prev]);
@@ -227,6 +257,7 @@ const AdminDashboard = () => {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'projects' },
         (payload) => {
+          console.log('🏗️ Project change:', payload);
           if (payload.eventType === 'INSERT') {
             setProjects(prev => [payload.new as Project, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
@@ -246,6 +277,7 @@ const AdminDashboard = () => {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'announcements' },
         (payload) => {
+          console.log('📢 Announcement change:', payload);
           if (payload.eventType === 'INSERT') {
             setAnnouncements(prev => [payload.new as Announcement, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
@@ -259,8 +291,11 @@ const AdminDashboard = () => {
       )
       .subscribe();
 
+    console.log('✅ Real-time subscriptions set up');
+
     // Cleanup subscriptions on component unmount
     return () => {
+      console.log('🧹 Cleaning up subscriptions');
       contactsSubscription.unsubscribe();
       bookingsSubscription.unsubscribe();
       projectsSubscription.unsubscribe();
@@ -270,12 +305,16 @@ const AdminDashboard = () => {
 
   // Check authentication
   useEffect(() => {
+    console.log('🔐 Auth check - Loading:', loading, 'User:', user?.email);
+    
     if (!loading) {
       if (!user) {
+        console.log('❌ No user found, redirecting to auth');
         navigate('/auth');
         return;
       }
 
+      console.log('✅ User authenticated, fetching data and setting up subscriptions');
       // If we reach here, user is authenticated
       fetchData();
       setupRealtimeSubscriptions();
@@ -527,6 +566,19 @@ const AdminDashboard = () => {
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
+              <Button variant="outline" onClick={() => {
+                console.log('🧪 Manual test - Current state:');
+                console.log('User:', user);
+                console.log('Profile:', profile);
+                console.log('Loading:', loading);
+                console.log('Data Loading:', dataLoading);
+                console.log('Contacts:', contacts);
+                console.log('Bookings:', bookings);
+                console.log('Projects:', projects);
+                console.log('Announcements:', announcements);
+              }}>
+                Debug
+              </Button>
               <Button variant="outline" onClick={() => navigate('/')}>
                 <Eye className="w-4 h-4 mr-2" />
                 View Site
@@ -593,13 +645,32 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
+        {/* Debug Info */}
+        {process.env.NODE_ENV === 'development' && (
+          <Card className="mb-8 border-yellow-200 bg-yellow-50">
+            <CardHeader>
+              <CardTitle className="text-yellow-800">Debug Information</CardTitle>
+            </CardHeader>
+            <CardContent className="text-yellow-700">
+              <p>User: {user?.email}</p>
+              <p>Profile: {profile?.full_name} ({profile?.role})</p>
+              <p>Loading: {loading.toString()}</p>
+              <p>Data Loading: {dataLoading.toString()}</p>
+              <p>Contacts: {contacts.length}</p>
+              <p>Bookings: {bookings.length}</p>
+              <p>Projects: {projects.length}</p>
+              <p>Announcements: {announcements.length}</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Main Content */}
         <Tabs defaultValue="contacts" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="contacts">Contact Forms</TabsTrigger>
-            <TabsTrigger value="bookings">Property Bookings</TabsTrigger>
-            <TabsTrigger value="projects">Projects</TabsTrigger>
-            <TabsTrigger value="announcements">Announcements</TabsTrigger>
+            <TabsTrigger value="contacts">Contact Forms ({contacts.length})</TabsTrigger>
+            <TabsTrigger value="bookings">Property Bookings ({bookings.length})</TabsTrigger>
+            <TabsTrigger value="projects">Projects ({projects.length})</TabsTrigger>
+            <TabsTrigger value="announcements">Announcements ({announcements.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-4">
@@ -646,6 +717,7 @@ const AdminDashboard = () => {
                             onClick={() => updateContactStatus(contact.id, 'contacted')}
                             disabled={contact.status !== 'pending'}
                           >
+                            <CheckCircle className="w-4 h-4 mr-1" />
                             Mark as Contacted
                           </Button>
                           <Button 
@@ -654,6 +726,7 @@ const AdminDashboard = () => {
                             onClick={() => updateContactStatus(contact.id, 'closed')}
                             disabled={contact.status === 'closed'}
                           >
+                            <XCircle className="w-4 h-4 mr-1" />
                             Close
                           </Button>
                         </div>
@@ -712,6 +785,7 @@ const AdminDashboard = () => {
                             onClick={() => updateBookingStatus(booking.id, 'approved')}
                             disabled={booking.status !== 'pending'}
                           >
+                            <CheckCircle className="w-4 h-4 mr-1" />
                             Approve
                           </Button>
                           <Button 
@@ -720,6 +794,7 @@ const AdminDashboard = () => {
                             onClick={() => updateBookingStatus(booking.id, 'rejected')}
                             disabled={booking.status !== 'pending'}
                           >
+                            <XCircle className="w-4 h-4 mr-1" />
                             Reject
                           </Button>
                         </div>
