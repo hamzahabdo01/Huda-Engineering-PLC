@@ -17,7 +17,6 @@ import Maps from "./pages/Maps";
 import VirtualTour from "./pages/VirtualTour";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
-import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -36,14 +35,7 @@ function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth />} />
-            <Route 
-              path="/admin-dashboard" 
-              element={
-                <ProtectedRoute requireAdmin={true}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/maps" element={<Maps />} />

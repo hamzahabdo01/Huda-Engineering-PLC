@@ -70,8 +70,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch profile immediately after setting user
-          await fetchProfile(session.user.id);
+          // Defer profile fetch to avoid RLS issues
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+          }, 0);
         } else {
           setProfile(null);
         }
@@ -81,12 +83,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        await fetchProfile(session.user.id);
+        setTimeout(() => {
+          fetchProfile(session.user.id);
+        }, 0);
       }
       
       setLoading(false);
