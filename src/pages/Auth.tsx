@@ -47,7 +47,7 @@ const Auth = () => {
         title: "Success",
         description: "Signed in successfully!",
       });
-      navigate("/");
+      navigate("/admin-dashboard");
     }
 
     setLoading(false);
