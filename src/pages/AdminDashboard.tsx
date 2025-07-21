@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, 
   MessageSquare, 
@@ -13,7 +18,12 @@ import {
   Building, 
   LogOut,
   RefreshCw,
-  Eye
+  Eye,
+  Plus,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -80,6 +90,36 @@ const AdminDashboard = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+
+  // Dialog states
+  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [isAddAnnouncementOpen, setIsAddAnnouncementOpen] = useState(false);
+
+  // Form states
+  const [newProject, setNewProject] = useState({
+    title: "",
+    description: "",
+    short_description: "",
+    location: "",
+    project_type: "",
+    status: "active" as const,
+    budget: "",
+    start_date: "",
+    end_date: "",
+    image_url: "",
+    features: [] as string[],
+  });
+
+  const [newAnnouncement, setNewAnnouncement] = useState({
+    title: "",
+    content: "",
+    short_description: "",
+    category: "general",
+    image_url: "",
+    is_published: false,
+  });
+
+  const [featureInput, setFeatureInput] = useState("");
 
   const fetchData = useCallback(async () => {
   // Check authentication and admin role
@@ -179,10 +219,50 @@ const AdminDashboard = () => {
       )
       .subscribe();
 
+    // Subscribe to projects
+    const projectsSubscription = supabase
+      .channel('projects')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'projects' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setProjects(prev => [payload.new as Project, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setProjects(prev => prev.map(project => 
+              project.id === payload.new.id ? payload.new as Project : project
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setProjects(prev => prev.filter(project => project.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to announcements
+    const announcementsSubscription = supabase
+      .channel('announcements')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'announcements' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setAnnouncements(prev => [payload.new as Announcement, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setAnnouncements(prev => prev.map(announcement => 
+              announcement.id === payload.new.id ? payload.new as Announcement : announcement
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setAnnouncements(prev => prev.filter(announcement => announcement.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
     // Cleanup subscriptions on component unmount
     return () => {
       contactsSubscription.unsubscribe();
       bookingsSubscription.unsubscribe();
+      projectsSubscription.unsubscribe();
+      announcementsSubscription.unsubscribe();
     };
   }, [toast]);
 
@@ -251,6 +331,167 @@ const AdminDashboard = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleAddProject = async () => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .insert([{
+          ...newProject,
+          created_by: user?.id,
+        }]);
+
+      if (error) throw error;
+
+      setNewProject({
+        title: "",
+        description: "",
+        short_description: "",
+        location: "",
+        project_type: "",
+        status: "active",
+        budget: "",
+        start_date: "",
+        end_date: "",
+        image_url: "",
+        features: [],
+      });
+      setIsAddProjectOpen(false);
+
+      toast({
+        title: "Success",
+        description: "Project added successfully",
+      });
+    } catch (error) {
+      console.error('Error adding project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add project",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteProject = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Project deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete project",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddAnnouncement = async () => {
+    try {
+      const { error } = await supabase
+        .from('announcements')
+        .insert([{
+          ...newAnnouncement,
+          created_by: user?.id,
+        }]);
+
+      if (error) throw error;
+
+      setNewAnnouncement({
+        title: "",
+        content: "",
+        short_description: "",
+        category: "general",
+        image_url: "",
+        is_published: false,
+      });
+      setIsAddAnnouncementOpen(false);
+
+      toast({
+        title: "Success",
+        description: "Announcement added successfully",
+      });
+    } catch (error) {
+      console.error('Error adding announcement:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add announcement",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('announcements')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Announcement deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete announcement",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleAnnouncementPublish = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('announcements')
+        .update({ is_published: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Announcement ${!currentStatus ? 'published' : 'unpublished'} successfully`,
+      });
+    } catch (error) {
+      console.error('Error updating announcement:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update announcement",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addFeature = () => {
+    if (featureInput.trim()) {
+      setNewProject(prev => ({
+        ...prev,
+        features: [...prev.features, featureInput.trim()]
+      }));
+      setFeatureInput("");
+    }
+  };
+
+  const removeFeature = (index: number) => {
+    setNewProject(prev => ({
+      ...prev,
+      features: prev.features.filter((_, i) => i !== index)
+    }));
   };
 
   // Show loading while auth is being checked
@@ -491,6 +732,138 @@ const AdminDashboard = () => {
           <TabsContent value="projects" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Projects</h2>
+              <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Project
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add New Project</DialogTitle>
+                    <DialogDescription>Create a new project in your portfolio</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="title">Project Title</Label>
+                        <Input
+                          id="title"
+                          value={newProject.title}
+                          onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="location">Location</Label>
+                        <Input
+                          id="location"
+                          value={newProject.location}
+                          onChange={(e) => setNewProject({ ...newProject, location: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="project_type">Project Type</Label>
+                        <Input
+                          id="project_type"
+                          value={newProject.project_type}
+                          onChange={(e) => setNewProject({ ...newProject, project_type: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="budget">Budget</Label>
+                        <Input
+                          id="budget"
+                          value={newProject.budget}
+                          onChange={(e) => setNewProject({ ...newProject, budget: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="short_description">Short Description</Label>
+                      <Input
+                        id="short_description"
+                        value={newProject.short_description}
+                        onChange={(e) => setNewProject({ ...newProject, short_description: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Full Description</Label>
+                      <Textarea
+                        id="description"
+                        value={newProject.description}
+                        onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                        rows={4}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="start_date">Start Date</Label>
+                        <Input
+                          id="start_date"
+                          type="date"
+                          value={newProject.start_date}
+                          onChange={(e) => setNewProject({ ...newProject, start_date: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="end_date">End Date</Label>
+                        <Input
+                          id="end_date"
+                          type="date"
+                          value={newProject.end_date}
+                          onChange={(e) => setNewProject({ ...newProject, end_date: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="image_url">Image URL</Label>
+                      <Input
+                        id="image_url"
+                        value={newProject.image_url}
+                        onChange={(e) => setNewProject({ ...newProject, image_url: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Features</Label>
+                      <div className="flex gap-2 mb-2">
+                        <Input
+                          value={featureInput}
+                          onChange={(e) => setFeatureInput(e.target.value)}
+                          placeholder="Enter a feature"
+                          onKeyPress={(e) => e.key === 'Enter' && addFeature()}
+                        />
+                        <Button type="button" onClick={addFeature}>Add</Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {newProject.features.map((feature, index) => (
+                          <Badge key={index} variant="secondary" className="cursor-pointer" onClick={() => removeFeature(index)}>
+                            {feature} ×
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="status">Status</Label>
+                      <Select onValueChange={(value) => setNewProject({ ...newProject, status: value as any })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="upcoming">Upcoming</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={handleAddProject} className="w-full">
+                      Add Project
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
             {dataLoading ? (
               <div className="flex justify-center py-8">
@@ -516,6 +889,16 @@ const AdminDashboard = () => {
                           <strong>Type:</strong> {project.project_type} • <strong>Status:</strong> {project.status}
                         </p>
                         <p className="text-sm mb-4">{project.short_description}</p>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline">
+                            <Edit className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteProject(project.id)}>
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))
@@ -527,6 +910,77 @@ const AdminDashboard = () => {
           <TabsContent value="announcements" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Announcements</h2>
+              <Dialog open={isAddAnnouncementOpen} onOpenChange={setIsAddAnnouncementOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Announcement
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Add New Announcement</DialogTitle>
+                    <DialogDescription>Create a new announcement</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="ann_title">Title</Label>
+                      <Input
+                        id="ann_title"
+                        value={newAnnouncement.title}
+                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="ann_short_description">Short Description</Label>
+                      <Input
+                        id="ann_short_description"
+                        value={newAnnouncement.short_description}
+                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, short_description: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="ann_content">Content</Label>
+                      <Textarea
+                        id="ann_content"
+                        value={newAnnouncement.content}
+                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
+                        rows={4}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="ann_category">Category</Label>
+                        <Input
+                          id="ann_category"
+                          value={newAnnouncement.category}
+                          onChange={(e) => setNewAnnouncement({ ...newAnnouncement, category: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="ann_image_url">Image URL</Label>
+                        <Input
+                          id="ann_image_url"
+                          value={newAnnouncement.image_url}
+                          onChange={(e) => setNewAnnouncement({ ...newAnnouncement, image_url: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="ann_published"
+                        checked={newAnnouncement.is_published}
+                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, is_published: e.target.checked })}
+                      />
+                      <Label htmlFor="ann_published">Publish immediately</Label>
+                    </div>
+                    <Button onClick={handleAddAnnouncement} className="w-full">
+                      Add Announcement
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
             {dataLoading ? (
               <div className="flex justify-center py-8">
@@ -559,6 +1013,23 @@ const AdminDashboard = () => {
                         <p className="text-xs text-muted-foreground mb-4">
                           Created: {new Date(announcement.created_at).toLocaleDateString()}
                         </p>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => toggleAnnouncementPublish(announcement.id, announcement.is_published)}
+                          >
+                            {announcement.is_published ? 'Unpublish' : 'Publish'}
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Edit className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteAnnouncement(announcement.id)}>
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))
