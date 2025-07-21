@@ -1,16 +1,105 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Phone, Mail, MapPin, Clock, MessageSquare } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useTranslation } from "react-i18next";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Contact = () => {
   const { t } = useTranslation();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    projectType: "",
+    budget: "",
+    message: ""
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    // Basic validation
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.message) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('contact_submissions')
+        .insert([
+          {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            phone: formData.phone || null,
+            project_type: formData.projectType || null,
+            budget: formData.budget || null,
+            message: formData.message,
+          }
+        ]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Your message has been sent successfully. We'll get back to you soon!",
+      });
+
+      // Reset form
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        projectType: "",
+        budget: "",
+        message: ""
+      });
+
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -42,56 +131,99 @@ const Contact = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="firstName">{t("contact.form.firstName")}</Label>
-                      <Input id="firstName" placeholder={t("contact.form.yourFirstName")} />
+                      <Label htmlFor="firstName">{t("contact.form.firstName")} *</Label>
+                      <Input 
+                        id="firstName" 
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        placeholder={t("contact.form.yourFirstName")} 
+                        required
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="lastName">{t("contact.form.lastName")}</Label>
-                      <Input id="lastName" placeholder={t("contact.form.yourLastName")} />
+                      <Label htmlFor="lastName">{t("contact.form.lastName")} *</Label>
+                      <Input 
+                        id="lastName" 
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        placeholder={t("contact.form.yourLastName")} 
+                        required
+                      />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="email">{t("contact.form.email")}</Label>
-                    <Input id="email" type="email" placeholder={t("contact.form.yourEmail")} />
+                    <Label htmlFor="email">{t("contact.form.email")} *</Label>
+                    <Input 
+                      id="email" 
+                      name="email"
+                      type="email" 
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder={t("contact.form.yourEmail")} 
+                      required
+                    />
                   </div>
                   <div>
                     <Label htmlFor="phone">{t("contact.form.phone")}</Label>
-                    <Input id="phone" placeholder={t("contact.form.yourPhone")} />
+                    <Input 
+                      id="phone" 
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      placeholder={t("contact.form.yourPhone")} 
+                    />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="projectType">{t("contact.form.projectType")}</Label>
-                      <select className="w-full border border-input bg-background px-3 py-2 rounded-md text-sm">
-                        <option value="">{t("contact.form.selectProject")}</option>
-                        <option value="residential">{t("servicesPage.residential.title")}</option>
-                        <option value="commercial">{t("servicesPage.commercial.title")}</option>
-                        <option value="mixed-use">{t("servicesPage.mixedUse.title")}</option>
-                      </select>
+                      <Select onValueChange={(value) => handleSelectChange("projectType", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("contact.form.selectProject")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="residential">{t("servicesPage.residential.title")}</SelectItem>
+                          <SelectItem value="commercial">{t("servicesPage.commercial.title")}</SelectItem>
+                          <SelectItem value="mixed-use">{t("servicesPage.mixedUse.title")}</SelectItem>
+                          <SelectItem value="renovation">Renovation</SelectItem>
+                          <SelectItem value="consultation">Consultation</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label htmlFor="budget">{t("contact.form.budget")}</Label>
-                      <select className="w-full border border-input bg-background px-3 py-2 rounded-md text-sm">
-                        <option value="">{t("contact.form.selectBudget")}</option>
-                        <option value="under-5m">Under 5M ETB</option>
-                        <option value="5m-15m">5M - 15M ETB</option>
-                        <option value="15m-50m">15M - 50M ETB</option>
-                        <option value="over-50m">Over 50M ETB</option>
-                      </select>
+                      <Select onValueChange={(value) => handleSelectChange("budget", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("contact.form.selectBudget")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="under-5m">Under 5M ETB</SelectItem>
+                          <SelectItem value="5m-15m">5M - 15M ETB</SelectItem>
+                          <SelectItem value="15m-50m">15M - 50M ETB</SelectItem>
+                          <SelectItem value="50m-100m">50M - 100M ETB</SelectItem>
+                          <SelectItem value="over-100m">Over 100M ETB</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="message">{t("contact.form.message")}</Label>
+                    <Label htmlFor="message">{t("contact.form.message")} *</Label>
                     <Textarea
                       id="message"
+                      name="message"
+                      value={formData.message}
+                      onChange={handleInputChange}
                       placeholder={t("contact.form.messagePlaceholder")}
                       className="min-h-[120px]"
+                      required
                     />
                   </div>
-                  <Button type="submit" className="w-full">
-                    {t("contact.form.submit")}
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Sending..." : t("contact.form.submit")}
                   </Button>
                 </form>
               </CardContent>
