@@ -160,10 +160,10 @@ const AdminDashboard = () => {
         supabase.from('announcements').select('*').order('created_at', { ascending: false }),
       ]);
 
-      if (contactsRes.data) setContacts(contactsRes.data);
-      if (bookingsRes.data) setBookings(bookingsRes.data);
-      if (projectsRes.data) setProjects(projectsRes.data);
-      if (announcementsRes.data) setAnnouncements(announcementsRes.data);
+      if (contactsRes.data) setContacts(contactsRes.data as ContactSubmission[]);
+      if (bookingsRes.data) setBookings(bookingsRes.data as PropertyBooking[]);
+      if (projectsRes.data) setProjects(projectsRes.data as Project[]);
+      if (announcementsRes.data) setAnnouncements(announcementsRes.data as Announcement[]);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -184,10 +184,11 @@ const AdminDashboard = () => {
         { event: '*', schema: 'public', table: 'contact_submissions' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setContacts(prev => [payload.new as ContactSubmission, ...prev]);
+            const newContact = payload.new as ContactSubmission;
+            setContacts(prev => [newContact, ...prev]);
             toast({
               title: "New Contact Submission",
-              description: `New contact from ${(payload.new as ContactSubmission).name}`,
+              description: `New contact from ${newContact.name}`,
             });
           } else if (payload.eventType === 'UPDATE') {
             setContacts(prev => prev.map(contact => 
@@ -205,10 +206,11 @@ const AdminDashboard = () => {
         { event: '*', schema: 'public', table: 'property_bookings' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setBookings(prev => [payload.new as PropertyBooking, ...prev]);
+            const newBooking = payload.new as PropertyBooking;
+            setBookings(prev => [newBooking, ...prev]);
             toast({
               title: "New Property Booking",
-              description: `New booking from ${(payload.new as PropertyBooking).full_name}`,
+              description: `New booking from ${newBooking.full_name}`,
             });
           } else if (payload.eventType === 'UPDATE') {
             setBookings(prev => prev.map(booking => 
