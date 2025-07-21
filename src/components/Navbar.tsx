@@ -160,20 +160,16 @@ const Navbar = () => {
                     </div>
                     <DropdownMenuSeparator />
                     
-                    {profile?.role === 'admin' && (
-                      <>
-                        <DropdownMenuItem asChild>
-                          <Link
-                            to="/admin-dashboard"
-                            className="w-full cursor-pointer px-3 py-2 rounded-lg transition-all duration-200 hover:bg-primary/10 hover:shadow-md flex items-center gap-3 text-foreground hover:text-primary"
-                          >
-                            <Settings className="h-4 w-4" />
-                            <span className="font-medium">Admin Dashboard</span>
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to="/admin-dashboard"
+                        className="w-full cursor-pointer px-3 py-2 rounded-lg transition-all duration-200 hover:bg-primary/10 hover:shadow-md flex items-center gap-3 text-foreground hover:text-primary"
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span className="font-medium">Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     
                     <DropdownMenuItem asChild>
                       <button
@@ -302,18 +298,16 @@ const Navbar = () => {
                     Signed in as <strong>{user.email}</strong>
                   </div>
                   
-                  {profile?.role === 'admin' && (
-                    <Link
-                      to="/admin-dashboard"
-                      className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-primary hover:bg-muted transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Settings className="h-4 w-4" />
-                        Admin Dashboard
-                      </div>
-                    </Link>
-                  )}
+                  <Link
+                    to="/admin-dashboard"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-primary hover:bg-muted transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      Dashboard
+                    </div>
+                  </Link>
                   
                   <button
                     onClick={() => {

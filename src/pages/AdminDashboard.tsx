@@ -186,34 +186,19 @@ const AdminDashboard = () => {
     };
   }, [toast]);
 
-  // Check authentication and admin role
+  // Check authentication
   useEffect(() => {
     if (!loading) {
       if (!user) {
         navigate('/auth');
         return;
       }
-      
-      // Wait for profile to load
-      if (profile === null) {
-        return;
-      }
-      
-      if (profile.role !== 'admin') {
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access this page.",
-          variant: "destructive",
-        });
-        navigate('/');
-        return;
-      }
 
-      // If we reach here, user is authenticated and is admin
+      // If we reach here, user is authenticated
       fetchData();
       setupRealtimeSubscriptions();
     }
-  }, [user, profile, loading, navigate, toast, fetchData, setupRealtimeSubscriptions]);
+  }, [user, loading, navigate, fetchData, setupRealtimeSubscriptions]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -269,7 +254,7 @@ const AdminDashboard = () => {
   };
 
   // Show loading while auth is being checked
-  if (loading || profile === null) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -280,8 +265,8 @@ const AdminDashboard = () => {
     );
   }
 
-  // Don't render anything if not authenticated or not admin
-  if (!user || profile.role !== 'admin') {
+  // Don't render anything if not authenticated
+  if (!user) {
     return null;
   }
 
@@ -291,8 +276,8 @@ const AdminDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back, {profile.full_name}</p>
+              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+              <p className="text-muted-foreground">Welcome back, {profile?.full_name || user.email}</p>
             </div>
             <div className="flex items-center gap-4">
               <Button variant="outline" onClick={fetchData}>
