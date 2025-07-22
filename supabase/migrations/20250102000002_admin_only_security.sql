@@ -96,7 +96,6 @@ CREATE POLICY "Admin can update bookings" ON public.property_bookings
 
 CREATE POLICY "Admin can delete bookings" ON public.property_bookings
   FOR DELETE USING (is_admin_user_alt());
-
 -- Profiles Policies - Admin Only
 CREATE POLICY "Admin can view all profiles" ON public.profiles
   FOR SELECT USING (is_admin_user_alt());
