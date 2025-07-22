@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Calendar, MapPin, Home, DollarSign, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, MapPin, Home, DollarSign, Clock, Building2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -9,72 +9,33 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 
-interface Property {
+interface Project {
   id: string;
   title: string;
+  description: string;
+  short_description: string;
   location: string;
-  price: string;
-  status: "Available" | "Reserved" | "Sold";
-  image: string;
-  bedrooms: number;
-  bathrooms: number;
-  area: string;
+  project_type: string;
+  status: 'active' | 'completed' | 'upcoming';
+  budget: string;
+  start_date: string;
+  end_date: string;
+  image_url: string;
+  gallery_urls: string[];
+  features: string[];
+  created_at: string;
 }
-
-const properties: Property[] = [
-  {
-    id: "1",
-    title: "Modern 3BR Apartment",
-    location: "Bole, Addis Ababa",
-    price: "4,500,000 ETB",
-    status: "Available",
-    image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop",
-    bedrooms: 3,
-    bathrooms: 2,
-    area: "120 sqm"
-  },
-  {
-    id: "2",
-    title: "Luxury Villa with Garden",
-    location: "Old Airport, Addis Ababa",
-    price: "12,000,000 ETB",
-    status: "Available",
-    image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400&h=300&fit=crop",
-    bedrooms: 5,
-    bathrooms: 4,
-    area: "350 sqm"
-  },
-  {
-    id: "3",
-    title: "Cozy 2BR Condo",
-    location: "Kazanchis, Addis Ababa",
-    price: "3,200,000 ETB",
-    status: "Reserved",
-    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop",
-    bedrooms: 2,
-    bathrooms: 1,
-    area: "85 sqm"
-  },
-  {
-    id: "4",
-    title: "Executive Penthouse",
-    location: "Sarbet, Addis Ababa",
-    price: "8,500,000 ETB",
-    status: "Available",
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop",
-    bedrooms: 4,
-    bathrooms: 3,
-    area: "200 sqm"
-  }
-];
 
 const Booking = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -85,7 +46,29 @@ const Booking = () => {
     notes: ""
   });
 
-  const availableProperties = properties.filter(p => p.status === "Available");
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .in('status', ['active', 'completed']) // Only show active and completed projects for booking
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const availableProjects = projects.filter(p => p.status === 'active' || p.status === 'completed');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -139,6 +122,21 @@ const Booking = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading available properties...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -158,65 +156,95 @@ const Booking = () => {
           {/* Property Listings */}
           <div>
             <h2 className="text-2xl font-bold text-foreground mb-6">{t("booking.available")}</h2>
-            <div className="space-y-6">
-              {properties.map((property) => (
-                <Card key={property.id} className={`transition-all duration-300 hover:shadow-lg ${
-                  property.status !== "Available" ? "opacity-60" : ""
-                }`}>
-                  <div className="flex flex-col md:flex-row">
-                    <div className="md:w-1/3">
-                      <img
-                        src={property.image}
-                        alt={property.title}
-                        className="w-full h-48 md:h-full object-cover rounded-t-lg md:rounded-l-lg md:rounded-t-none"
-                      />
+            {projects.length === 0 ? (
+              <div className="text-center py-12">
+                <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">No Properties Available</h3>
+                <p className="text-muted-foreground">Check back later for available properties to book.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                                 {projects.map((project) => (
+                  <Card key={project.id} className={`transition-all duration-300 hover:shadow-lg ${
+                    project.status === "upcoming" ? "opacity-60" : ""
+                  }`}>
+                    <div className="flex flex-col md:flex-row">
+                      <div className="md:w-1/3">
+                        {project.image_url ? (
+                          <img
+                            src={project.image_url}
+                            alt={project.title}
+                            className="w-full h-48 md:h-full object-cover rounded-t-lg md:rounded-l-lg md:rounded-t-none"
+                          />
+                        ) : (
+                          <div className="w-full h-48 md:h-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center rounded-t-lg md:rounded-l-lg md:rounded-t-none">
+                            <Building2 className="w-16 h-16 text-primary-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="md:w-2/3 p-6">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-xl font-semibold text-foreground">{project.title}</h3>
+                          <Badge variant={project.status === 'active' ? 'default' : project.status === 'completed' ? 'secondary' : 'outline'}>
+                            {project.status === 'active' ? 'Available' : project.status === 'completed' ? 'Completed' : 'Upcoming'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center text-muted-foreground mb-3">
+                          <MapPin className="w-4 h-4 mr-1" />
+                          <span className="text-sm">{project.location}</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-4 text-sm text-muted-foreground">
+                          <div className="flex items-center">
+                            <Building2 className="w-4 h-4 mr-1" />
+                            {project.project_type}
+                          </div>
+                          <div className="flex items-center">
+                            <DollarSign className="w-4 h-4 mr-1" />
+                            {project.budget}
+                          </div>
+                        </div>
+                        
+                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                          {project.short_description}
+                        </p>
+
+                        {project.features.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-4">
+                            {project.features.slice(0, 3).map((feature, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {feature}
+                              </Badge>
+                            ))}
+                            {project.features.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{project.features.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center text-primary">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            <span className="text-sm">Started: {new Date(project.start_date).getFullYear()}</span>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            disabled={project.status === "upcoming"}
+                            onClick={() => setFormData({...formData, property: project.id})}
+                          >
+                            {project.status !== "upcoming" ? "Select" : "Coming Soon"}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="md:w-2/3 p-6">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-xl font-semibold text-foreground">{property.title}</h3>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          property.status === "Available" 
-                            ? "bg-green-100 text-green-800"
-                            : property.status === "Reserved"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
-                        }`}>
-                          {t(`booking.status.${property.status.toLowerCase()}`)}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center text-muted-foreground mb-3">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        <span className="text-sm">{property.location}</span>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-4 mb-4 text-sm text-muted-foreground">
-                        <div className="flex items-center">
-                          <Home className="w-4 h-4 mr-1" />
-                          {property.bedrooms} {t("booking.details.bedrooms")}
-                        </div>
-                        <div className="flex items-center">
-                          <span className="w-4 h-4 mr-1">🚿</span>
-                          {property.bathrooms} {t("booking.details.bathrooms")}
-                        </div>
-                        <div className="flex items-center">
-                          <span className="w-4 h-4 mr-1">📐</span>
-                          {property.area}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center text-primary">
-                          <DollarSign className="w-5 h-5 mr-1" />
-                          <span className="text-lg font-bold">{property.price}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+                                  </Card>
+                ))}
+                </div>
+              )}
             </div>
-          </div>
 
           {/* Booking Form */}
           <div>
@@ -292,9 +320,9 @@ const Booking = () => {
                         <SelectValue placeholder={t("booking.form.propertyPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        {availableProperties.map((property) => (
-                          <SelectItem key={property.id} value={property.id}>
-                            {property.title} - {property.location}
+                        {availableProjects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.title} - {project.location}
                           </SelectItem>
                         ))}
                       </SelectContent>

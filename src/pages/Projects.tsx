@@ -1,13 +1,96 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, MapPin, Calendar, Users } from "lucide-react";
+import { Building2, MapPin, Calendar, Users, DollarSign } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  short_description: string;
+  location: string;
+  project_type: string;
+  status: 'active' | 'completed' | 'upcoming';
+  budget: string;
+  start_date: string;
+  end_date: string;
+  image_url: string;
+  gallery_urls: string[];
+  features: string[];
+  created_at: string;
+}
 
 const Projects = () => {
   const { t } = useTranslation();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <Badge variant="secondary">{t("projectsPage.details.completedBadge")}</Badge>;
+      case 'active':
+        return <Badge variant="outline">{t("projectsPage.details.activeBadge")}</Badge>;
+      case 'upcoming':
+        return <Badge variant="default">Upcoming</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'from-green-500 to-green-600';
+      case 'active':
+        return 'from-blue-500 to-blue-600';
+      case 'upcoming':
+        return 'from-purple-500 to-purple-600';
+      default:
+        return 'from-gray-500 to-gray-600';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading projects...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -31,73 +114,70 @@ const Projects = () => {
             <p className="text-xl text-muted-foreground">{t("projectsPage.featured.description")}</p>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-            {/* Huda Apartment Building */}
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="bg-gradient-to-br from-primary to-primary/80 h-64 flex items-center justify-center">
-                <Building2 className="w-20 h-20 text-primary-foreground" />
-              </div>
-              <CardHeader>
-                <div className="flex justify-between items-start mb-2">
-                  <CardTitle className="text-2xl">{t("projects.hudaApartment.title")}</CardTitle>
-                  <Badge className="bg-accent text-accent-foreground">{t("projectsPage.details.flagshipBadge")}</Badge>
-                </div>
-                <CardDescription className="text-lg">{t("projects.hudaApartment.floors")}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <span>Addis Ababa, Ethiopia</span>
+          {projects.length === 0 ? (
+            <div className="text-center py-12">
+              <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">No Projects Available</h3>
+              <p className="text-muted-foreground">Check back later for our latest projects.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+              {projects.slice(0, 2).map((project, index) => (
+                <Card key={project.id} className="overflow-hidden hover:shadow-xl transition-shadow">
+                  <div className={`bg-gradient-to-br ${index === 0 ? 'from-primary to-primary/80' : 'from-accent to-accent/80'} h-64 flex items-center justify-center overflow-hidden`}>
+                    {project.image_url ? (
+                      <img 
+                        src={project.image_url} 
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Building2 className={`w-20 h-20 ${index === 0 ? 'text-primary-foreground' : 'text-accent-foreground'}`} />
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2 text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>{t("projectsPage.details.completed")}: 2023</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-muted-foreground">
-                    <Building2 className="w-4 h-4" />
-                    <span>{t("projectsPage.details.projectValue")}: 251M ETB</span>
-                  </div>
-                  <p className="text-muted-foreground">
-                    {t("projects.hudaApartment.description")}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* SYS Luxury Apartments */}
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="bg-gradient-to-br from-accent to-accent/80 h-64 flex items-center justify-center">
-                <Building2 className="w-20 h-20 text-accent-foreground" />
-              </div>
-              <CardHeader>
-                <div className="flex justify-between items-start mb-2">
-                  <CardTitle className="text-2xl">{t("projects.sysLuxury.title")}</CardTitle>
-                  <Badge variant="secondary">{t("projectsPage.details.completedBadge")}</Badge>
-                </div>
-                <CardDescription className="text-lg">{t("projects.sysLuxury.floors")}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <span>Addis Ababa, Ethiopia</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>{t("projectsPage.details.completed")}: 2022</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span>156 {t("projectsPage.details.units")}</span>
-                  </div>
-                  <p className="text-muted-foreground">
-                    {t("projects.sysLuxury.description")}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  <CardHeader>
+                    <div className="flex justify-between items-start mb-2">
+                      <CardTitle className="text-2xl">{project.title}</CardTitle>
+                      {index === 0 ? (
+                        <Badge className="bg-accent text-accent-foreground">Featured</Badge>
+                      ) : (
+                        getStatusBadge(project.status)
+                      )}
+                    </div>
+                    <CardDescription className="text-lg">{project.project_type}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2 text-muted-foreground">
+                        <MapPin className="w-4 h-4" />
+                        <span>{project.location}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-muted-foreground">
+                        <Calendar className="w-4 h-4" />
+                        <span>Started: {new Date(project.start_date).getFullYear()}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-muted-foreground">
+                        <DollarSign className="w-4 h-4" />
+                        <span>Budget: {project.budget}</span>
+                      </div>
+                      <p className="text-muted-foreground">
+                        {project.short_description}
+                      </p>
+                      {project.features.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          {project.features.slice(0, 3).map((feature, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {feature}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -109,160 +189,73 @@ const Projects = () => {
             <p className="text-xl text-muted-foreground">{t("projectsPage.all.description")}</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Tokoma Office Building */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-white" />
-              </div>
-              <CardHeader>
-                <CardTitle className="text-lg">{t("projects.tokomaOffice.title")}</CardTitle>
-                <CardDescription>{t("projects.tokomaOffice.floors")}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-3 h-3" />
-                    <span>Addis Ababa</span>
+          {projects.length === 0 ? (
+            <div className="text-center py-12">
+              <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">No Projects Available</h3>
+              <p className="text-muted-foreground">Our portfolio will be displayed here once projects are added.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {projects.map((project, index) => (
+                <Card key={project.id} className="hover:shadow-lg transition-shadow">
+                  <div className={`bg-gradient-to-br ${getStatusColor(project.status)} h-48 flex items-center justify-center overflow-hidden`}>
+                    {project.image_url ? (
+                      <img 
+                        src={project.image_url} 
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Building2 className="w-16 h-16 text-white" />
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>2021</span>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mt-3">
-                  {t("projects.tokomaOffice.description")}
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Additional Project Cards */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-green-500 to-green-600 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-white" />
-              </div>
-              <CardHeader>
-                <CardTitle className="text-lg">Megenagna Commercial Complex</CardTitle>
-                <CardDescription>B+G+7 {t("projectsPage.details.floors")}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-3 h-3" />
-                    <span>Addis Ababa</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>2020</span>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mt-3">
-                  Mixed-use commercial and residential development in prime location.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-white" />
-              </div>
-              <CardHeader>
-                <CardTitle className="text-lg">Bole Residential Tower</CardTitle>
-                <CardDescription>B+G+12 {t("projectsPage.details.floors")}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-3 h-3" />
-                    <span>Addis Ababa</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>2024</span>
-                  </div>
-                  <Badge variant="outline" className="text-xs">{t("projectsPage.details.activeBadge")}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mt-3">
-                  Luxury residential tower with modern amenities and city views.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-orange-500 to-orange-600 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-white" />
-              </div>
-              <CardHeader>
-                <CardTitle className="text-lg">Lafto Shopping Mall</CardTitle>
-                <CardDescription>B+G+4 {t("projectsPage.details.floors")}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-3 h-3" />
-                    <span>Addis Ababa</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>2019</span>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mt-3">
-                  Modern shopping center with retail spaces and entertainment facilities.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-teal-500 to-teal-600 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-white" />
-              </div>
-              <CardHeader>
-                <CardTitle className="text-lg">Gerji Office Complex</CardTitle>
-                <CardDescription>B+G+8 {t("projectsPage.details.floors")}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-3 h-3" />
-                    <span>Addis Ababa</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>2018</span>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mt-3">
-                  Professional office building with modern facilities and parking.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-red-500 to-red-600 h-48 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-white" />
-              </div>
-              <CardHeader>
-                <CardTitle className="text-lg">Atlas Villa Project</CardTitle>
-                <CardDescription>G+2 {t("projectsPage.details.floors")}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-3 h-3" />
-                    <span>Addis Ababa</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-3 h-3" />
-                    <span>2017</span>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mt-3">
-                  Luxury villa development with premium finishes and landscaping.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+                  <CardHeader>
+                    <div className="flex justify-between items-start mb-2">
+                      <CardTitle className="text-lg line-clamp-2">{project.title}</CardTitle>
+                      {getStatusBadge(project.status)}
+                    </div>
+                    <CardDescription className="line-clamp-1">{project.project_type}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-muted-foreground mb-3">
+                      <div className="flex items-center space-x-2">
+                        <MapPin className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{project.location}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        <span>Started: {new Date(project.start_date).getFullYear()}</span>
+                      </div>
+                      {project.budget && (
+                        <div className="flex items-center space-x-2">
+                          <DollarSign className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{project.budget}</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-3">
+                      {project.short_description}
+                    </p>
+                    {project.features.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-3">
+                        {project.features.slice(0, 2).map((feature, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {feature}
+                          </Badge>
+                        ))}
+                        {project.features.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{project.features.length - 2} more
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
