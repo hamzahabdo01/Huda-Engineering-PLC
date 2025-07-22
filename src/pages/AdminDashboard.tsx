@@ -120,6 +120,8 @@ const AdminDashboard = () => {
   });
 
   const [featureInput, setFeatureInput] = useState("");
+  const [deletingContact, setDeletingContact] = useState<string | null>(null);
+  const [deletingBooking, setDeletingBooking] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     console.log('🔄 Starting data fetch...');
@@ -224,6 +226,8 @@ const AdminDashboard = () => {
             setContacts(prev => prev.map(contact => 
               contact.id === payload.new.id ? payload.new as ContactSubmission : contact
             ));
+          } else if (payload.eventType === 'DELETE') {
+            setContacts(prev => prev.filter(contact => contact.id !== payload.old.id));
           }
         }
       )
@@ -247,6 +251,8 @@ const AdminDashboard = () => {
             setBookings(prev => prev.map(booking => 
               booking.id === payload.new.id ? payload.new as PropertyBooking : booking
             ));
+          } else if (payload.eventType === 'DELETE') {
+            setBookings(prev => prev.filter(booking => booking.id !== payload.old.id));
           }
         }
       )
@@ -389,47 +395,79 @@ const AdminDashboard = () => {
 
   const handleDeleteContact = async (id: string) => {
     try {
+      setDeletingContact(id);
+      console.log('🗑️ Deleting contact with ID:', id);
+      
       const { error } = await supabase
         .from('contact_submissions')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase delete error:', error);
+        throw error;
+      }
+
+      console.log('✅ Contact deleted from database');
+
+      // Immediately update local state
+      setContacts(prev => prev.filter(contact => contact.id !== id));
+
+      // Refresh data to ensure consistency
+      await fetchData();
 
       toast({
         title: "Success",
         description: "Contact submission deleted successfully",
       });
     } catch (error) {
-      console.error('Error deleting contact:', error);
+      console.error('💥 Error deleting contact:', error);
       toast({
         title: "Error",
-        description: "Failed to delete contact submission",
+        description: `Failed to delete contact submission: ${error.message}`,
         variant: "destructive",
       });
+    } finally {
+      setDeletingContact(null);
     }
   };
 
   const handleDeleteBooking = async (id: string) => {
     try {
+      setDeletingBooking(id);
+      console.log('🗑️ Deleting booking with ID:', id);
+      
       const { error } = await supabase
         .from('property_bookings')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase delete error:', error);
+        throw error;
+      }
+
+      console.log('✅ Booking deleted from database');
+
+      // Immediately update local state
+      setBookings(prev => prev.filter(booking => booking.id !== id));
+
+      // Refresh data to ensure consistency
+      await fetchData();
 
       toast({
         title: "Success",
         description: "Property booking deleted successfully",
       });
     } catch (error) {
-      console.error('Error deleting booking:', error);
+      console.error('💥 Error deleting booking:', error);
       toast({
         title: "Error",
-        description: "Failed to delete property booking",
+        description: `Failed to delete property booking: ${error.message}`,
         variant: "destructive",
       });
+    } finally {
+      setDeletingBooking(null);
     }
   };
 
@@ -654,50 +692,50 @@ const AdminDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-          <Card>
-            <CardContent className="flex items-center p-6">
-              <MessageSquare className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Contact Forms</p>
-                <p className="text-2xl font-bold">{contacts.length}</p>
-                <p className="text-xs text-muted-foreground">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
+              <MessageSquare className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600 flex-shrink-0" />
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Contact Forms</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{contacts.length}</p>
+                <p className="text-xs text-muted-foreground truncate">
                   {contacts.filter(c => c.status === 'pending').length} pending
                 </p>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="flex items-center p-6">
-              <Calendar className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Property Bookings</p>
-                <p className="text-2xl font-bold">{bookings.length}</p>
-                <p className="text-xs text-muted-foreground">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
+              <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-600 flex-shrink-0" />
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Property Bookings</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{bookings.length}</p>
+                <p className="text-xs text-muted-foreground truncate">
                   {bookings.filter(b => b.status === 'pending').length} pending
                 </p>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="flex items-center p-6">
-              <Building className="h-8 w-8 text-orange-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Projects</p>
-                <p className="text-2xl font-bold">{projects.length}</p>
-                <p className="text-xs text-muted-foreground">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
+              <Building className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-600 flex-shrink-0" />
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Projects</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{projects.length}</p>
+                <p className="text-xs text-muted-foreground truncate">
                   {projects.filter(p => p.status === 'active').length} active
                 </p>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="flex items-center p-6">
-              <Users className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Announcements</p>
-                <p className="text-2xl font-bold">{announcements.length}</p>
-                <p className="text-xs text-muted-foreground">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
+              <Users className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-600 flex-shrink-0" />
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Announcements</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{announcements.length}</p>
+                <p className="text-xs text-muted-foreground truncate">
                   {announcements.filter(a => a.is_published).length} published
                 </p>
               </div>
@@ -798,10 +836,15 @@ const AdminDashboard = () => {
                             size="sm" 
                             variant="destructive"
                             onClick={() => handleDeleteContact(contact.id)}
+                            disabled={deletingContact === contact.id}
                             className="flex-1 sm:flex-none"
                           >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
+                            {deletingContact === contact.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                            ) : (
+                              <Trash2 className="w-4 h-4 mr-1" />
+                            )}
+                            {deletingContact === contact.id ? 'Deleting...' : 'Delete'}
                           </Button>
                         </div>
                       </CardContent>
@@ -877,10 +920,15 @@ const AdminDashboard = () => {
                             size="sm" 
                             variant="destructive"
                             onClick={() => handleDeleteBooking(booking.id)}
+                            disabled={deletingBooking === booking.id}
                             className="flex-1 sm:flex-none"
                           >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
+                            {deletingBooking === booking.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                            ) : (
+                              <Trash2 className="w-4 h-4 mr-1" />
+                            )}
+                            {deletingBooking === booking.id ? 'Deleting...' : 'Delete'}
                           </Button>
                         </div>
                       </CardContent>
