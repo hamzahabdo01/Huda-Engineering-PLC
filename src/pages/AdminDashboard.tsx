@@ -652,8 +652,8 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b bg-card">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-4 gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-3 sm:py-4 gap-3 sm:gap-4">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Dashboard</h1>
               <p className="text-sm sm:text-base text-muted-foreground">Welcome back, Administrator</p>
@@ -690,7 +690,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
           <Card className="hover:shadow-md transition-shadow">
@@ -766,87 +766,111 @@ const AdminDashboard = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="contacts" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-            <TabsTrigger value="contacts" className="text-xs md:text-sm">Contact Forms ({contacts.length})</TabsTrigger>
-            <TabsTrigger value="bookings" className="text-xs md:text-sm">Property Bookings ({bookings.length})</TabsTrigger>
-            <TabsTrigger value="projects" className="text-xs md:text-sm">Projects ({projects.length})</TabsTrigger>
-            <TabsTrigger value="announcements" className="text-xs md:text-sm">Announcements ({announcements.length})</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto p-1">
+            <TabsTrigger value="contacts" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1">
+              <span className="hidden sm:inline">Contact Forms</span>
+              <span className="sm:hidden">Contacts</span>
+              <span className="text-xs">({contacts.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="bookings" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1">
+              <span className="hidden sm:inline">Property Bookings</span>
+              <span className="sm:hidden">Bookings</span>
+              <span className="text-xs">({bookings.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="projects" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1">
+              <span>Projects</span>
+              <span className="text-xs">({projects.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="announcements" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1">
+              <span className="hidden sm:inline">Announcements</span>
+              <span className="sm:hidden">News</span>
+              <span className="text-xs">({announcements.length})</span>
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="contacts" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Contact Submissions</h2>
-            </div>
+                      <TabsContent value="contacts" className="space-y-3 sm:space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg sm:text-xl font-semibold">Contact Submissions</h2>
+              </div>
             {dataLoading ? (
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {contacts.length === 0 ? (
-                  <Card>
-                    <CardContent className="flex items-center justify-center py-8">
-                      <p className="text-muted-foreground">No contact submissions yet</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  contacts.map((contact) => (
-                    <Card key={contact.id}>
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle className="text-lg">{contact.name}</CardTitle>
-                            <CardDescription>{contact.email} • {contact.phone}</CardDescription>
+                          ) : (
+                <div className="space-y-3 sm:space-y-4">
+                  {contacts.length === 0 ? (
+                    <Card>
+                      <CardContent className="flex items-center justify-center py-6 sm:py-8">
+                        <p className="text-muted-foreground text-sm sm:text-base">No contact submissions yet</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    contacts.map((contact) => (
+                      <Card key={contact.id}>
+                        <CardHeader className="pb-3 sm:pb-6">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
+                            <div className="min-w-0 flex-1">
+                              <CardTitle className="text-base sm:text-lg truncate">{contact.name}</CardTitle>
+                              <CardDescription className="text-xs sm:text-sm">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                  <span className="truncate">{contact.email}</span>
+                                  <span className="hidden sm:inline">•</span>
+                                  <span>{contact.phone}</span>
+                                </div>
+                              </CardDescription>
+                            </div>
+                            <Badge variant={contact.status === 'pending' ? 'destructive' : contact.status === 'contacted' ? 'default' : 'secondary'} className="self-start">
+                              {contact.status}
+                            </Badge>
                           </div>
-                          <Badge variant={contact.status === 'pending' ? 'destructive' : contact.status === 'contacted' ? 'default' : 'secondary'}>
-                            {contact.status}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          <strong>Project Type:</strong> {contact.project_type} • <strong>Budget:</strong> {contact.budget}
-                        </p>
-                        <p className="mb-4">{contact.message}</p>
-                        <p className="text-xs text-muted-foreground mb-4">
-                          Submitted: {new Date(contact.created_at).toLocaleDateString()}
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Button 
-                            size="sm" 
-                            onClick={() => updateContactStatus(contact.id, 'contacted')}
-                            disabled={contact.status !== 'pending'}
-                            className="flex-1 sm:flex-none"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            <span className="hidden sm:inline">Mark as Contacted</span>
-                            <span className="sm:hidden">Contacted</span>
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => updateContactStatus(contact.id, 'closed')}
-                            disabled={contact.status === 'closed'}
-                            className="flex-1 sm:flex-none"
-                          >
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Close
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => handleDeleteContact(contact.id)}
-                            disabled={deletingContact === contact.id}
-                            className="flex-1 sm:flex-none"
-                          >
-                            {deletingContact === contact.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
-                            ) : (
-                              <Trash2 className="w-4 h-4 mr-1" />
-                            )}
-                            {deletingContact === contact.id ? 'Deleting...' : 'Delete'}
-                          </Button>
-                        </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="space-y-3 sm:space-y-4">
+                            <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
+                              <div><strong>Project Type:</strong> {contact.project_type}</div>
+                              <div><strong>Budget:</strong> {contact.budget}</div>
+                            </div>
+                            <p className="text-sm sm:text-base">{contact.message}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Submitted: {new Date(contact.created_at).toLocaleDateString()}
+                            </p>
+                                                    <div className="flex flex-col sm:flex-row gap-2">
+                              <Button 
+                                size="sm" 
+                                onClick={() => updateContactStatus(contact.id, 'contacted')}
+                                disabled={contact.status !== 'pending'}
+                                className="flex-1 sm:flex-none text-xs sm:text-sm"
+                              >
+                                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                <span className="hidden sm:inline">Mark as Contacted</span>
+                                <span className="sm:hidden">Contacted</span>
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => updateContactStatus(contact.id, 'closed')}
+                                disabled={contact.status === 'closed'}
+                                className="flex-1 sm:flex-none text-xs sm:text-sm"
+                              >
+                                <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                Close
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => handleDeleteContact(contact.id)}
+                                disabled={deletingContact === contact.id}
+                                className="flex-1 sm:flex-none text-xs sm:text-sm"
+                              >
+                                {deletingContact === contact.id ? (
+                                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1"></div>
+                                ) : (
+                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                )}
+                                {deletingContact === contact.id ? 'Deleting...' : 'Delete'}
+                              </Button>
+                            </div>
+                          </div>
                       </CardContent>
                     </Card>
                   ))
@@ -855,82 +879,89 @@ const AdminDashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="bookings" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Property Bookings</h2>
-            </div>
+                      <TabsContent value="bookings" className="space-y-3 sm:space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg sm:text-xl font-semibold">Property Bookings</h2>
+              </div>
             {dataLoading ? (
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {bookings.length === 0 ? (
-                  <Card>
-                    <CardContent className="flex items-center justify-center py-8">
-                      <p className="text-muted-foreground">No property bookings yet</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  bookings.map((booking) => (
-                    <Card key={booking.id}>
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle className="text-lg">{booking.full_name}</CardTitle>
-                            <CardDescription>{booking.email} • {booking.phone}</CardDescription>
+                          ) : (
+                <div className="space-y-3 sm:space-y-4">
+                  {bookings.length === 0 ? (
+                    <Card>
+                      <CardContent className="flex items-center justify-center py-6 sm:py-8">
+                        <p className="text-muted-foreground text-sm sm:text-base">No property bookings yet</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    bookings.map((booking) => (
+                      <Card key={booking.id}>
+                        <CardHeader className="pb-3 sm:pb-6">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
+                            <div className="min-w-0 flex-1">
+                              <CardTitle className="text-base sm:text-lg truncate">{booking.full_name}</CardTitle>
+                              <CardDescription className="text-xs sm:text-sm">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                  <span className="truncate">{booking.email}</span>
+                                  <span className="hidden sm:inline">•</span>
+                                  <span>{booking.phone}</span>
+                                </div>
+                              </CardDescription>
+                            </div>
+                            <Badge variant={booking.status === 'pending' ? 'destructive' : booking.status === 'approved' ? 'default' : 'secondary'} className="self-start">
+                              {booking.status}
+                            </Badge>
                           </div>
-                          <Badge variant={booking.status === 'pending' ? 'destructive' : booking.status === 'approved' ? 'default' : 'secondary'}>
-                            {booking.status}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          <strong>Property ID:</strong> {booking.property_id} • <strong>National ID:</strong> {booking.national_id}
-                        </p>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          <strong>Move-in Date:</strong> {booking.move_in_date || 'Not specified'}
-                        </p>
-                        {booking.notes && <p className="mb-4">{booking.notes}</p>}
-                        <p className="text-xs text-muted-foreground mb-4">
-                          Submitted: {new Date(booking.created_at).toLocaleDateString()}
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Button 
-                            size="sm" 
-                            onClick={() => updateBookingStatus(booking.id, 'approved')}
-                            disabled={booking.status !== 'pending'}
-                            className="flex-1 sm:flex-none"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Approve
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => updateBookingStatus(booking.id, 'rejected')}
-                            disabled={booking.status !== 'pending'}
-                            className="flex-1 sm:flex-none"
-                          >
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Reject
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => handleDeleteBooking(booking.id)}
-                            disabled={deletingBooking === booking.id}
-                            className="flex-1 sm:flex-none"
-                          >
-                            {deletingBooking === booking.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
-                            ) : (
-                              <Trash2 className="w-4 h-4 mr-1" />
-                            )}
-                            {deletingBooking === booking.id ? 'Deleting...' : 'Delete'}
-                          </Button>
-                        </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="space-y-3 sm:space-y-4">
+                            <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
+                              <div><strong>Property ID:</strong> {booking.property_id}</div>
+                              <div><strong>National ID:</strong> {booking.national_id}</div>
+                              <div><strong>Move-in Date:</strong> {booking.move_in_date || 'Not specified'}</div>
+                            </div>
+                            {booking.notes && <p className="text-sm sm:text-base">{booking.notes}</p>}
+                            <p className="text-xs text-muted-foreground">
+                              Submitted: {new Date(booking.created_at).toLocaleDateString()}
+                            </p>
+                                                    <div className="flex flex-col sm:flex-row gap-2">
+                              <Button 
+                                size="sm" 
+                                onClick={() => updateBookingStatus(booking.id, 'approved')}
+                                disabled={booking.status !== 'pending'}
+                                className="flex-1 sm:flex-none text-xs sm:text-sm"
+                              >
+                                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => updateBookingStatus(booking.id, 'rejected')}
+                                disabled={booking.status !== 'pending'}
+                                className="flex-1 sm:flex-none text-xs sm:text-sm"
+                              >
+                                <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                Reject
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => handleDeleteBooking(booking.id)}
+                                disabled={deletingBooking === booking.id}
+                                className="flex-1 sm:flex-none text-xs sm:text-sm"
+                              >
+                                {deletingBooking === booking.id ? (
+                                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1"></div>
+                                ) : (
+                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                )}
+                                {deletingBooking === booking.id ? 'Deleting...' : 'Delete'}
+                              </Button>
+                            </div>
+                          </div>
                       </CardContent>
                     </Card>
                   ))
@@ -939,16 +970,16 @@ const AdminDashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="projects" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Projects</h2>
-              <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Project
-                  </Button>
-                </DialogTrigger>
+                      <TabsContent value="projects" className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+                <h2 className="text-lg sm:text-xl font-semibold">Projects</h2>
+                              <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="w-full sm:w-auto">
+                      <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                      <span className="text-xs sm:text-sm">Add Project</span>
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add New Project</DialogTitle>
@@ -1079,54 +1110,57 @@ const AdminDashboard = () => {
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-                {projects.length === 0 ? (
-                  <Card className="col-span-full">
-                    <CardContent className="flex items-center justify-center py-8">
-                      <p className="text-muted-foreground">No projects yet</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  projects.map((project) => (
-                    <Card key={project.id}>
-                      <CardHeader>
-                        <CardTitle className="text-lg">{project.title}</CardTitle>
-                        <CardDescription>{project.location}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          <strong>Type:</strong> {project.project_type} • <strong>Status:</strong> {project.status}
-                        </p>
-                        <p className="text-sm mb-4">{project.short_description}</p>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Button size="sm" variant="outline" className="flex-1 sm:flex-none">
-                            <Edit className="w-4 h-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteProject(project.id)} className="flex-1 sm:flex-none">
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
+                          ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+                  {projects.length === 0 ? (
+                    <Card className="col-span-full">
+                      <CardContent className="flex items-center justify-center py-6 sm:py-8">
+                        <p className="text-muted-foreground text-sm sm:text-base">No projects yet</p>
                       </CardContent>
                     </Card>
-                  ))
-                )}
-              </div>
+                  ) : (
+                    projects.map((project) => (
+                      <Card key={project.id}>
+                        <CardHeader className="pb-3 sm:pb-6">
+                          <CardTitle className="text-base sm:text-lg line-clamp-2">{project.title}</CardTitle>
+                          <CardDescription className="text-xs sm:text-sm">{project.location}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="space-y-3 sm:space-y-4">
+                            <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
+                              <div><strong>Type:</strong> {project.project_type}</div>
+                              <div><strong>Status:</strong> {project.status}</div>
+                            </div>
+                            <p className="text-xs sm:text-sm line-clamp-3">{project.short_description}</p>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <Button size="sm" variant="outline" className="flex-1 sm:flex-none text-xs sm:text-sm">
+                                <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                Edit
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleDeleteProject(project.id)} className="flex-1 sm:flex-none text-xs sm:text-sm">
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
             )}
           </TabsContent>
 
-          <TabsContent value="announcements" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Announcements</h2>
-              <Dialog open={isAddAnnouncementOpen} onOpenChange={setIsAddAnnouncementOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Announcement
-                  </Button>
-                </DialogTrigger>
+                      <TabsContent value="announcements" className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+                <h2 className="text-lg sm:text-xl font-semibold">Announcements</h2>
+                              <Dialog open={isAddAnnouncementOpen} onOpenChange={setIsAddAnnouncementOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="w-full sm:w-auto">
+                      <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                      <span className="text-xs sm:text-sm">Add Announcement</span>
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Add New Announcement</DialogTitle>
@@ -1196,56 +1230,58 @@ const AdminDashboard = () => {
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {announcements.length === 0 ? (
-                  <Card>
-                    <CardContent className="flex items-center justify-center py-8">
-                      <p className="text-muted-foreground">No announcements yet</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  announcements.map((announcement) => (
-                    <Card key={announcement.id}>
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle className="text-lg">{announcement.title}</CardTitle>
-                            <CardDescription>Category: {announcement.category}</CardDescription>
-                          </div>
-                          <Badge variant={announcement.is_published ? 'default' : 'secondary'}>
-                            {announcement.is_published ? 'Published' : 'Draft'}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm mb-4">{announcement.short_description}</p>
-                        <p className="text-xs text-muted-foreground mb-4">
-                          Created: {new Date(announcement.created_at).toLocaleDateString()}
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => toggleAnnouncementPublish(announcement.id, announcement.is_published)}
-                            className="flex-1 sm:flex-none"
-                          >
-                            {announcement.is_published ? 'Unpublish' : 'Publish'}
-                          </Button>
-                          <Button size="sm" variant="outline" className="flex-1 sm:flex-none">
-                            <Edit className="w-4 h-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteAnnouncement(announcement.id)} className="flex-1 sm:flex-none">
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
+                          ) : (
+                <div className="space-y-3 sm:space-y-4">
+                  {announcements.length === 0 ? (
+                    <Card>
+                      <CardContent className="flex items-center justify-center py-6 sm:py-8">
+                        <p className="text-muted-foreground text-sm sm:text-base">No announcements yet</p>
                       </CardContent>
                     </Card>
-                  ))
-                )}
-              </div>
+                  ) : (
+                    announcements.map((announcement) => (
+                      <Card key={announcement.id}>
+                        <CardHeader className="pb-3 sm:pb-6">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
+                            <div className="min-w-0 flex-1">
+                              <CardTitle className="text-base sm:text-lg line-clamp-2">{announcement.title}</CardTitle>
+                              <CardDescription className="text-xs sm:text-sm">Category: {announcement.category}</CardDescription>
+                            </div>
+                            <Badge variant={announcement.is_published ? 'default' : 'secondary'} className="self-start">
+                              {announcement.is_published ? 'Published' : 'Draft'}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="space-y-3 sm:space-y-4">
+                            <p className="text-xs sm:text-sm line-clamp-3">{announcement.short_description}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Created: {new Date(announcement.created_at).toLocaleDateString()}
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => toggleAnnouncementPublish(announcement.id, announcement.is_published)}
+                                className="flex-1 sm:flex-none text-xs sm:text-sm"
+                              >
+                                {announcement.is_published ? 'Unpublish' : 'Publish'}
+                              </Button>
+                              <Button size="sm" variant="outline" className="flex-1 sm:flex-none text-xs sm:text-sm">
+                                <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                Edit
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleDeleteAnnouncement(announcement.id)} className="flex-1 sm:flex-none text-xs sm:text-sm">
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
             )}
           </TabsContent>
         </Tabs>

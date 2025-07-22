@@ -22,6 +22,9 @@ Your application has been configured for **admin-only access** with the followin
 1. Go to your **Supabase Dashboard** → **SQL Editor**
 2. Copy and paste the entire content from `supabase/migrations/20250102000002_admin_only_security.sql`
 3. Click **"Run"** to execute the migration
+4. **IMPORTANT:** Also run the delete policies migration:
+   - Copy and paste the entire content from `supabase/migrations/20250102000003_add_delete_policies.sql`
+   - Click **"Run"** to execute the delete policies
 
 ### 3. **Test Admin Access**
 1. Visit your application's `/auth` page
