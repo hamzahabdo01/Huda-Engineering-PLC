@@ -49,7 +49,9 @@ Your application has been configured for **admin-only access** with the followin
 |--------|------------|-------------|-----------|
 | View Dashboard | ✅ | ❌ | ❌ |
 | View Contact Submissions | ✅ | ❌ | ❌ |
+| Delete Contact Submissions | ✅ | ❌ | ❌ |
 | View Property Bookings | ✅ | ❌ | ❌ |
+| Delete Property Bookings | ✅ | ❌ | ❌ |
 | Manage Projects | ✅ | ❌ | ❌ |
 | Manage Announcements | ✅ | ❌ | ❌ |
 | Submit Contact Forms | ✅ | ✅ | ✅ |
