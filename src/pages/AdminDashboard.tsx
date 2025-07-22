@@ -387,6 +387,52 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteContact = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_submissions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Contact submission deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete contact submission",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteBooking = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('property_bookings')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Property booking deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete property booking",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAddProject = async () => {
     try {
       const { error } = await supabase
@@ -569,16 +615,16 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background">
       <div className="border-b bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-4 gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back, Administrator</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Dashboard</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Welcome back, Administrator</p>
               <p className="text-xs text-muted-foreground">Secure admin portal - {user?.email}</p>
             </div>
-            <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={fetchData}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+              <Button variant="outline" onClick={fetchData} size="sm" className="flex-1 sm:flex-none">
+                <RefreshCw className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
               <Button variant="outline" onClick={() => {
                 console.log('🧪 Manual test - Current state:');
@@ -590,16 +636,16 @@ const AdminDashboard = () => {
                 console.log('Bookings:', bookings);
                 console.log('Projects:', projects);
                 console.log('Announcements:', announcements);
-              }}>
-                Debug
+              }} size="sm" className="flex-1 sm:flex-none">
+                <span>Debug</span>
               </Button>
-              <Button variant="outline" onClick={() => navigate('/')}>
-                <Eye className="w-4 h-4 mr-2" />
-                View Site
+              <Button variant="outline" onClick={() => navigate('/')} size="sm" className="flex-1 sm:flex-none">
+                <Eye className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">View Site</span>
               </Button>
-              <Button variant="outline" onClick={handleSignOut}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
+              <Button variant="outline" onClick={handleSignOut} size="sm" className="flex-1 sm:flex-none">
+                <LogOut className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Sign Out</span>
               </Button>
             </div>
           </div>
@@ -608,7 +654,7 @@ const AdminDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
           <Card>
             <CardContent className="flex items-center p-6">
               <MessageSquare className="h-8 w-8 text-blue-600" />
@@ -663,28 +709,30 @@ const AdminDashboard = () => {
         {process.env.NODE_ENV === 'development' && (
           <Card className="mb-8 border-yellow-200 bg-yellow-50">
             <CardHeader>
-              <CardTitle className="text-yellow-800">Debug Information</CardTitle>
+              <CardTitle className="text-yellow-800 text-sm sm:text-base">Debug Information</CardTitle>
             </CardHeader>
-            <CardContent className="text-yellow-700">
-              <p>User: {user?.email}</p>
-              <p>Profile: {profile?.full_name} ({profile?.role})</p>
-              <p>Loading: {loading.toString()}</p>
-              <p>Data Loading: {dataLoading.toString()}</p>
-              <p>Contacts: {contacts.length}</p>
-              <p>Bookings: {bookings.length}</p>
-              <p>Projects: {projects.length}</p>
-              <p>Announcements: {announcements.length}</p>
+            <CardContent className="text-yellow-700 text-xs sm:text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <p>User: {user?.email}</p>
+                <p>Profile: {profile?.full_name} ({profile?.role})</p>
+                <p>Loading: {loading.toString()}</p>
+                <p>Data Loading: {dataLoading.toString()}</p>
+                <p>Contacts: {contacts.length}</p>
+                <p>Bookings: {bookings.length}</p>
+                <p>Projects: {projects.length}</p>
+                <p>Announcements: {announcements.length}</p>
+              </div>
             </CardContent>
           </Card>
         )}
 
         {/* Main Content */}
         <Tabs defaultValue="contacts" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="contacts">Contact Forms ({contacts.length})</TabsTrigger>
-            <TabsTrigger value="bookings">Property Bookings ({bookings.length})</TabsTrigger>
-            <TabsTrigger value="projects">Projects ({projects.length})</TabsTrigger>
-            <TabsTrigger value="announcements">Announcements ({announcements.length})</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+            <TabsTrigger value="contacts" className="text-xs md:text-sm">Contact Forms ({contacts.length})</TabsTrigger>
+            <TabsTrigger value="bookings" className="text-xs md:text-sm">Property Bookings ({bookings.length})</TabsTrigger>
+            <TabsTrigger value="projects" className="text-xs md:text-sm">Projects ({projects.length})</TabsTrigger>
+            <TabsTrigger value="announcements" className="text-xs md:text-sm">Announcements ({announcements.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-4">
@@ -725,23 +773,35 @@ const AdminDashboard = () => {
                         <p className="text-xs text-muted-foreground mb-4">
                           Submitted: {new Date(contact.created_at).toLocaleDateString()}
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Button 
                             size="sm" 
                             onClick={() => updateContactStatus(contact.id, 'contacted')}
                             disabled={contact.status !== 'pending'}
+                            className="flex-1 sm:flex-none"
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
-                            Mark as Contacted
+                            <span className="hidden sm:inline">Mark as Contacted</span>
+                            <span className="sm:hidden">Contacted</span>
                           </Button>
                           <Button 
                             size="sm" 
                             variant="outline"
                             onClick={() => updateContactStatus(contact.id, 'closed')}
                             disabled={contact.status === 'closed'}
+                            className="flex-1 sm:flex-none"
                           >
                             <XCircle className="w-4 h-4 mr-1" />
                             Close
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => handleDeleteContact(contact.id)}
+                            className="flex-1 sm:flex-none"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
                           </Button>
                         </div>
                       </CardContent>
@@ -793,23 +853,34 @@ const AdminDashboard = () => {
                         <p className="text-xs text-muted-foreground mb-4">
                           Submitted: {new Date(booking.created_at).toLocaleDateString()}
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Button 
                             size="sm" 
                             onClick={() => updateBookingStatus(booking.id, 'approved')}
                             disabled={booking.status !== 'pending'}
+                            className="flex-1 sm:flex-none"
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
                             Approve
                           </Button>
                           <Button 
                             size="sm" 
-                            variant="destructive"
+                            variant="outline"
                             onClick={() => updateBookingStatus(booking.id, 'rejected')}
                             disabled={booking.status !== 'pending'}
+                            className="flex-1 sm:flex-none"
                           >
                             <XCircle className="w-4 h-4 mr-1" />
                             Reject
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => handleDeleteBooking(booking.id)}
+                            className="flex-1 sm:flex-none"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
                           </Button>
                         </div>
                       </CardContent>
@@ -961,7 +1032,7 @@ const AdminDashboard = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {projects.length === 0 ? (
                   <Card className="col-span-full">
                     <CardContent className="flex items-center justify-center py-8">
@@ -980,12 +1051,12 @@ const AdminDashboard = () => {
                           <strong>Type:</strong> {project.project_type} • <strong>Status:</strong> {project.status}
                         </p>
                         <p className="text-sm mb-4">{project.short_description}</p>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Button size="sm" variant="outline" className="flex-1 sm:flex-none">
                             <Edit className="w-4 h-4 mr-1" />
                             Edit
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteProject(project.id)}>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteProject(project.id)} className="flex-1 sm:flex-none">
                             <Trash2 className="w-4 h-4 mr-1" />
                             Delete
                           </Button>
@@ -1104,19 +1175,20 @@ const AdminDashboard = () => {
                         <p className="text-xs text-muted-foreground mb-4">
                           Created: {new Date(announcement.created_at).toLocaleDateString()}
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Button 
                             size="sm" 
                             variant="outline"
                             onClick={() => toggleAnnouncementPublish(announcement.id, announcement.is_published)}
+                            className="flex-1 sm:flex-none"
                           >
                             {announcement.is_published ? 'Unpublish' : 'Publish'}
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" className="flex-1 sm:flex-none">
                             <Edit className="w-4 h-4 mr-1" />
                             Edit
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteAnnouncement(announcement.id)}>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteAnnouncement(announcement.id)} className="flex-1 sm:flex-none">
                             <Trash2 className="w-4 h-4 mr-1" />
                             Delete
                           </Button>

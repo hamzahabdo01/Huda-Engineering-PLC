@@ -4,68 +4,46 @@ import { Calendar, Clock, Tag, ChevronDown, ChevronUp } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Announcement {
   id: string;
   title: string;
-  date: string;
-  category: "New Projects" | "Construction Progress" | "Sales" | "Company News";
-  shortDescription: string;
-  fullContent: string;
-  image: string;
+  created_at: string;
+  category: string;
+  short_description: string;
+  content: string;
+  image_url: string;
+  is_published: boolean;
 }
 
-const announcements: Announcement[] = [
-  {
-    id: "1",
-    title: "Grand Opening of Luxury Residential Complex in Bole",
-    date: "2024-01-15",
-    category: "New Projects",
-    shortDescription: "We're excited to announce the grand opening of our newest luxury residential complex featuring 50 premium units with modern amenities.",
-    fullContent: "We're thrilled to announce the grand opening of our newest luxury residential complex in the heart of Bole district. This state-of-the-art development features 50 premium residential units, each designed with modern living in mind. The complex includes a swimming pool, fitness center, children's playground, and 24/7 security. Units range from 2-bedroom apartments to 4-bedroom penthouses, all featuring high-end finishes and smart home technology. Early bird pricing is available for the first 20 buyers.",
-    image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&h=400&fit=crop"
-  },
-  {
-    id: "2",
-    title: "Construction Progress Update - Sarbet Heights Project",
-    date: "2024-01-10",
-    category: "Construction Progress",
-    shortDescription: "Our Sarbet Heights project is now 75% complete. We're on track to deliver all units by March 2024.",
-    fullContent: "We're pleased to update you on the significant progress of our Sarbet Heights residential project. The construction is now 75% complete, with all structural work finished and interior finishing well underway. The landscaping and external amenities installation has begun. We remain on schedule to deliver all 80 units by March 2024. Site visits are available for interested buyers every weekend from 9 AM to 5 PM.",
-    image: "https://images.unsplash.com/photo-1541976590-713941681591?w=600&h=400&fit=crop"
-  },
-  {
-    id: "3",
-    title: "Special Holiday Sales Campaign - Up to 15% Discount",
-    date: "2024-01-05",
-    category: "Sales",
-    shortDescription: "Limited time offer: Get up to 15% discount on selected properties during our holiday sales campaign.",
-    fullContent: "This holiday season, we're offering exceptional discounts on selected properties across our portfolio. Enjoy up to 15% off on apartments in our Kazanchis development, and 10% off on villa units in Old Airport area. This promotion is valid until January 31st, 2024, and includes flexible payment plans. Additional benefits include free interior design consultation and one-year maintenance package. Contact our sales team to learn more about eligibility and terms.",
-    image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop"
-  },
-  {
-    id: "4",
-    title: "Huda Engineering PLC Wins Real Estate Excellence Award",
-    date: "2023-12-28",
-    category: "Company News",
-    shortDescription: "We're honored to receive the Real Estate Excellence Award for our commitment to quality and innovation in property development.",
-    fullContent: "We're proud to announce that Huda Engineering PLC has been awarded the prestigious Real Estate Excellence Award 2023 by the Ethiopian Real Estate Association. This recognition highlights our commitment to delivering high-quality residential and commercial properties while maintaining the highest standards of construction and customer service. The award ceremony took place at the Skylight Hotel, where we were recognized alongside other industry leaders. This achievement motivates us to continue our mission of transforming Ethiopia's real estate landscape.",
-    image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=600&h=400&fit=crop"
-  },
-  {
-    id: "5",
-    title: "New Affordable Housing Initiative Launched",
-    date: "2023-12-20",
-    category: "New Projects",
-    shortDescription: "Introducing our affordable housing program designed to make homeownership accessible to middle-income families.",
-    fullContent: "We're excited to launch our new affordable housing initiative, aimed at making quality homes accessible to middle-income families in Addis Ababa. This program offers 2 and 3-bedroom apartments starting from 2.8 million ETB, with flexible financing options and down payments as low as 20%. The first phase includes 120 units in the Lebu area, featuring modern amenities while maintaining affordability. Registration is now open, and we're partnering with local banks to provide attractive mortgage rates for qualified buyers.",
-    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&h=400&fit=crop"
-  }
-];
-
 const Announcements = () => {
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
+
+  const fetchAnnouncements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('*')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setAnnouncements(data || []);
+    } catch (error) {
+      console.error('Error fetching announcements:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -208,7 +186,7 @@ const Announcements = () => {
               <div className="space-y-6 lg:pl-8">
                 <div className="flex items-center text-muted-foreground text-sm mb-4">
                   <Calendar className="w-4 h-4 mr-2" />
-                  {formatDate(currentAnnouncement.date)}
+                  {formatDate(currentAnnouncement.created_at)}
                 </div>
                 
                 <h1 className="text-3xl lg:text-4xl font-bold text-foreground leading-tight">
@@ -216,12 +194,12 @@ const Announcements = () => {
                 </h1>
                 
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  {currentAnnouncement.shortDescription}
+                  {currentAnnouncement.short_description}
                 </p>
                 
                 <div className="pt-4">
                   <p className="text-foreground leading-relaxed">
-                    {currentAnnouncement.fullContent}
+                    {currentAnnouncement.content}
                   </p>
                 </div>
               </div>

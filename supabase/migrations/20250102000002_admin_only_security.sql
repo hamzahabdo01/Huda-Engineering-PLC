@@ -58,6 +58,9 @@ CREATE POLICY "Admin can view all contact submissions" ON public.contact_submiss
 CREATE POLICY "Admin can update contact submissions" ON public.contact_submissions
   FOR UPDATE USING (is_admin_user_alt());
 
+CREATE POLICY "Admin can delete contact submissions" ON public.contact_submissions
+  FOR DELETE USING (is_admin_user_alt());
+
 -- Projects Policies - Admin Only
 CREATE POLICY "Admin can view all projects" ON public.projects
   FOR SELECT USING (is_admin_user_alt());
@@ -90,6 +93,9 @@ CREATE POLICY "Admin can view all bookings" ON public.property_bookings
 
 CREATE POLICY "Admin can update bookings" ON public.property_bookings
   FOR UPDATE USING (is_admin_user_alt());
+
+CREATE POLICY "Admin can delete bookings" ON public.property_bookings
+  FOR DELETE USING (is_admin_user_alt());
 
 -- Profiles Policies - Admin Only
 CREATE POLICY "Admin can view all profiles" ON public.profiles
