@@ -19,6 +19,11 @@ After analyzing your Supabase database and RLS (Row Level Security) policies, I 
 - **Impact**: Dashboard shows no data, may indicate data loss or migration issues
 - **Status**: ⚠️ **MEDIUM** - Data availability
 
+### 4. **Project Creation Failing (400 Error)**
+- **Problem**: Projects status constraint is broken, blocking project creation with 400 error
+- **Impact**: Admin cannot add new projects through the dashboard
+- **Status**: ❌ **CRITICAL** - Core functionality broken
+
 ## 🔧 Fixes Applied
 
 ### 1. **Created New Migration: `20250102000004_fix_rls_policies.sql`**
@@ -59,6 +64,13 @@ This migration addresses all the RLS policy issues:
 - Created indexes on frequently queried columns
 - Optimized for dashboard data loading
 - Improved query performance for date-based sorting
+
+### 4. **Fixed Project Creation Issue: `20250102000005_fix_projects_status_constraint.sql`**
+- **Problem**: Projects status constraint was broken, causing 400 errors
+- **Solution**: Recreated the constraint with correct status values
+- **New Status Values**: `planning`, `active`, `completed`, `upcoming`, `on-hold`
+- **Default Status**: Changed from `active` to `planning` (more appropriate for new projects)
+- **Updated Admin Dashboard**: Added new status options and updated TypeScript interfaces
 
 ## 📊 Current Database State
 
@@ -115,6 +127,8 @@ After applying the migration, test that:
 ## 📝 Files Modified
 
 - `supabase/migrations/20250102000004_fix_rls_policies.sql` (NEW)
+- `supabase/migrations/20250102000005_fix_projects_status_constraint.sql` (NEW)  
+- `src/pages/AdminDashboard.tsx` (updated status interface and form options)
 - `package-lock.json` (updated dependencies)
 
 ## ⚠️ Important Notes
@@ -135,4 +149,6 @@ The main problem was that RLS policies were not properly blocking SELECT operati
 - Improves performance with proper indexing
 - Follows security best practices
 
-**Next Action**: Apply the migration file `20250102000004_fix_rls_policies.sql` to your Supabase database.
+**Next Action**: Apply both migration files to your Supabase database:
+1. `20250102000004_fix_rls_policies.sql` (fixes RLS policies)
+2. `20250102000005_fix_projects_status_constraint.sql` (fixes project creation 400 error)

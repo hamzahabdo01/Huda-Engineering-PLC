@@ -59,7 +59,7 @@ interface Project {
   short_description: string;
   location: string;
   project_type: string;
-  status: 'active' | 'completed' | 'upcoming';
+  status: 'planning' | 'active' | 'completed' | 'upcoming' | 'on-hold';
   budget: string;
   start_date: string;
   end_date: string;
@@ -102,7 +102,7 @@ const AdminDashboard = () => {
     short_description: "",
     location: "",
     project_type: "",
-    status: "active" as const,
+    status: "planning" as const,
     budget: "",
     start_date: "",
     end_date: "",
@@ -488,7 +488,7 @@ const AdminDashboard = () => {
         short_description: "",
         location: "",
         project_type: "",
-        status: "active",
+        status: "planning",
         budget: "",
         start_date: "",
         end_date: "",
@@ -724,7 +724,7 @@ const AdminDashboard = () => {
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Projects</p>
                 <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{projects.length}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {projects.filter(p => p.status === 'active').length} active
+                  {projects.filter(p => p.status === 'active').length} active, {projects.filter(p => p.status === 'planning').length} planning
                 </p>
               </div>
             </CardContent>
@@ -1093,9 +1093,11 @@ const AdminDashboard = () => {
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="planning">Planning</SelectItem>
                           <SelectItem value="active">Active</SelectItem>
                           <SelectItem value="completed">Completed</SelectItem>
                           <SelectItem value="upcoming">Upcoming</SelectItem>
+                          <SelectItem value="on-hold">On Hold</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
