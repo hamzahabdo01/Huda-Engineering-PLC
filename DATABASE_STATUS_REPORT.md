@@ -23,7 +23,6 @@ After analyzing your Supabase database and RLS (Row Level Security) policies, I 
 - **Problem**: Projects status constraint is broken, blocking project creation with 400 error
 - **Impact**: Admin cannot add new projects through the dashboard
 - **Status**: ❌ **CRITICAL** - Core functionality broken
-
 ## 🔧 Fixes Applied
 
 ### 1. **Created New Migration: `20250102000004_fix_rls_policies.sql`**
@@ -71,7 +70,6 @@ This migration addresses all the RLS policy issues:
 - **New Status Values**: `planning`, `active`, `completed`, `upcoming`, `on-hold`
 - **Default Status**: Changed from `active` to `planning` (more appropriate for new projects)
 - **Updated Admin Dashboard**: Added new status options and updated TypeScript interfaces
-
 ## 📊 Current Database State
 
 ### **Tables Status**
