@@ -12,6 +12,20 @@
     "admin": "Admin",
     "maps": "Location"
   },
+  "navbar": {
+    "signedInAs": "Signed in as",
+    "dashboard": "Dashboard",
+    "signOut": "Sign Out"
+  },
+  "auth": {
+    "signedOut": "Signed out",
+    "signedOutDesc": "You have been signed out successfully."
+  },
+  "errors": {
+    "error": "Error",
+    "signOutFailed": "Failed to sign out",
+    "captchaRequired": "Captcha required"
+  },
   "about": {
     "hero": {
       "title": "About Huda Engineering",
@@ -212,20 +226,26 @@
       "title": "Contact Us",
       "subtitle": "Ready to start your construction project? Get in touch with our expert team"
     },
+    "validation": {
+      "invalidName": {"title": "Invalid name", "desc": "Only letters allowed"},
+      "invalidEmail": {"title": "Invalid email", "desc": "Enter a valid email address"},
+      "invalidPhone": {"title": "Invalid phone", "desc": "Must be 10 digits"},
+      "ratingRequired": "Rating required"
+    },
+    "submitted": "Submitted",
+    "weWillContact": "We will contact you soon.",
+    "submitFailed": "Failed to submit",
+    "feedbackFailed": "Failed to submit feedback",
+    "feedbackSubmitted": "Feedback submitted",
     "form": {
       "title": "Send us a Message",
       "description": "Fill out the form below and we'll get back to you within 24 hours",
-      "firstName": "First Name",
+      "firstName": "Name",
       "lastName": "Last Name",
       "email": "Email",
       "phone": "Phone Number",
-      "projectType": "Project Type",
-      "budget": "Estimated Budget",
-      "message": "Project Details",
+      "message": "Message",
       "messagePlaceholder": "Tell us about your project requirements, timeline, and any specific needs...",
-      "send": "Send Message",
-      "selectProject": "Select project type",
-      "selectBudget": "Select budget range",
       "yourFirstName": "Your first name",
       "yourLastName": "Your last name",
       "yourEmail": "Your email address",
