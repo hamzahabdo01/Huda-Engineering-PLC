@@ -355,23 +355,27 @@ const About = () => {
           </div>
         </div>
       </section>
-{/* Portfolio Preview Section */}
+{/* Embedded Portfolio Section */}
 <section className="py-20 lg:py-32 bg-muted">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="text-center mb-16">
-      <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">Our Portfolio</h2>
-      <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-        A quick look at some of our featured work showcasing the quality and diversity of our projects.
-      </p>
+    <div className="text-center mb-12 animate-fade-in">
+      <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">Our Portfolio</h2>
+      <p className="text-lg text-muted-foreground">Explore a selection of our work across residential and commercial projects.</p>
     </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+    <div className="flex justify-center gap-3 mb-10 animate-slide-up">
+      {["All","Residential","Commercial"].map((cat) => (
+        <Button key={cat} variant="outline" className="px-6">{cat}</Button>
+      ))}
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-slide-up">
       {[
         { title: "Residential Complex", category: "Residential", image: "/images/portfolio/residential1.jpg" },
         { title: "Commercial Tower", category: "Commercial", image: "/images/portfolio/commercial1.jpg" },
         { title: "Luxury Villa", category: "Residential", image: "/images/portfolio/residential2.jpg" }
       ].map((item, index) => (
-        <Card key={index} className="overflow-hidden hover:shadow-xl transition-shadow">
+        <Card key={index} className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
           <div className="h-56 overflow-hidden">
             <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
           </div>
@@ -381,15 +385,6 @@ const About = () => {
           </CardHeader>
         </Card>
       ))}
-    </div>
-
-    <div className="text-center">
-      <Link to="/portfolio">
-        <Button size="lg" className="bg-gradient-to-r from-accent to-primary text-white shadow-lg hover:shadow-xl px-8 py-4 text-lg transition-transform transform hover:scale-110">
-          View Full Portfolio
-          <ArrowRight className="ml-2 h-5 w-5" />
-        </Button>
-      </Link>
     </div>
   </div>
 </section>
