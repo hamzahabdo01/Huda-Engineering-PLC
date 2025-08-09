@@ -204,14 +204,20 @@ console.log("unit stock fetched:", data);
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-12 text-center animate-fade-in">
+        <div className="max-w-4xl mx-auto px-4">
+          <h1 className="text-3xl md:text-5xl font-bold">Book Your Appointment or Property</h1>
+          <p className="text-lg md:text-xl text-primary-foreground/90 mt-2">Secure a viewing or reserve your preferred unit in minutes.</p>
+        </div>
+      </section>
+      <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
         <div className="flex gap-4 mb-8 justify-center">
           <Button variant={bookingType === "appointment" ? "default" : "outline"} onClick={() => setBookingType("appointment")}>Book Appointment</Button>
           <Button variant={bookingType === "property" ? "default" : "outline"} onClick={() => setBookingType("property")}>Book Property</Button>
         </div>
 
         {bookingType === "property" ? (
-          <form onSubmit={(e) => handleSubmit(e, "property")} className="space-y-6">
+          <form onSubmit={(e) => handleSubmit(e, "property")} className="space-y-6 max-w-2xl mx-auto">
             <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
             <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
             <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
@@ -246,7 +252,7 @@ console.log("unit stock fetched:", data);
             <Button type="submit" className="w-full bg-primary" disabled={!formData.consent || !formData.acceptTnC}>Submit</Button>
           </form>
         ) : (
-          <form onSubmit={(e) => handleSubmit(e, "appointment")} className="space-y-6">
+          <form onSubmit={(e) => handleSubmit(e, "appointment")} className="space-y-6 max-w-2xl mx-auto">
             <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
             <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
             <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />

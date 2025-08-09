@@ -59,41 +59,38 @@ export default function Contact() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <main className="max-w-3xl mx-auto px-4 py-12 space-y-8">
+        <div className="text-center space-y-3 animate-fade-in">
+          <h1 className="text-3xl md:text-5xl font-bold">{t("contact.hero.title")}</h1>
+          <p className="text-lg md:text-xl text-muted-foreground">{t("contact.hero.subtitle")}</p>
+        </div>
+
         {/* Contact Form */}
-        <Card>
-          <CardHeader><CardTitle>{t("contact.hero.title")}</CardTitle></CardHeader>
+        <Card className="shadow-lg border animate-slide-up">
+          <CardHeader><CardTitle>{t("contact.form.title")}</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleContactSubmit} className="space-y-4">
-              <div><Label>{t("contact.form.firstName")}</Label><Input name="name" value={contact.name} onChange={e=>setContact({...contact,name:e.target.value})} required /></div>
-              <div><Label>{t("contact.form.email")}</Label><Input type="email" name="email" value={contact.email} onChange={e=>setContact({...contact,email:e.target.value})} required /></div>
-              <div><Label>{t("contact.form.phone")}</Label><Input type="tel" name="phone" value={contact.phone} onChange={e=>setContact({...contact,phone:e.target.value})} required /></div>
-              <div><Label>{t("contact.form.message")}</Label><Textarea name="message" value={contact.message} onChange={e=>setContact({...contact,message:e.target.value})} required /></div>
-              <ReCAPTCHA sitekey={SITE_KEY} onChange={token => setCaptchaToken(token)} />
-              <Button type="submit" disabled={loading}>{t("contact.form.submit")}</Button>
+              <div className="space-y-2">
+                <Label>{t("contact.form.firstName")}</Label>
+                <Input name="name" value={contact.name} onChange={e=>setContact({...contact,name:e.target.value})} required />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("contact.form.email")}</Label>
+                <Input type="email" name="email" value={contact.email} onChange={e=>setContact({...contact,email:e.target.value})} required />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("contact.form.phone")}</Label>
+                <Input type="tel" name="phone" value={contact.phone} onChange={e=>setContact({...contact,phone:e.target.value})} required />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("contact.form.message")}</Label>
+                <Textarea name="message" value={contact.message} onChange={e=>setContact({...contact,message:e.target.value})} required rows={6} />
+              </div>
+              <div className="pt-2">
+                <ReCAPTCHA sitekey={SITE_KEY} onChange={token => setCaptchaToken(token)} />
+              </div>
+              <Button type="submit" disabled={loading} className="w-full">{t("contact.form.submit")}</Button>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Persuasive CTA instead of redundant portfolio/feedback */}
-        <Card>
-          <CardHeader><CardTitle>{t("contact.cta.title")}</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">{t("contact.cta.description")}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-4 rounded-lg border bg-card">
-                <div className="text-2xl font-bold text-primary">50+</div>
-                <div className="text-sm text-muted-foreground">{t("cta.completed")}</div>
-              </div>
-              <div className="p-4 rounded-lg border bg-card">
-                <div className="text-2xl font-bold text-primary">100%</div>
-                <div className="text-sm text-muted-foreground">{t("about.stats.satisfaction")}</div>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Button asChild><a href="/booking">{t("cta.consultation")}</a></Button>
-              <Button variant="outline" asChild><a href="/projects">{t("cta.portfolio")}</a></Button>
-            </div>
           </CardContent>
         </Card>
       </main>

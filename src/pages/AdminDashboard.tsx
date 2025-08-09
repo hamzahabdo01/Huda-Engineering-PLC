@@ -1468,11 +1468,36 @@ const handleEdit = (update) => {
 
           <div>
             <Label>Upload Image/Video</Label>
-            <Input
-              type="file"
-              accept="image/*,video/*"
-              onChange={(e) => setUpdate({ ...update, file: e.target.files?.[0] })}
-            />
+            <div
+              className="mt-2 border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files?.[0];
+                if (file) setUpdate({ ...update, file });
+              }}
+            >
+              <p className="text-sm text-muted-foreground mb-3">Drag & drop a file here, or click to select</p>
+              <Input
+                type="file"
+                accept="image/*,video/*"
+                onChange={(e) => setUpdate({ ...update, file: e.target.files?.[0] })}
+              />
+              {update.file && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium">Selected: {update.file.name}</p>
+                  {update.file.type.startsWith("image") && (
+                    <img src={URL.createObjectURL(update.file)} alt="preview" className="mt-2 max-h-48 rounded" />
+                  )}
+                  {update.file.type.startsWith("video") && (
+                    <video src={URL.createObjectURL(update.file)} controls className="mt-2 w-full rounded max-h-64" />
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <Button onClick={handleAddUpdate} disabled={loading} className="w-full">
