@@ -12,6 +12,20 @@
     "admin": "አስተዳዳሪ",
     "maps": "አካባቢ"
   },
+  "navbar": {
+    "signedInAs": "የገባው መለያ:",
+    "dashboard": "ዳሽቦርድ",
+    "signOut": "ውጣ"
+  },
+  "auth": {
+    "signedOut": "ወጥተዋል",
+    "signedOutDesc": "በተሳካ ሁኔታ ከመለያዎ ወጥተዋል።"
+  },
+  "errors": {
+    "error": "ስህተት",
+    "signOutFailed": "መውጣት አልተሳካም",
+    "captchaRequired": "ካፕቻ ያስፈልጋል"
+  },
   "about": {
     "hero": {
       "title": "ስለ ሁዳ ኢንጂነሪንግ",
@@ -123,7 +137,7 @@
     },
     "residential": {
       "title": "የመኖሪያ ቤት ግንባታ",
-      "description": "ለኢትዮጵያ ቤተሰቦች የተዘጋጁ ዘመናዊ አፓርታሞች፣ ቅንጦት ቤቶች እና የመኖሪያ ውስብስቦች። ከነጠላ ቤተሰብ ቤቶች እስከ 2B+G+13 ፎቅ የከፍታ አፓርታማ ህንጻዎች።",
+      "description": "ለኢትዮጵያ ቤተሰቦች የተዘጋጁ ዘመናዊ አፓርታሞች፣ ቅንጦት ቤቶች እስከ ከፍተኛ ህንጻዎች፣ ምቾት፣ ተግባራዊነት እና የውበት ውበትን የሚያጣምሩ ዘመናዊ የመኖሪያ ቦታዎችን እንፈጥራለን።",
       "badge": "ተወዳጅ",
       "features": [
         "ቅንጦት አፓርታማ ውስብስቦች",
@@ -210,47 +224,54 @@
   "contact": {
     "hero": {
       "title": "ያነጋግሩን",
-      "subtitle": "የግንባታ ፕሮጀክትዎን ለመጀመር ዝግጁ ነዎት? ከባለሙያ ቡድናችን ጋር ይገናኙ"
+      "subtitle": "የግንባታ ፕሮጀክትዎን ለማስጀመር ዝግጁ ነዎት? ከባለሙያ ቡድናችን ጋር ያግኙን"
     },
+    "validation": {
+      "invalidName": {"title": "የስም አስተካክል", "desc": "ፊደላት ብቻ ይፈቀዳሉ"},
+      "invalidEmail": {"title": "ልክ ያልሆነ ኢሜይል", "desc": "ትክክለኛ ኢሜይል ያስገቡ"},
+      "invalidPhone": {"title": "ልክ ያልሆነ ስልክ", "desc": "10 አሃዞች መሆን አለበት"},
+      "ratingRequired": "ደረጃ ያስፈልጋል"
+    },
+    "submitted": "ተላክ",
+    "weWillContact": "በቅርቡ እናገናኝዎታለን።",
+    "submitFailed": "መላክ አልተሳካም",
+    "feedbackFailed": "አስተያየት መላክ አልተሳካም",
+    "feedbackSubmitted": "አስተያየት ተላክ",
     "form": {
-      "title": "መልእክት ይላኩልን",
-      "description": "ከዚህ በታች ያለውን ቅጽ ይሙሉ እና በ24 ሰዓታት ውስጥ እንመለሳለን",
-      "firstName": "የመጀመሪያ ስም",
-      "lastName": "የአያት ስም",
+      "title": "መልዕክት ይላኩልን",
+      "description": "በታች ያለውን ቅጽ ይሙሉ፣ በ24 ሰዓታት ውስጥ እንመልስልዎታለን",
+      "firstName": "ስም",
+      "lastName": "የአባት ስም",
       "email": "ኢሜይል",
       "phone": "ስልክ ቁጥር",
-      "projectType": "የፕሮጀክት አይነት",
-      "budget": "የተገመተ በጀት",
-      "message": "የፕሮጀክት ዝርዝሮች",
-      "messagePlaceholder": "ስለ ፕሮጀክት መስፈርቶችዎ፣ የጊዜ ሰሌዳ እና ማንኛውም ልዩ ፍላጎቶች ይንገሩን...",
-      "send": "መልእክት ላክ",
-      "selectProject": "የፕሮጀክት አይነት ይምረጡ",
-      "selectBudget": "የበጀት ክልል ይምረጡ",
+      "message": "መልዕክት",
+      "messagePlaceholder": "ስለ ፕሮጀክትዎ መረጃ፣ ጊዜ እና ልዩ ፍላጎቶች...",
+      "send": "መልዕክት ላክ",
       "yourFirstName": "የመጀመሪያ ስምዎ",
-      "yourLastName": "የአያት ስምዎ",
-      "yourEmail": "የኢሜይል አድራሻዎ",
-      "yourPhone": "የስልክ ቁጥርዎ",
+      "yourLastName": "የአባት ስምዎ",
+      "yourEmail": "ኢሜይልዎ",
+      "yourPhone": "ስልክዎ",
       "tellUs": "ስለ ፕሮጀክትዎ ይንገሩን...",
-      "submit": "መልእክት ላክ"
+      "submit": "መልዕክት ላክ"
     },
     "info": {
       "phone": "ስልክ",
-      "phoneDesc": "ለአፋጣኝ እርዳታ ይደውሉልን",
+      "phoneDesc": "በአሁኑ ጊዜ ለእርዳታ ይደውሉ",
       "email": "ኢሜይል", 
-      "emailDesc": "የፕሮጀክት ዝርዝሮችዎን ይላኩልን",
+      "emailDesc": "ዝርዝር መረጃዎችዎን ይላኩልን",
       "location": "አካባቢ",
-      "locationDesc": "ኢትዮጵያን ሁሉ እናገለግላለን",
-      "hours": "የንግድ ሰዓታት",
-      "contactInfo": "የግንኙነት መረጃ",
-      "mondayFriday": "ሰኞ - አርብ፡ ከጧት 8:00 እስከ ምሽት 6:00",
-      "saturday": "ቅዳሜ፡ ከጧት 9:00 እስከ ከሳዓት 4:00",
-      "sunday": "እሁድ፡ ዝግ"
+      "locationDesc": "በኢትዮጵያ ሙሉ ግምገማ",
+      "hours": "የስራ ሰዓቶች",
+      "contactInfo": "የእውቂያ መረጃ",
+      "mondayFriday": "ሰኞ - አምስት: 2:00 - 12:00 ሰዓት",
+      "saturday": "ቅዳሜ: 3:00 - 10:00 ሰዓት",
+      "sunday": "እሁድ: ዝግ"
     },
     "cta": {
       "title": "ፕሮጀክትዎን ለመጀመር ዝግጁ ነዎት?",
-      "description": "የግንባታ ፍላጎታቸውን እንድንሰራላቸው ከታመኑን 50+ ደምበኞች ጋር ይቀላቀሉ",
-      "quote": "ግምት ይጠይቁ",
-      "consultation": "ምክክር ይይዙ",
+      "description": "50+ የተሟሉ ደንበኞች ከእኛ ጋር የተሰሩ ፕሮጀክቶችን ይቀላቀሉ",
+      "quote": "ኮት ይጠይቁ",
+      "consultation": "ምክክር ያቀናብሩ",
       "completed": "በተሳካ ሁኔታ የተጠናቀቁ ፕሮጀክቶች"
     }
   },

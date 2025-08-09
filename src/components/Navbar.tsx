@@ -22,21 +22,21 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems = [
-    { name: "Projects", path: "/projects" },
-    { name: "Services", path: "/services" },
-    { name: "About Us", path: "/about" },
-    { name: "Announcements", path: "/announcements" },
-    { name: "Booking", path: "/booking" },
-    { name: "Contact Us", path: "/contact" },
-    { name: "Virtual Tour", path: "/virtual-tour" },
+    { key: "nav.projects", path: "/projects" },
+    { key: "nav.services", path: "/services" },
+    { key: "nav.about", path: "/about" },
+    { key: "nav.announcements", path: "/announcements" },
+    { key: "nav.booking", path: "/booking" },
+    { key: "nav.contact", path: "/contact" },
+    { key: "nav.virtualTour", path: "/virtual-tour" },
   ];
 
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (error) {
-      toast({ title: "Error", description: "Failed to sign out", variant: "destructive" });
+      toast({ title: t("errors.error"), description: t("errors.signOutFailed"), variant: "destructive" });
     } else {
-      toast({ title: "Success", description: "Signed out successfully" });
+      toast({ title: t("auth.signedOut"), description: t("auth.signedOutDesc") });
       navigate("/");
     }
   };
@@ -78,8 +78,8 @@ const Navbar = () => {
 
           <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => (
-              <Link key={item.name} to={item.path}
-                className={`transition-colors text-sm font-medium px-3 py-2 rounded-lg ${location.pathname === item.path ? "text-primary font-semibold bg-primary/10" : "text-foreground hover:text-primary hover:bg-primary/5"}`}>{item.name}</Link>
+              <Link key={item.key} to={item.path}
+                className={`transition-colors text-sm font-medium px-3 py-2 rounded-lg ${location.pathname === item.path ? "text-primary font-semibold bg-primary/10" : "text-foreground hover:text-primary hover:bg-primary/5"}`}>{t(item.key)}</Link>
             ))}
           </div>
 
@@ -98,12 +98,12 @@ const Navbar = () => {
                     <span className="hidden lg:block">{profile?.full_name || user.email}</span>
                     <ChevronDown className="h-3 w-3" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-background border shadow rounded-xl p-3 min-w-[200px] z-50">
-                    <div className="px-3 py-2 text-sm text-muted-foreground">Signed in as <strong>{user.email}</strong></div>
+                  <DropdownMenuContent align="end" className="bg-background border shadow rounded-xl p-3 min-w[200px] z-50">
+                    <div className="px-3 py-2 text-sm text-muted-foreground">{t("navbar.signedInAs")} <strong>{user.email}</strong></div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild><Link to="/admin-dashboard" className="w-full flex items-center gap-3 px-3 py-2"><Settings className="h-4 w-4" /><span className="font-medium">Dashboard</span></Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild><Link to="/admin-dashboard" className="w-full flex items-center gap-3 px-3 py-2"><Settings className="h-4 w-4" /><span className="font-medium">{t("navbar.dashboard")}</span></Link></DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild><button onClick={handleSignOut} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-red-50 hover:text-red-600"><LogOut className="h-4 w-4" /><span className="font-medium">Sign Out</span></button></DropdownMenuItem>
+                    <DropdownMenuItem asChild><button onClick={handleSignOut} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-red-50 hover:text-red-600"><LogOut className="h-4 w-4" /><span className="font-medium">{t("navbar.signOut")}</span></button></DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -119,7 +119,7 @@ const Navbar = () => {
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-background border-t border-border">
               {navItems.map((item) => (
-                <Link key={item.name} to={item.path} onClick={() => setIsMenuOpen(false)} className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === item.path ? "text-primary bg-primary/10" : "text-foreground hover:text-primary hover:bg-muted"}`}>{item.name}</Link>
+                <Link key={item.key} to={item.path} onClick={() => setIsMenuOpen(false)} className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === item.path ? "text-primary bg-primary/10" : "text-foreground hover:text-primary hover:bg-muted"}`}>{t(item.key)}</Link>
               ))}
               <div className="flex gap-2 mt-3">
                 <button title="English" onClick={() => changeLanguage("en")} className={`p-1 rounded border transform transition-transform hover:scale-110 ${i18n.language === "en" ? "bg-primary text-white" : "bg-white"}`}><UKFlag /></button>
