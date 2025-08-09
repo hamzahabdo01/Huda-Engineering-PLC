@@ -10,7 +10,6 @@ import About from "./pages/About";
 import Services from "./pages/Services";
 import Projects from "./pages/Projects";
 import Contact from "./pages/Contact";
-import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import Booking from "./pages/Booking";
 import Announcements from "./pages/Announcements";
@@ -38,7 +37,7 @@ function App() {
             <Route path="/services" element={<Services />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/auth" element={<Auth />} />
+
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/announcements" element={<Announcements />} />
