@@ -8,7 +8,7 @@ import Logo from "@/components/Logo";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import heroImage from "@/assets/hero-real-estate.jpg";
-
+import Portfolio from "@/pages/Portfolio";
 const Index = () => {
   const { t } = useTranslation();
   
@@ -24,7 +24,7 @@ const Index = () => {
             src={heroImage} 
             alt="Modern real estate" 
             className="w-full h-full object-cover"
-          />
+          />block
           <div className="absolute inset-0 bg-gradient-to-br from-[#00555b]/85 via-[#004147]/80 to-[#002b2f]/90"></div>
         </div>
         
@@ -37,7 +37,7 @@ const Index = () => {
               </div>
               
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold leading-tight animate-fade-in">
-                <span className="block">{t("hero.title")}</span>
+                <span className="">{t("hero.title")}</span>
                 <span className="block text-white/90 mt-2">{t("hero.subtitle")}</span>
               </h1>
             </div>
@@ -53,7 +53,7 @@ const Index = () => {
                 asChild
               >
                 <Link to="/booking">
-                  {t("hero.exploreNow")}
+                  {t("BookNow")}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
@@ -148,89 +148,39 @@ const Index = () => {
 
       {/* Why Choose Us Section */}
       <section className="py-20 lg:py-32 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("whyChoose.title")}</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              {t("whyChoose.description")}
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <CardHeader>
-                <Shield className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">{t("whyChoose.quality.title")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  {t("whyChoose.quality.description")}
-                </CardDescription>
-              </CardContent>
-            </Card>
-            
-            <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <CardHeader>
-                <Users className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">{t("whyChoose.expert.title")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  {t("whyChoose.expert.description")}
-                </CardDescription>
-              </CardContent>
-            </Card>
-            
-            <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <CardHeader>
-                <Clock className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">{t("whyChoose.timely.title")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  {t("whyChoose.timely.description")}
-                </CardDescription>
-              </CardContent>
-            </Card>
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="text-center mb-16">
+      <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("whyChoose.title")}</h2>
+      <p className="text-xl text-muted-foreground max-w-3xl mx-auto">{t("whyChoose.description")}</p>
+    </div>
 
-            <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <CardHeader>
-                <Target className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">{t("whyChoose.local.title")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  {t("whyChoose.local.description")}
-                </CardDescription>
-              </CardContent>
-            </Card>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {[ 
+        { icon: Shield, title: t("whyChoose.quality.title"), desc: t("whyChoose.quality.description") },
+        { icon: Users, title: t("whyChoose.expert.title"), desc: t("whyChoose.expert.description") },
+        { icon: Clock, title: t("whyChoose.timely.title"), desc: t("whyChoose.timely.description") },
+        { icon: Target, title: t("whyChoose.local.title"), desc: t("whyChoose.local.description") },
+        { icon: Zap, title: t("whyChoose.modern.title"), desc: t("whyChoose.modern.description") },
+        { icon: CheckCircle, title: t("whyChoose.fullService.title"), desc: t("whyChoose.fullService.description") }
+      ].map((item, index) => (
+        <Card key={index} className="relative text-center cursor-default rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+          {/* Decorative background pattern */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 opacity-60 pointer-events-none"></div>
+          <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
 
-            <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <CardHeader>
-                <Zap className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">{t("whyChoose.modern.title")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  {t("whyChoose.modern.description")}
-                </CardDescription>
-              </CardContent>
-            </Card>
+          <CardHeader className="relative z-10">
+            <item.icon className="w-16 h-16 text-primary mx-auto mb-4 transition-transform duration-300 group-hover:scale-110 drop-shadow-md" />
+            <CardTitle className="text-xl font-semibold">{item.title}</CardTitle>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <CardDescription className="text-base">{item.desc}</CardDescription>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  </div>
+</section>
 
-            <Card className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <CardHeader>
-                <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
-                <CardTitle className="text-xl">{t("whyChoose.fullService.title")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  {t("whyChoose.fullService.description")}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
 
       {/* Services Overview */}
       <section className="py-20 lg:py-32 bg-muted">
@@ -358,131 +308,79 @@ const Index = () => {
       </section>
 
       {/* Our Process */}
-      <section className="py-20 lg:py-32 bg-muted">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("constructionProcess.title")}</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              {t("constructionProcess.description")}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                step: "01",
-                title: t("constructionProcess.steps.consultation.title"),
-                description: t("constructionProcess.steps.consultation.description"),
-                icon: Users
-              },
-              {
-                step: "02", 
-                title: t("constructionProcess.steps.design.title"),
-                description: t("constructionProcess.steps.design.description"),
-                icon: Target
-              },
-              {
-                step: "03",
-                title: t("constructionProcess.steps.construction.title"), 
-                description: t("constructionProcess.steps.construction.description"),
-                icon: Wrench
-              },
-              {
-                step: "04",
-                title: t("constructionProcess.steps.completion.title"),
-                description: t("constructionProcess.steps.completion.description"),
-                icon: CheckCircle
-              }
-            ].map((item, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-all duration-300">
-                <CardHeader>
-                  <div className="text-4xl font-bold text-accent mb-4">{item.step}</div>
-                  <item.icon className="w-12 h-12 text-primary mx-auto mb-4" />
-                  <CardTitle className="text-lg">{item.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base">
-                    {item.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+      
 
       {/* Testimonials */}
       <section className="py-20 lg:py-32 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("testimonials.title")}</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              {t("testimonials.description")}
-            </p>
-          </div>
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="text-center mb-16">
+      <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("testimonials.title")}</h2>
+      <p className="text-xl text-muted-foreground max-w-3xl mx-auto">{t("testimonials.description")}</p>
+    </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                name: "Ahmed Hassan",
-                project: "Residential Complex Owner",
-                content: "Huda Engineering delivered our apartment complex on time and within budget. Their attention to detail and professional approach exceeded our expectations.",
-                rating: 5
-              },
-              {
-                name: "Meron Tadesse", 
-                project: "Commercial Building Client",
-                content: "The quality of construction and the professionalism of the team was outstanding. They handled every aspect of our office building project perfectly.",
-                rating: 5
-              },
-              {
-                name: "Solomon Bekele",
-                project: "Luxury Home Owner", 
-                content: "From design to completion, Huda Engineering provided exceptional service. Our dream home became reality thanks to their expertise and dedication.",
-                rating: 5
-              }
-            ].map((testimonial, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-accent text-accent" />
-                    ))}
-                  </div>
-                  <CardTitle className="text-lg">{testimonial.name}</CardTitle>
-                  <CardDescription className="text-primary">{testimonial.project}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground italic">"{testimonial.content}"</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {[
+        {
+          name: "Ahmed Hassan",
+          project: "Residential Complex Owner",
+          content: "Huda Engineering delivered our apartment complex on time and within budget. Their attention to detail and professional approach exceeded our expectations.",
+          rating: 5,
+          video: "https://www.youtube.com/embed/dQw4w9WgXcQ" // Example YouTube link
+        },
+        {
+          name: "Meron Tadesse",
+          project: "Commercial Building Client",
+          content: "The quality of construction and the professionalism of the team was outstanding. They handled every aspect of our office building project perfectly.",
+          rating: 5,
+          video: null // Example no video
+        },
+        {
+          name: "Solomon Bekele",
+          project: "Luxury Home Owner",
+          content: "From design to completion, Huda Engineering provided exceptional service. Our dream home became reality thanks to their expertise and dedication.",
+          rating: 5,
+          video: "/videos/testimonial1.mp4" // Example local video file path
+        }
+      ].map((testimonial, index) => (
+        <Card key={index} className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <div className="flex mb-4">
+              {[...Array(testimonial.rating)].map((_, i) => (
+                <Star key={i} className="w-5 h-5 fill-accent text-accent" />
+              ))}
+            </div>
+            <CardTitle className="text-lg">{testimonial.name}</CardTitle>
+            <CardDescription className="text-primary">{testimonial.project}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground italic mb-4">"{testimonial.content}"</p>
+            {testimonial.video && (
+              testimonial.video.includes("youtube.com") ? (
+                <div className="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src={testimonial.video}
+                    title={`${testimonial.name} video testimonial`}
+                    allowFullScreen
+                    className="w-full h-full rounded-lg"
+                  ></iframe>
+                </div>
+              ) : (
+                <video controls className="w-full rounded-lg">
+                  <source src={testimonial.video} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              )
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  </div>
+</section>
+
 
       {/* Call to Action */}
-      <section className="py-20 lg:py-32 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl lg:text-5xl font-bold mb-6">{t("cta.title")}</h2>
-          <p className="text-xl lg:text-2xl mb-8 text-primary-foreground/90">
-            {t("cta.description")}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/contact">
-              <Button size="lg" className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 px-8 py-4 text-lg">
-                {t("cta.consultation")}
-                <Phone className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link to="/projects">
-              <Button size="lg" className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 px-8 py-4 text-lg">
-                {t("cta.portfolio")}
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+     
 
       <Footer />
     </div>

@@ -355,6 +355,44 @@ const About = () => {
           </div>
         </div>
       </section>
+{/* Portfolio Preview Section */}
+<section className="py-20 lg:py-32 bg-muted">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="text-center mb-16">
+      <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">Our Portfolio</h2>
+      <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+        A quick look at some of our featured work showcasing the quality and diversity of our projects.
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+      {[
+        { title: "Residential Complex", category: "Residential", image: "/images/portfolio/residential1.jpg" },
+        { title: "Commercial Tower", category: "Commercial", image: "/images/portfolio/commercial1.jpg" },
+        { title: "Luxury Villa", category: "Residential", image: "/images/portfolio/residential2.jpg" }
+      ].map((item, index) => (
+        <Card key={index} className="overflow-hidden hover:shadow-xl transition-shadow">
+          <div className="h-56 overflow-hidden">
+            <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+          </div>
+          <CardHeader>
+            <CardTitle className="text-xl mb-2">{item.title}</CardTitle>
+            <CardDescription className="text-muted-foreground">{item.category}</CardDescription>
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+
+    <div className="text-center">
+      <Link to="/portfolio">
+        <Button size="lg" className="bg-gradient-to-r from-accent to-primary text-white shadow-lg hover:shadow-xl px-8 py-4 text-lg transition-transform transform hover:scale-110">
+          View Full Portfolio
+          <ArrowRight className="ml-2 h-5 w-5" />
+        </Button>
+      </Link>
+    </div>
+  </div>
+</section>
 
       {/* Call to Action */}
       <section className="py-20 lg:py-32 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
@@ -364,19 +402,19 @@ const About = () => {
             Experience the Huda Engineering difference. Let's discuss how we can bring your construction vision to life with our proven expertise and unwavering commitment to excellence.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/contact">
-              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-4 text-lg">
-                {t("nav.contact")}
-                <Phone className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link to="/projects">
-              <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg">
-                {t("nav.projects")}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-          </div>
+  <Link to="/contact">
+    <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-4 text-lg transition-transform hover:scale-105">
+      {t("nav.contact")}
+      <Phone className="ml-2 h-5 w-5" />
+    </Button>
+  </Link>
+  <Link to="/projects">
+    <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg transition-transform hover:scale-105">
+      {t("nav.projects")}
+      <ArrowRight className="ml-2 h-5 w-5" />
+    </Button>
+  </Link>
+</div>
         </div>
       </section>
 

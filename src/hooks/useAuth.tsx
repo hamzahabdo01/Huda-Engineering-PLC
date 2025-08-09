@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return { error };
   };
 
-  const isAdmin = user?.email === 'hudaengineeringrealestate@gmail.com';
+  const isAdmin = profile?.role === 'admin';
 
   const value = {
     user,

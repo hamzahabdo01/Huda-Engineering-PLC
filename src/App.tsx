@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import Portfolio from "@/pages/Portfolio";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Services from "./pages/Services";
@@ -16,7 +17,9 @@ import Announcements from "./pages/Announcements";
 import Maps from "./pages/Maps";
 import VirtualTour from "./pages/VirtualTour";
 import NotFound from "./pages/NotFound";
+
 import ScrollToTop from "./components/ScrollToTop";
+import BackToHomeButton from "./components/BackToHomeButton"; // ✅ أضف هذا السطر
 
 const queryClient = new QueryClient();
 
@@ -28,6 +31,7 @@ function App() {
           <Toaster />
           <Sonner />
           <ScrollToTop />
+          <BackToHomeButton /> {/* ✅ الزر العائم */}
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
@@ -40,6 +44,7 @@ function App() {
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/maps" element={<Maps />} />
             <Route path="/virtual-tour" element={<VirtualTour />} />
+            <Route path="/portfolio" element={<Portfolio />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>

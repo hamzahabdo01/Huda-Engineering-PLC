@@ -1,376 +1,302 @@
-
 import { useState, useEffect } from "react";
-import { Calendar, MapPin, Home, DollarSign, Clock, Building2 } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
-import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import ReCAPTCHA from "react-google-recaptcha";
 
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  short_description: string;
-  location: string;
-  project_type: string;
-  status: 'active' | 'completed' | 'upcoming';
-  budget: string;
-  start_date: string;
-  end_date: string;
-  image_url: string;
-  gallery_urls: string[];
-  features: string[];
-  created_at: string;
-}
+const SITE_KEY = "6LcpLJIrAAAAAHCswRH3bneQHmnsrtktGrL8Fg1F";
 
-const Booking = () => {
+export default function Booking() {
   const { toast } = useToast();
-  const { t } = useTranslation();
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [stock, setStock] = useState<Record<string, number>>({});
+  const [units, setUnits] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [bookingType, setBookingType] = useState<"appointment" | "property">("property");
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     phone: "",
+    secondary_phone: "",
     nationalId: "",
     property: "",
+    unitType: "",
     moveInDate: "",
-    notes: ""
+    appointmentDate: "",
+    notes: "",
+    consent: false,
+    acceptTnC: false,
   });
 
   useEffect(() => {
-    fetchProjects();
+    supabase.from("projects").select("*").in("status", ["active", "completed"]).then(({ data }) => {
+      setProjects(data || []);
+      setLoading(false);
+    });
   }, []);
 
-  const fetchProjects = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .in('status', ['active', 'completed']) // Only show active and completed projects for booking
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setProjects(data || []);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (!formData.property) return;
+    const project = projects.find((p) => p.id === formData.property);
+    if (project) {
+      setUnits(project.units || {});
+      fetchStock(formData.property);
+    } else {
+      setUnits({});
+      setStock({});
     }
-  };
+  }, [formData.property, projects]);
 
-  const availableProjects = projects.filter(p => p.status === 'active' || p.status === 'completed');
+  const fetchStock = async (propertyId: string) => {
+  console.log("Fetching stock for propertyId:", propertyId);
+  const { data, error } = await supabase
+    .from("unit_stock")
+    .select("unit_type, total_units, booked_units, property_id")
+    .eq("property_id", propertyId);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const { error } = await supabase
-        .from('property_bookings')
-        .insert([
-          {
-            property_id: formData.property,
-            full_name: formData.fullName,
-            email: formData.email,
-            phone: formData.phone,
-            national_id: formData.nationalId,
-            move_in_date: formData.moveInDate || null,
-            notes: formData.notes || null,
-          }
-        ]);
-
-      if (error) throw error;
-
-      toast({
-        title: t("booking.toast.title"),
-        description: t("booking.toast.description"),
-      });
-
-      // Reset form
-      setFormData({
-        fullName: "",
-        email: "",
-        phone: "",
-        nationalId: "",
-        property: "",
-        moveInDate: "",
-        notes: ""
-      });
-    } catch (error) {
-      console.error('Error submitting booking:', error);
-      toast({
-        title: "Error",
-        description: "Failed to submit booking. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>Loading available properties...</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
+  if (error) {
+    console.error("Stock fetch error:", error);
+    return;
   }
+
+  console.log("Unit stock rows:", data);
+
+  if (data) {
+    const stockMap: Record<string, number> = {};
+    data.forEach((s) => {
+      const available = (s.total_units ?? 0) - (s.booked_units ?? 0);
+      stockMap[s.unit_type] = available;
+    });
+    setStock(stockMap);
+  }
+  console.log("propertyId used:", propertyId);
+console.log("unit stock fetched:", data);
+
+};
+
+
+  useEffect(() => {
+  const channel = supabase
+    .channel('unit_stock_changes')
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'unit_stock' },
+      (payload) => {
+        if (payload.new.project_id === formData.property) {
+          setUnits((prev) => ({
+            ...prev,
+            [payload.new.unit_type]: payload.new.available_units
+          }));
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [formData.property]);
+
+  
+
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    if (name === "fullName") {
+      setFormData({ ...formData, [name]: value.replace(/[^a-zA-Z\s]/g, "") });
+    } else if (name === "phone" || name === "secondary_phone") {
+      setFormData({ ...formData, [name]: value.replace(/\D/g, "").slice(0, 10) });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
+  const handleSubmit = async (e: any, type: "property" | "appointment") => {
+    e.preventDefault();
+    if (type === "property" && (!formData.property || !formData.unitType)) {
+      return toast({ title: "Missing Data", description: "Select property and unit type", variant: "destructive" });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      return toast({ title: "Invalid Email", description: "Enter a valid email", variant: "destructive" });
+    }
+    if (formData.phone.length !== 10) {
+      return toast({ title: "Invalid Phone", description: "Phone must be 10 digits", variant: "destructive" });
+    }
+    if (!captchaToken) {
+      return toast({ title: "Captcha Required", description: "Please verify you are human", variant: "destructive" });
+    }
+    if (!formData.consent) {
+      return toast({ title: "Consent Required", description: "You must agree to be contacted", variant: "destructive" });
+    }
+    if (type === "property" && !formData.acceptTnC) {
+      return toast({ title: "T&C Required", description: "Accept Terms & Conditions", variant: "destructive" });
+    }
+
+    let error = null;
+    if (type === "property") {
+      const { error: insertError } = await supabase.from("property_bookings").insert([
+        {
+          property_id: formData.property,
+          unit_type: formData.unitType,
+          full_name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          secondary_phone: formData.secondary_phone,
+          national_id: formData.nationalId,
+          move_in_date: formData.moveInDate || null,
+          notes: formData.notes || null,
+          recaptcha_token: captchaToken,
+        },
+      ]);
+
+      if (!insertError) {
+        await supabase.rpc("increment_booked_units", {
+          property_id: formData.property,
+          unit_type: formData.unitType,
+        });
+        fetchStock(formData.property);
+      }
+      error = insertError;
+    } else {
+      const { error: insertError } = await supabase.from("appointments").insert([
+        {
+          full_name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          secondary_phone: formData.secondary_phone,
+          appointment_date: formData.appointmentDate,
+          notes: formData.notes || null,
+          recaptcha_token: captchaToken,
+        },
+      ]);
+      error = insertError;
+    }
+
+    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
+
+    toast({ title: "Success", description: type === "property" ? "Property booked successfully" : "Appointment scheduled" });
+    setFormData({
+      fullName: "",
+      email: "",
+      phone: "",
+      secondary_phone: "",
+      nationalId: "",
+      property: "",
+      unitType: "",
+      moveInDate: "",
+      appointmentDate: "",
+      notes: "",
+      consent: false,
+      acceptTnC: false,
+    });
+    setCaptchaToken(null);
+  };
+
+  if (loading) return <div className="min-h-screen bg-background">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            {t("booking.title")}
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            {t("booking.subtitle")}
-          </p>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex gap-4 mb-8 justify-center">
+          <Button variant={bookingType === "appointment" ? "default" : "outline"} onClick={() => setBookingType("appointment")}>Book Appointment</Button>
+          <Button variant={bookingType === "property" ? "default" : "outline"} onClick={() => setBookingType("property")}>Book Property</Button>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Property Listings */}
-          <div>
-            <h2 className="text-2xl font-bold text-foreground mb-6">{t("booking.available")}</h2>
-            {projects.length === 0 ? (
-              <div className="text-center py-12">
-                <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">No Properties Available</h3>
-                <p className="text-muted-foreground">Check back later for available properties to book.</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                                 {projects.map((project) => (
-                  <Card key={project.id} className={`transition-all duration-300 hover:shadow-lg ${
-                    project.status === "upcoming" ? "opacity-60" : ""
-                  }`}>
-                    <div className="flex flex-col md:flex-row">
-                      <div className="md:w-1/3">
-                        {project.image_url ? (
-                          <img
-                            src={project.image_url}
-                            alt={project.title}
-                            className="w-full h-48 md:h-full object-cover rounded-t-lg md:rounded-l-lg md:rounded-t-none"
-                          />
-                        ) : (
-                          <div className="w-full h-48 md:h-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center rounded-t-lg md:rounded-l-lg md:rounded-t-none">
-                            <Building2 className="w-16 h-16 text-primary-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="md:w-2/3 p-6">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-xl font-semibold text-foreground">{project.title}</h3>
-                          <Badge variant={project.status === 'active' ? 'default' : project.status === 'completed' ? 'secondary' : 'outline'}>
-                            {project.status === 'active' ? 'Available' : project.status === 'completed' ? 'Completed' : 'Upcoming'}
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex items-center text-muted-foreground mb-3">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          <span className="text-sm">{project.location}</span>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 mb-4 text-sm text-muted-foreground">
-                          <div className="flex items-center">
-                            <Building2 className="w-4 h-4 mr-1" />
-                            {project.project_type}
-                          </div>
-                          <div className="flex items-center">
-                            <DollarSign className="w-4 h-4 mr-1" />
-                            {project.budget}
-                          </div>
-                        </div>
-                        
-                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                          {project.short_description}
-                        </p>
+        {bookingType === "property" ? (
+          <form onSubmit={(e) => handleSubmit(e, "property")} className="space-y-6">
+            <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
+            <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+            <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+            <InputGroup label="Secondary Phone" name="secondary_phone" type="tel" value={formData.secondary_phone} onChange={handleChange} required />
+            <InputGroup label="National ID" name="nationalId" value={formData.nationalId} onChange={handleChange} required />
+            <SelectProject projects={projects} value={formData.property} onChange={(v: any) => setFormData({ ...formData, property: v })} />
 
-                        {project.features.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-4">
-                            {project.features.slice(0, 3).map((feature, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs">
-                                {feature}
-                              </Badge>
-                            ))}
-                            {project.features.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{project.features.length - 3} more
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center text-primary">
-                            <Calendar className="w-4 h-4 mr-1" />
-                            <span className="text-sm">Started: {new Date(project.start_date).getFullYear()}</span>
-                          </div>
-                          <Button 
-                            size="sm" 
-                            disabled={project.status === "upcoming"}
-                            onClick={() => setFormData({...formData, property: project.id})}
-                          >
-                            {project.status !== "upcoming" ? "Select" : "Coming Soon"}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                                  </Card>
-                ))}
-                </div>
-              )}
+            <div className="space-y-2">
+              <Label>Select Unit Type *</Label>
+              <Select value={formData.unitType} onValueChange={(v) => setFormData({ ...formData, unitType: v })}>
+                <SelectTrigger><SelectValue placeholder="Select unit type" /></SelectTrigger>
+                <SelectContent>
+  {Object.keys(units).map((unit) => (
+  <SelectItem key={unit} value={unit}>
+    {unit} - Available: {stock[unit] ?? 0}
+  </SelectItem>
+))}
+
+</SelectContent>
+
+              </Select>
             </div>
 
-          {/* Booking Form */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl">{t("booking.form.title")}</CardTitle>
-                <CardDescription>
-                  {t("booking.form.description")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">{t("booking.form.fullName")} *</Label>
-                    <Input
-                      id="fullName"
-                      name="fullName"
-                      type="text"
-                      required
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      className="bg-background border-input"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">{t("booking.form.email")} *</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="bg-background border-input"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">{t("booking.form.phone")} *</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      required
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="bg-background border-input"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="nationalId">{t("booking.form.nationalId")} *</Label>
-                    <Input
-                      id="nationalId"
-                      name="nationalId"
-                      type="text"
-                      required
-                      value={formData.nationalId}
-                      onChange={handleInputChange}
-                      placeholder={t("booking.form.nationalIdPlaceholder")}
-                      className="bg-background border-input"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="property">{t("booking.form.property")} *</Label>
-                    <Select 
-                      value={formData.property} 
-                      onValueChange={(value) => setFormData({...formData, property: value})}
-                    >
-                      <SelectTrigger className="bg-background border-input">
-                        <SelectValue placeholder={t("booking.form.propertyPlaceholder")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        {availableProjects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.title} - {project.location}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="moveInDate">{t("booking.form.moveInDate")}</Label>
-                    <Input
-                      id="moveInDate"
-                      name="moveInDate"
-                      type="date"
-                      value={formData.moveInDate}
-                      onChange={handleInputChange}
-                      className="bg-background border-input"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="notes">{t("booking.form.notes")}</Label>
-                    <Textarea
-                      id="notes"
-                      name="notes"
-                      rows={4}
-                      value={formData.notes}
-                      onChange={handleInputChange}
-                      placeholder={t("booking.form.notesPlaceholder")}
-                      className="bg-background border-input"
-                    />
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    {t("booking.form.submit")}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+            <InputGroup label="Move In Date" name="moveInDate" type="date" value={formData.moveInDate} onChange={handleChange} />
+            <TextareaGroup label="Notes" name="notes" value={formData.notes} onChange={handleChange} />
+            <ConsentCheckbox checked={formData.consent} onChange={(v: any) => setFormData({ ...formData, consent: v })} />
+            <div className="flex items-center space-x-2">
+              <Checkbox checked={formData.acceptTnC} onCheckedChange={(v: any) => setFormData({ ...formData, acceptTnC: !!v })} />
+              <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
+            </div>
+            <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
+            <Button type="submit" className="w-full bg-primary" disabled={!formData.consent || !formData.acceptTnC}>Submit</Button>
+          </form>
+        ) : (
+          <form onSubmit={(e) => handleSubmit(e, "appointment")} className="space-y-6">
+            <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
+            <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+            <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+            <InputGroup label="Secondary Phone" name="secondary_phone" type="tel" value={formData.secondary_phone} onChange={handleChange} required />
+            <InputGroup label="Preferred Date & Time" name="appointmentDate" type="datetime-local" value={formData.appointmentDate} onChange={handleChange} required />
+            <TextareaGroup label="Notes" name="notes" value={formData.notes} onChange={handleChange} />
+            <ConsentCheckbox checked={formData.consent} onChange={(v: any) => setFormData({ ...formData, consent: v })} />
+            <div className="flex items-center space-x-2">
+              <Checkbox checked={formData.acceptTnC} onCheckedChange={(v: any) => setFormData({ ...formData, acceptTnC: !!v })} />
+              <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
+            </div>
+            <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
+            <Button type="submit" className="w-full bg-primary">Book Appointment</Button>
+          </form>
+        )}
       </main>
-
       <Footer />
     </div>
   );
-};
+}
 
-export default Booking;
+const InputGroup = ({ label, name, value, onChange, type = "text", required = false }: any) => (
+  <div className="space-y-2">
+    <Label htmlFor={name}>{label}{required && " *"}</Label>
+    <Input id={name} name={name} type={type} value={value} onChange={onChange} required={required} />
+  </div>
+);
+
+const TextareaGroup = ({ label, name, value, onChange }: any) => (
+  <div className="space-y-2">
+    <Label htmlFor={name}>{label}</Label>
+    <Textarea id={name} name={name} rows={4} value={value} onChange={onChange} />
+  </div>
+);
+
+const SelectProject = ({ projects, value, onChange }: any) => (
+  <div className="space-y-2">
+    <Label htmlFor="property">Select Property *</Label>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger><SelectValue placeholder="Select property" /></SelectTrigger>
+      <SelectContent>
+        {projects.map((p: any) => (<SelectItem key={p.id} value={p.id}>{p.title} - {p.location}</SelectItem>))}
+      </SelectContent>
+    </Select>
+  </div>
+);
+
+const ConsentCheckbox = ({ checked, onChange }: any) => (
+  <div className="flex items-center space-x-2">
+    <Checkbox checked={checked} onCheckedChange={onChange} />
+    <Label>I agree to be contacted.</Label>
+  </div>
+);

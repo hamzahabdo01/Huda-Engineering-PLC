@@ -45,6 +45,7 @@ interface PropertyBooking {
   full_name: string;
   email: string;
   phone: string;
+  unit_type: string;
   national_id: string;
   move_in_date: string;
   notes: string;
@@ -59,13 +60,17 @@ interface Project {
   short_description: string;
   location: string;
   project_type: string;
+<<<<<<< Updated upstream
   status: 'planning' | 'active' | 'completed' | 'upcoming' | 'on-hold';
   budget: string;
+=======
+  status: 'active' | 'completed' | 'upcoming';
+>>>>>>> Stashed changes
   start_date: string;
   end_date: string;
   image_url: string;
-  gallery_urls: string[];
-  features: string[];
+  Amenities: string[];
+  units: string[] ;
   created_at: string;
 }
 
@@ -95,6 +100,17 @@ const AdminDashboard = () => {
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isAddAnnouncementOpen, setIsAddAnnouncementOpen] = useState(false);
 
+  const [isAddUpdateOpen, setIsAddUpdateOpen] = useState(false);
+const [update, setUpdate] = useState({
+  project_id: "",
+  description: "",
+  file: null,
+});
+const [loadingg, setLoading] = useState(false);
+const [ongoingProjects, setOngoingProjects] = useState([]);
+const [updates, setUpdates] = useState([]);
+
+
   // Form states
   const [newProject, setNewProject] = useState({
     title: "",
@@ -102,12 +118,17 @@ const AdminDashboard = () => {
     short_description: "",
     location: "",
     project_type: "",
+<<<<<<< Updated upstream
     status: "planning" as const,
     budget: "",
+=======
+    status: "active" as const,
+>>>>>>> Stashed changes
     start_date: "",
     end_date: "",
     image_url: "",
-    features: [] as string[],
+    units: "",
+    Amenities: [] as string[],
   });
 
   const [newAnnouncement, setNewAnnouncement] = useState({
@@ -116,10 +137,25 @@ const AdminDashboard = () => {
     short_description: "",
     category: "general",
     image_url: "",
+    scheduled_for:"",
     is_published: false,
   });
+  const [units, setUnits] = useState<{ [key: string]: string }>({});
+const [AmenityInput, setAmenityInput] = useState("");
+const addAmenity = () => {
+  if (!AmenityInput.trim()) return;
+  setNewProject(prev => ({ ...prev, Amenities: [...prev.Amenities, AmenityInput.trim()] }));
+  setAmenityInput("");
+};
+const removeAmenity = (index: number) => {
+  setNewProject(prev => ({
+    ...prev,
+    Amenities: prev.Amenities.filter((_, i) => i !== index),
+  }));
+};
 
-  const [featureInput, setFeatureInput] = useState("");
+
+  const [AmenitiesInput, setAmenitiesInput] = useState("");
   const [deletingContact, setDeletingContact] = useState<string | null>(null);
   const [deletingBooking, setDeletingBooking] = useState<string | null>(null);
 
@@ -176,7 +212,7 @@ const AdminDashboard = () => {
         });
       } else {
         console.log(`✅ Setting ${projectsRes.data?.length || 0} projects`);
-        setProjects(projectsRes.data as Project[] || []);
+        setProjects(projectsRes.data as unknown as Project[] || []);
       }
 
       if (announcementsRes.error) {
@@ -312,7 +348,7 @@ const AdminDashboard = () => {
 
   // Check authentication and admin access
   useEffect(() => {
-    console.log('🔐 Auth check - Loading:', loading, 'User:', user?.email);
+    console.log('🔐 Auth check - Loading:', loading, 'User:', user?.email, 'Profile:', profile);
     
     if (!loading) {
       if (!user) {
@@ -321,8 +357,8 @@ const AdminDashboard = () => {
         return;
       }
 
-      // Check if user is the authorized admin
-      if (user.email !== 'hudaengineeringrealestate@gmail.com') {
+      // Check if user is the authorized admin (role-based)
+      if (profile?.role !== 'admin') {
         console.log('❌ Unauthorized user, redirecting to auth');
         toast({
           title: "Access Denied",
@@ -338,7 +374,7 @@ const AdminDashboard = () => {
       fetchData();
       setupRealtimeSubscriptions();
     }
-  }, [user, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
+  }, [user, profile, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -477,6 +513,8 @@ const AdminDashboard = () => {
         .from('projects')
         .insert([{
           ...newProject,
+           units: units,
+           Amenities: newProject.Amenities,
           created_by: user?.id,
         }]);
 
@@ -488,13 +526,20 @@ const AdminDashboard = () => {
         short_description: "",
         location: "",
         project_type: "",
+<<<<<<< Updated upstream
         status: "planning",
         budget: "",
+=======
+        status: "active",
+        
+>>>>>>> Stashed changes
         start_date: "",
         end_date: "",
         image_url: "",
-        features: [],
+        units: [],
+        Amenities: [],
       });
+      setUnits({});
       setIsAddProjectOpen(false);
 
       toast({
@@ -533,6 +578,46 @@ const AdminDashboard = () => {
       });
     }
   };
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+
+// When edit is clicked
+const handleEditClick = (project: any) => {
+  setEditingProjectId(project.id);
+  setNewProject({
+    title: project.title,
+    location: project.location,
+    project_type: project.project_type,
+    short_description: project.short_description,
+    description: project.description,
+    start_date: project.start_date,
+    end_date: project.end_date,
+    image_url: project.image_url,
+    status: project.status,
+    Amenities: project.Amenities || [],
+  });
+  setUnits(project.units || {});
+  setIsAddProjectOpen(true);
+};
+
+// Save changes
+const handleSaveProject = async () => {
+  const { error } = await supabase
+    .from("projects")
+    .update({
+      ...newProject,
+      units,
+    })
+    .eq("id", editingProjectId);
+
+  if (!error) {
+    toast({ title: "Project Updated", description: "Changes saved." });
+    setIsAddProjectOpen(false);
+    setEditingProjectId(null);
+  } else {
+    toast({ title: "Error", description: error.message, variant: "destructive" });
+  }
+};
+
 
   const handleAddAnnouncement = async () => {
     try {
@@ -568,6 +653,55 @@ const AdminDashboard = () => {
       });
     }
   };
+  const [editingAnnouncement, setEditingAnnouncement] = useState<any | null>(null);
+  const handleEditAnnouncement = (announcement: any) => {
+  setEditingAnnouncement(announcement);
+  setNewAnnouncement({
+    ...announcement,
+    scheduled_for: announcement.scheduled_for || "",
+  });
+  setIsAddAnnouncementOpen(true);
+};
+
+// save changes
+const handleSaveAnnouncement = async () => {
+  if (editingAnnouncement) {
+    const { error } = await supabase
+      .from("announcements")
+      .update({
+        title: newAnnouncement.title,
+        short_description: newAnnouncement.short_description,
+        content: newAnnouncement.content,
+        category: newAnnouncement.category,
+        image_url: newAnnouncement.image_url,
+        is_published: newAnnouncement.is_published,
+        scheduled_for: newAnnouncement.scheduled_for,
+      })
+      .eq("id", editingAnnouncement.id);
+    if (!error) toast({ title: "Updated", description: "Announcement updated" });
+  } else {
+    const { error } = await supabase.from("announcements").insert([
+      { ...newAnnouncement },
+    ]);
+    if (!error) toast({ title: "Added", description: "Announcement added" });
+  }
+  setIsAddAnnouncementOpen(false);
+  setEditingAnnouncement(null);
+};
+const handleOpenAddAnnouncement = () => {
+  setEditingAnnouncement(null);
+  setNewAnnouncement({
+    title: "",
+    short_description: "",
+    content: "",
+    category: "",
+    image_url: "",
+    is_published: false,
+    scheduled_for: "",
+  });
+  setIsAddAnnouncementOpen(true);
+};
+
 
   const handleDeleteAnnouncement = async (id: string) => {
     try {
@@ -614,21 +748,122 @@ const AdminDashboard = () => {
       });
     }
   };
+  const handleAddUpdate = async () => {
+  setLoading(true);
 
-  const addFeature = () => {
-    if (featureInput.trim()) {
+  let media_url = null;
+  let update_type = "text";
+
+  if (update.file) {
+    const ext = update.file.name.split(".").pop();
+    update_type = update.file.type.startsWith("video") ? "video" : "image";
+    const filePath = `${Date.now()}-${update.file.name}`;
+    const { data, error } = await supabase.storage
+      .from("project-updates")
+      .upload(filePath, update.file);
+
+    if (error) {
+  console.error("Supabase upload error:", error);
+  alert("Upload failed: " + error.message);
+  setLoading(false);
+  return;
+}
+
+
+    media_url = supabase.storage
+      .from("project-updates")
+      .getPublicUrl(filePath).data.publicUrl;
+  }
+
+  const { error: insertError } = await supabase
+  .from("project_updates")
+  .insert({
+    project_id: update.project_id,
+    description: update.description,
+    media_url: [media_url], // ✅ Fix here
+    update_type,
+  });
+
+
+if (insertError) {
+  console.error("Insert Error:", insertError); // 👈 this is crucial
+  alert("Error inserting update: " + insertError.message); // 👈 shows real reason
+} else {
+  alert("Update added!");
+  fetchUpdates();
+  setIsAddUpdateOpen(false);
+  setUpdate({ project_id: "", description: "", file: null });
+}
+
+setLoading(false);
+  }
+
+useEffect(() => {
+  const fetchProjects = async () => {
+    const { data } = await supabase
+      .from("projects")
+      .select("id, title")
+      .eq("status", "active");
+    setOngoingProjects(data || []);
+  };
+
+  const fetchUpdates = async () => {
+    const { data } = await supabase
+      .from("project_updates")
+      .select("*, projects(title)")
+      .order("created_at", { ascending: false });
+
+    const formatted = data.map((u) => ({
+      ...u,
+      project_title: u.projects?.title || "Untitled",
+    }));
+
+    setUpdates(formatted);
+  };
+
+  fetchProjects();
+  fetchUpdates();
+}, []);
+const handleDelete = async (id: string) => {
+  if (!confirm("Are you sure you want to delete this update?")) return;
+
+  const { error } = await supabase.from("project_updates").delete().eq("id", id);
+  if (error) {
+    alert("Delete failed");
+    console.error(error);
+  } else {
+    alert("Deleted!");
+    fetchUpdates(); // re-fetch your updates
+  }
+};
+
+const handleEdit = (update) => {
+  setEditingUpdate(update); // optional for update mode
+  setUpdate({
+    project_id: update.project_id,
+    description: update.description,
+    file: null,
+  });
+  setIsAddUpdateOpen(true);
+};
+
+
+  
+
+  const addAmenities = () => {
+    if (AmenitiesInput.trim()) {
       setNewProject(prev => ({
         ...prev,
-        features: [...prev.features, featureInput.trim()]
+        Amenities: [...prev.Amenities, AmenitiesInput.trim()]
       }));
-      setFeatureInput("");
+      setAmenitiesInput("");
     }
   };
 
-  const removeFeature = (index: number) => {
+  const removeAmenities  = (index: number) => {
     setNewProject(prev => ({
       ...prev,
-      features: prev.features.filter((_, i) => i !== index)
+      Amenities: prev.Amenities.filter((_, i) => i !== index)
     }));
   };
 
@@ -971,6 +1206,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
                       <TabsContent value="projects" className="space-y-3 sm:space-y-4">
+<<<<<<< Updated upstream
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
                 <h2 className="text-lg sm:text-xl font-semibold">Projects</h2>
                               <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
@@ -1107,8 +1343,185 @@ const AdminDashboard = () => {
                   </div>
                 </DialogContent>
               </Dialog>
+=======
+   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+    <h2 className="text-lg sm:text-xl font-semibold">Projects</h2>
+    <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
+      <DialogTrigger asChild>
+   <Button
+    size="sm"
+    className="w-full sm:w-auto"
+    onClick={() => {
+      setEditingProjectId(null); // <-- ensure we are adding, not editing
+      setNewProject({
+        title: "",
+        location: "",
+        project_type: "",
+        short_description: "",
+        description: "",
+        start_date: "",
+        end_date: "",
+        image_url: "",
+        status: "active",
+        Amenities: [],
+      });
+      setUnits({});       // reset units
+      setAmenityInput(""); // clear input field
+    }}
+   >
+    <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+    <span className="text-xs sm:text-sm">Add Project</span>
+   </Button>
+   </DialogTrigger>
+
+
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add New Project</DialogTitle>
+          <DialogDescription>Create a new project in your portfolio</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="title">Project Title</Label>
+              <Input
+                id="title"
+                value={newProject.title}
+                onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+              />
+>>>>>>> Stashed changes
             </div>
-            {dataLoading ? (
+            <div>
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={newProject.location}
+                onChange={(e) => setNewProject({ ...newProject, location: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="project_type">Project Type</Label>
+            <Input
+              id="project_type"
+              value={newProject.project_type}
+              onChange={(e) => setNewProject({ ...newProject, project_type: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="short_description">Short Description</Label>
+            <Input
+              id="short_description"
+              value={newProject.short_description}
+              onChange={(e) => setNewProject({ ...newProject, short_description: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="description">Full Description</Label>
+            <Textarea
+              id="description"
+              value={newProject.description}
+              onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+              rows={4}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="start_date">Start Date</Label>
+              <Input
+                id="start_date"
+                type="date"
+                value={newProject.start_date}
+                onChange={(e) => setNewProject({ ...newProject, start_date: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="end_date">End Date</Label>
+              <Input
+                id="end_date"
+                type="date"
+                value={newProject.end_date}
+                onChange={(e) => setNewProject({ ...newProject, end_date: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="image_url">Image URL</Label>
+            <Input
+              id="image_url"
+              value={newProject.image_url}
+              onChange={(e) => setNewProject({ ...newProject, image_url: e.target.value })}
+            />
+          </div>
+
+          {/* Unit Types Pricing */}
+          <div>
+            <Label>Unit Types & Pricing</Label>
+            {["1B", "2B", "3B", "4B"].map((unit) => (
+              <div key={unit} className="flex gap-2 my-1">
+                <Input
+                  value={units[unit] || ""}
+                  onChange={(e) => setUnits({ ...units, [unit]: e.target.value })}
+                  placeholder={`${unit} Price`}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Amenities */}
+          <div>
+            <Label>Amenities</Label>
+            <div className="flex gap-2 mb-2">
+              <Input
+                value={AmenityInput}
+                onChange={(e) => setAmenityInput(e.target.value)}
+                placeholder="Enter an Amenity"
+                onKeyPress={(e) => e.key === "Enter" && addAmenity()}
+              />
+              <Button type="button" onClick={addAmenity}>Add</Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {newProject.Amenities.map((Amenity, index) => (
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="cursor-pointer"
+                  onClick={() => removeAmenity(index)}
+                >
+                  {Amenity} ×
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select onValueChange={(value) => setNewProject({ ...newProject, status: value as any })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="upcoming">Upcoming</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button onClick={editingProjectId ? handleSaveProject : handleAddProject} className="w-full">
+   {editingProjectId ? "Save Changes" : "Add Project"}
+   </Button>
+
+        </div>
+      </DialogContent>
+    </Dialog>
+   </div>
+   {dataLoading ? (
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
@@ -1132,10 +1545,21 @@ const AdminDashboard = () => {
                             <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
                               <div><strong>Type:</strong> {project.project_type}</div>
                               <div><strong>Status:</strong> {project.status}</div>
+                              <div>
+   <strong>Units & Pricing:</strong>
+   <ul className="list-disc list-inside">
+    {Object.entries(project.units || {}).map(([unit, price]) => (
+      <li key={unit}>
+        {unit}: {price}
+      </li>
+    ))}
+   </ul>
+   </div>
+
                             </div>
                             <p className="text-xs sm:text-sm line-clamp-3">{project.short_description}</p>
                             <div className="flex flex-col sm:flex-row gap-2">
-                              <Button size="sm" variant="outline" className="flex-1 sm:flex-none text-xs sm:text-sm">
+                              <Button size="sm" variant="outline" onClick={() => handleEditClick(project)} className="flex-1 sm:flex-none text-xs sm:text-sm">
                                 <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                                 Edit
                               </Button>
@@ -1151,18 +1575,145 @@ const AdminDashboard = () => {
                   )}
                 </div>
             )}
-          </TabsContent>
+            <Tabs value="progress-updates" className="space-y-3 sm:space-y-4">
+  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+    <h2 className="text-lg sm:text-xl font-semibold">Progress Updates</h2>
+
+    <Dialog open={isAddUpdateOpen} onOpenChange={setIsAddUpdateOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" onClick={() => setIsAddUpdateOpen(true)}>
+          <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+          <span className="text-xs sm:text-sm">Add Update</span>
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{update.id ? "Edit Update" : "Add Project Update"}</DialogTitle>
+          <DialogDescription>Attach a photo/video or description</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="update_project">Project</Label>
+            <select
+              id="update_project"
+              className="w-full border rounded p-2"
+              value={update.project_id}
+              onChange={(e) => setUpdate({ ...update, project_id: e.target.value })}
+            >
+              <option value="">-- Select Project --</option>
+              {ongoingProjects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <Label>Description</Label>
+            <Textarea
+              rows={3}
+              value={update.description}
+              onChange={(e) => setUpdate({ ...update, description: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <Label>Upload Image/Video</Label>
+            <Input
+              type="file"
+              accept="image/*,video/*"
+              onChange={(e) => setUpdate({ ...update, file: e.target.files?.[0] })}
+            />
+          </div>
+
+          <Button onClick={handleAddUpdate} disabled={loading} className="w-full">
+            {loading ? "Uploading..." : update.id ? "Update" : "Submit Update"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  </div>
+
+  <TabsContent value="progress-updates" className="space-y-4">
+    {updates.length === 0 ? (
+      <Card>
+        <CardContent className="py-6 text-center text-muted-foreground">
+          No updates yet
+        </CardContent>
+      </Card>
+    ) : (
+      updates.map((update) => (
+        <Card key={update.id}>
+          <CardHeader>
+            <CardTitle>{update.project_title}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {update.media_url && update.update_type === "image" && (
+              <img src={update.media_url} className="rounded" alt="Update image" />
+            )}
+            {update.media_url && update.update_type === "video" && (
+              <video src={update.media_url} controls className="w-full rounded" />
+            )}
+            <p>{update.description}</p>
+            <p className="text-muted-foreground text-xs">
+              {new Date(update.created_at).toLocaleString()}
+            </p>
+
+            {/* Edit/Delete Buttons */}
+            <div className="flex gap-2 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setUpdate({
+                    id: update.id,
+                    project_id: update.project_id,
+                    description: update.description,
+                    file: null, // no existing file re-selection
+                  });
+                  setIsAddUpdateOpen(true);
+                }}
+              >
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => handleDelete(update.id)}
+              >
+                Delete
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))
+    )}
+  </TabsContent>
+</Tabs>
+
+
+          
+     </TabsContent>
+
 
                       <TabsContent value="announcements" className="space-y-3 sm:space-y-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
                 <h2 className="text-lg sm:text-xl font-semibold">Announcements</h2>
                               <Dialog open={isAddAnnouncementOpen} onOpenChange={setIsAddAnnouncementOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm" className="w-full sm:w-auto">
-                      <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      <span className="text-xs sm:text-sm">Add Announcement</span>
-                    </Button>
-                  </DialogTrigger>
+  <Button
+    size="sm"
+    className="w-full sm:w-auto"
+    onClick={handleOpenAddAnnouncement}
+  >
+    <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+    <span className="text-xs sm:text-sm">Add Announcement</span>
+  </Button>
+</DialogTrigger>
+
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Add New Announcement</DialogTitle>
@@ -1194,6 +1745,17 @@ const AdminDashboard = () => {
                         rows={4}
                       />
                     </div>
+                    <div>
+  <Label htmlFor="ann_scheduled_for">Schedule For</Label>
+  <Input
+    id="ann_scheduled_for"
+    type="datetime-local"
+    value={newAnnouncement.scheduled_for}
+    onChange={(e) =>
+      setNewAnnouncement({ ...newAnnouncement, scheduled_for: e.target.value })
+    }
+  />
+</div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="ann_category">Category</Label>
@@ -1221,9 +1783,9 @@ const AdminDashboard = () => {
                       />
                       <Label htmlFor="ann_published">Publish immediately</Label>
                     </div>
-                    <Button onClick={handleAddAnnouncement} className="w-full">
-                      Add Announcement
-                    </Button>
+                    <Button onClick={handleSaveAnnouncement} className="w-full">
+  {editingAnnouncement ? "Save Changes" : "Add Announcement"}
+</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -1269,7 +1831,7 @@ const AdminDashboard = () => {
                               >
                                 {announcement.is_published ? 'Unpublish' : 'Publish'}
                               </Button>
-                              <Button size="sm" variant="outline" className="flex-1 sm:flex-none text-xs sm:text-sm">
+                              <Button size="sm" variant="outline" onClick={() => handleEditAnnouncement(announcement)} className="flex-1 sm:flex-none text-xs sm:text-sm">
                                 <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                                 Edit
                               </Button>
@@ -1285,7 +1847,7 @@ const AdminDashboard = () => {
                   )}
                 </div>
             )}
-          </TabsContent>
+          </TabsContent>          
         </Tabs>
       </div>
     </div>

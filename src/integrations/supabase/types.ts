@@ -121,17 +121,17 @@ export type Database = {
       }
       projects: {
         Row: {
-          budget: string | null
           created_at: string
           created_by: string | null
           description: string
           end_date: string | null
-          features: string[] | null
+          Amenities: string[] | null
           gallery_urls: string[] | null
           id: string
           image_url: string | null
           location: string
           project_type: string
+          units: { [key: string]: Json | undefined }
           short_description: string | null
           start_date: string | null
           status: string
@@ -139,17 +139,17 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          budget?: string | null
           created_at?: string
           created_by?: string | null
           description: string
           end_date?: string | null
-          features?: string[] | null
+          Amenities?: string[] | null
           gallery_urls?: string[] | null
           id?: string
           image_url?: string | null
           location: string
           project_type: string
+          units: { [key: string]: Json | undefined }
           short_description?: string | null
           start_date?: string | null
           status?: string
@@ -157,17 +157,17 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          budget?: string | null
           created_at?: string
           created_by?: string | null
           description?: string
           end_date?: string | null
-          features?: string[] | null
+          Amenities?: string[] | null
           gallery_urls?: string[] | null
           id?: string
           image_url?: string | null
           location?: string
           project_type?: string
+          units: { [key: string]: Json | undefined }
           short_description?: string | null
           start_date?: string | null
           status?: string
