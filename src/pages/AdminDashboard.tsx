@@ -60,12 +60,7 @@ interface Project {
   short_description: string;
   location: string;
   project_type: string;
-<<<<<<< Updated upstream
-  status: 'planning' | 'active' | 'completed' | 'upcoming' | 'on-hold';
-  budget: string;
-=======
   status: 'active' | 'completed' | 'upcoming';
->>>>>>> Stashed changes
   start_date: string;
   end_date: string;
   image_url: string;
@@ -118,12 +113,7 @@ const [updates, setUpdates] = useState([]);
     short_description: "",
     location: "",
     project_type: "",
-<<<<<<< Updated upstream
-    status: "planning" as const,
-    budget: "",
-=======
     status: "active" as const,
->>>>>>> Stashed changes
     start_date: "",
     end_date: "",
     image_url: "",
@@ -526,13 +516,8 @@ const removeAmenity = (index: number) => {
         short_description: "",
         location: "",
         project_type: "",
-<<<<<<< Updated upstream
-        status: "planning",
-        budget: "",
-=======
         status: "active",
         
->>>>>>> Stashed changes
         start_date: "",
         end_date: "",
         image_url: "",
@@ -959,7 +944,7 @@ const handleEdit = (update) => {
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Projects</p>
                 <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{projects.length}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {projects.filter(p => p.status === 'active').length} active, {projects.filter(p => p.status === 'planning').length} planning
+                  {projects.filter(p => p.status === 'active').length} active
                 </p>
               </div>
             </CardContent>
@@ -1206,144 +1191,6 @@ const handleEdit = (update) => {
           </TabsContent>
 
                       <TabsContent value="projects" className="space-y-3 sm:space-y-4">
-<<<<<<< Updated upstream
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
-                <h2 className="text-lg sm:text-xl font-semibold">Projects</h2>
-                              <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="w-full sm:w-auto">
-                      <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      <span className="text-xs sm:text-sm">Add Project</span>
-                    </Button>
-                  </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Add New Project</DialogTitle>
-                    <DialogDescription>Create a new project in your portfolio</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="title">Project Title</Label>
-                        <Input
-                          id="title"
-                          value={newProject.title}
-                          onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="location">Location</Label>
-                        <Input
-                          id="location"
-                          value={newProject.location}
-                          onChange={(e) => setNewProject({ ...newProject, location: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="project_type">Project Type</Label>
-                        <Input
-                          id="project_type"
-                          value={newProject.project_type}
-                          onChange={(e) => setNewProject({ ...newProject, project_type: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="budget">Budget</Label>
-                        <Input
-                          id="budget"
-                          value={newProject.budget}
-                          onChange={(e) => setNewProject({ ...newProject, budget: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="short_description">Short Description</Label>
-                      <Input
-                        id="short_description"
-                        value={newProject.short_description}
-                        onChange={(e) => setNewProject({ ...newProject, short_description: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="description">Full Description</Label>
-                      <Textarea
-                        id="description"
-                        value={newProject.description}
-                        onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                        rows={4}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="start_date">Start Date</Label>
-                        <Input
-                          id="start_date"
-                          type="date"
-                          value={newProject.start_date}
-                          onChange={(e) => setNewProject({ ...newProject, start_date: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="end_date">End Date</Label>
-                        <Input
-                          id="end_date"
-                          type="date"
-                          value={newProject.end_date}
-                          onChange={(e) => setNewProject({ ...newProject, end_date: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="image_url">Image URL</Label>
-                      <Input
-                        id="image_url"
-                        value={newProject.image_url}
-                        onChange={(e) => setNewProject({ ...newProject, image_url: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label>Features</Label>
-                      <div className="flex gap-2 mb-2">
-                        <Input
-                          value={featureInput}
-                          onChange={(e) => setFeatureInput(e.target.value)}
-                          placeholder="Enter a feature"
-                          onKeyPress={(e) => e.key === 'Enter' && addFeature()}
-                        />
-                        <Button type="button" onClick={addFeature}>Add</Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {newProject.features.map((feature, index) => (
-                          <Badge key={index} variant="secondary" className="cursor-pointer" onClick={() => removeFeature(index)}>
-                            {feature} ×
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="status">Status</Label>
-                      <Select onValueChange={(value) => setNewProject({ ...newProject, status: value as any })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="planning">Planning</SelectItem>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="upcoming">Upcoming</SelectItem>
-                          <SelectItem value="on-hold">On Hold</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button onClick={handleAddProject} className="w-full">
-                      Add Project
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-=======
    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
     <h2 className="text-lg sm:text-xl font-semibold">Projects</h2>
     <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
@@ -1389,7 +1236,6 @@ const handleEdit = (update) => {
                 value={newProject.title}
                 onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
               />
->>>>>>> Stashed changes
             </div>
             <div>
               <Label htmlFor="location">Location</Label>
