@@ -950,7 +950,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('announcements')}
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('announcements')}>
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Users className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
