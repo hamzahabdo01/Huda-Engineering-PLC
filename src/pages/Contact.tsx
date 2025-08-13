@@ -10,8 +10,9 @@ import Footer from "@/components/Footer";
 import ReCAPTCHA from "react-google-recaptcha";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { SITE_RECAPTCHA_KEY } from "@/utils/env";
 
-const SITE_KEY = "6LcpLJIrAAAAAHCswRH3bneQHmnsrtktGrL8Fg1F";
+const SITE_KEY = SITE_RECAPTCHA_KEY;
 
 export default function Contact() {
   const { t } = useTranslation();

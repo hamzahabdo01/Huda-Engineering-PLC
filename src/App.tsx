@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import Booking from "./pages/Booking";
 import Announcements from "./pages/Announcements";
+import AnnouncementDetail from "./pages/AnnouncementDetail";
 import Maps from "./pages/Maps";
 import VirtualTour from "./pages/VirtualTour";
 import NotFound from "./pages/NotFound";
@@ -41,6 +42,7 @@ function App() {
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/announcements" element={<Announcements />} />
+            <Route path="/announcements/:id" element={<AnnouncementDetail />} />
             <Route path="/maps" element={<Maps />} />
             <Route path="/virtual-tour" element={<VirtualTour />} />
             <Route path="*" element={<NotFound />} />

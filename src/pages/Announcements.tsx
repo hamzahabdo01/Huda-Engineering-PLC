@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 interface Announcement {
   id: string;
@@ -164,14 +165,14 @@ const Announcements = () => {
           }`}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-            <div className="grid lg:grid-cols-2 gap-12 w-full items-center">
+            <Link to={`/announcements/${currentAnnouncement.id}`} className="grid lg:grid-cols-2 gap-12 w-full items-center group">
               {/* Image Section */}
               <div className="relative">
                 <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
                   <img
                 src={currentAnnouncement.image_url || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop"}
                     alt={currentAnnouncement.title}
-                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute top-4 left-4">
                     <Badge className={`${getCategoryColor(currentAnnouncement.category)} border-0`}>
@@ -183,13 +184,13 @@ const Announcements = () => {
               </div>
 
               {/* Content Section */}
-              <div className="space-y-6 lg:pl-8">
+              <div className="space-y-6 lg:pl-8 block">
                 <div className="flex items-center text-muted-foreground text-sm mb-4">
                   <Calendar className="w-4 h-4 mr-2" />
                   {formatDate(currentAnnouncement.created_at)}
                 </div>
                 
-                <h1 className="text-3xl lg:text-4xl font-bold text-foreground leading-tight">
+                <h1 className="text-3xl lg:text-4xl font-bold text-foreground leading-tight group-hover:underline">
                   {currentAnnouncement.title}
                 </h1>
                 
@@ -203,7 +204,7 @@ const Announcements = () => {
                   </p>
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
 

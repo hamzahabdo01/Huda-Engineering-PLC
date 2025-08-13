@@ -765,7 +765,7 @@ const handleOpenAddAnnouncement = () => {
   .insert({
     project_id: update.project_id,
     description: update.description,
-    media_url: [media_url], // ✅ Fix here
+    media_url: media_url,
     update_type,
   });
 
@@ -913,7 +913,7 @@ const handleEdit = (update) => {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-          <Card className="hover:shadow-md transition-shadow">
+          <Card className="hover:shadow-md transition-shadow" onClick={() => (document.querySelector('[data-state="active"][data-radix-collection-item]') as HTMLElement)?.click()}>
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <MessageSquare className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -925,7 +925,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-          <Card className="hover:shadow-md transition-shadow">
+          <Card className="hover:shadow-md transition-shadow" onClick={() => (document.querySelector('[role="tab"][data-state="inactive"][data-value="bookings"]') as HTMLElement)?.click()}>
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -937,7 +937,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-          <Card className="hover:shadow-md transition-shadow">
+          <Card className="hover:shadow-md transition-shadow" onClick={() => (document.querySelector('[role="tab"][data-value="projects"]') as HTMLElement)?.click()}>
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Building className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -949,7 +949,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-          <Card className="hover:shadow-md transition-shadow">
+          <Card className="hover:shadow-md transition-shadow" onClick={() => (document.querySelector('[role="tab"][data-value="announcements"]') as HTMLElement)?.click()}>
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Users className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1297,12 +1297,28 @@ const handleEdit = (update) => {
           </div>
 
           <div>
-            <Label htmlFor="image_url">Image URL</Label>
-            <Input
-              id="image_url"
-              value={newProject.image_url}
-              onChange={(e) => setNewProject({ ...newProject, image_url: e.target.value })}
-            />
+            <Label htmlFor="image_url">Project Image</Label>
+            <div className="flex gap-2 items-center">
+                <Input
+                  id="image_url"
+                  placeholder="Or paste image URL"
+                  value={newProject.image_url}
+                  onChange={(e) => setNewProject({ ...newProject, image_url: e.target.value })}
+                />
+                <Input type="file" accept="image/*" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const filePath = `projects/${Date.now()}-${file.name}`;
+                  const { error } = await supabase.storage.from('project-media').upload(filePath, file);
+                  if (error) {
+                    toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+                  } else {
+                    const url = supabase.storage.from('project-media').getPublicUrl(filePath).data.publicUrl;
+                    setNewProject({ ...newProject, image_url: url });
+                    toast({ title: 'Uploaded', description: 'Image uploaded successfully' });
+                  }
+                }} />
+            </div>
           </div>
 
           {/* Unit Types Pricing */}
@@ -1501,7 +1517,7 @@ const handleEdit = (update) => {
           </div>
 
           <Button onClick={handleAddUpdate} disabled={loading} className="w-full">
-            {/* {loading ? "Uploading..." : update.id ? "Update" : "Submit Update"} */}
+            {loading ? "Uploading..." : "Submit Update"}
           </Button>
         </div>
       </DialogContent>
@@ -1637,12 +1653,28 @@ const handleEdit = (update) => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="ann_image_url">Image URL</Label>
-                        <Input
-                          id="ann_image_url"
-                          value={newAnnouncement.image_url}
-                          onChange={(e) => setNewAnnouncement({ ...newAnnouncement, image_url: e.target.value })}
-                        />
+                        <Label htmlFor="ann_image_url">Announcement Image</Label>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            id="ann_image_url"
+                            placeholder="Or paste image URL"
+                            value={newAnnouncement.image_url}
+                            onChange={(e) => setNewAnnouncement({ ...newAnnouncement, image_url: e.target.value })}
+                          />
+                          <Input type="file" accept="image/*" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const filePath = `announcements/${Date.now()}-${file.name}`;
+                            const { error } = await supabase.storage.from('announcement-media').upload(filePath, file);
+                            if (error) {
+                              toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+                            } else {
+                              const url = supabase.storage.from('announcement-media').getPublicUrl(filePath).data.publicUrl;
+                              setNewAnnouncement({ ...newAnnouncement, image_url: url });
+                              toast({ title: 'Uploaded', description: 'Image uploaded successfully' });
+                            }
+                          }} />
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">

@@ -23,7 +23,7 @@ const Index = () => {
             src={heroImage} 
             alt="Modern real estate" 
             className="w-full h-full object-cover"
-          />block
+          />
           <div className="absolute inset-0 bg-gradient-to-br from-[#00555b]/85 via-[#004147]/80 to-[#002b2f]/90"></div>
         </div>
         
@@ -151,6 +151,7 @@ const Index = () => {
     <div className="text-center mb-16">
       <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("whyChoose.title")}</h2>
       <p className="text-xl text-muted-foreground max-w-3xl mx-auto">{t("whyChoose.description")}</p>
+      <p className="text-sm text-muted-foreground mt-2">These highlight cards are informational and not clickable.</p>
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -162,7 +163,7 @@ const Index = () => {
         { icon: Zap, title: t("whyChoose.modern.title"), desc: t("whyChoose.modern.description") },
         { icon: CheckCircle, title: t("whyChoose.fullService.title"), desc: t("whyChoose.fullService.description") }
       ].map((item, index) => (
-        <Card key={index} className="relative text-center cursor-default rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+        <Card key={index} className="group relative text-center cursor-default rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2" role="presentation" aria-disabled="true">
           {/* Decorative background pattern */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 opacity-60 pointer-events-none"></div>
           <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
@@ -192,9 +193,10 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5" />
               <CardHeader>
-                <Building2 className="w-12 h-12 text-primary mb-4" />
+                <Building2 className="w-12 h-12 text-primary mb-4 transition-transform group-hover:scale-110" />
                 <CardTitle className="text-2xl">{t("services.residential.title")}</CardTitle>
               </CardHeader>
               <CardContent>
@@ -209,9 +211,10 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/5 to-primary/5" />
               <CardHeader>
-                <Globe className="w-12 h-12 text-primary mb-4" />
+                <Globe className="w-12 h-12 text-primary mb-4 transition-transform group-hover:scale-110" />
                 <CardTitle className="text-2xl">{t("services.commercial.title")}</CardTitle>
               </CardHeader>
               <CardContent>
@@ -353,9 +356,9 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground italic mb-4">"{testimonial.content}"</p>
-            {/* {testimonial.video && (
-              testimonial.video.includes("youtube.com") ? (
-                <div className="aspect-w-16 aspect-h-9">
+            {testimonial.video && (
+              (testimonial.video.includes("youtube.com") || testimonial.video.includes("youtu.be")) ? (
+                <div className="w-full h-56">
                   <iframe
                     src={testimonial.video}
                     title={`${testimonial.name} video testimonial`}
@@ -369,7 +372,7 @@ const Index = () => {
                   Your browser does not support the video tag.
                 </video>
               )
-            )} */}
+            )}
           </CardContent>
         </Card>
       ))}
