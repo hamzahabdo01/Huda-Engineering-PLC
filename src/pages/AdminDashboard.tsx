@@ -146,6 +146,7 @@ const removeAmenity = (index: number) => {
 
 
   const [AmenitiesInput, setAmenitiesInput] = useState("");
+  const [activeTab, setActiveTab] = useState<'contacts' | 'bookings' | 'projects' | 'announcements'>("contacts");
   const [deletingContact, setDeletingContact] = useState<string | null>(null);
   const [deletingBooking, setDeletingBooking] = useState<string | null>(null);
 
@@ -913,7 +914,7 @@ const handleEdit = (update) => {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-          <Card className="hover:shadow-md transition-shadow" onClick={() => (document.querySelector('[data-state="active"][data-radix-collection-item]') as HTMLElement)?.click()}>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('contacts')}>
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <MessageSquare className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -925,7 +926,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-          <Card className="hover:shadow-md transition-shadow" onClick={() => (document.querySelector('[role="tab"][data-state="inactive"][data-value="bookings"]') as HTMLElement)?.click()}>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('bookings')}>
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -937,7 +938,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-          <Card className="hover:shadow-md transition-shadow" onClick={() => (document.querySelector('[role="tab"][data-value="projects"]') as HTMLElement)?.click()}>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('projects')}>
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Building className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -949,7 +950,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-          <Card className="hover:shadow-md transition-shadow" onClick={() => (document.querySelector('[role="tab"][data-value="announcements"]') as HTMLElement)?.click()}>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('announcements')}>
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Users className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -985,7 +986,7 @@ const handleEdit = (update) => {
         )}
 
         {/* Main Content */}
-        <Tabs defaultValue="contacts" className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto p-1">
             <TabsTrigger value="contacts" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1">
               <span className="hidden sm:inline">Contact Forms</span>
