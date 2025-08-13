@@ -355,42 +355,7 @@ const About = () => {
           </div>
         </div>
       </section>
-<<<<<<< Updated upstream
-{/* Embedded Portfolio Section */}
-<section className="py-20 lg:py-32 bg-muted">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="text-center mb-12 animate-fade-in">
-      <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">Our Portfolio</h2>
-      <p className="text-lg text-muted-foreground">Explore a selection of our work across residential and commercial projects.</p>
-    </div>
 
-    <div className="flex justify-center gap-3 mb-10 animate-slide-up">
-      {["All","Residential","Commercial"].map((cat) => (
-        <Button key={cat} variant="outline" className="px-6">{cat}</Button>
-      ))}
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-slide-up">
-      {[
-        { title: "Residential Complex", category: "Residential", image: "/images/portfolio/residential1.jpg" },
-        { title: "Commercial Tower", category: "Commercial", image: "/images/portfolio/commercial1.jpg" },
-        { title: "Luxury Villa", category: "Residential", image: "/images/portfolio/residential2.jpg" }
-      ].map((item, index) => (
-        <Card key={index} className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-          <div className="h-56 overflow-hidden">
-            <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-          </div>
-          <CardHeader>
-            <CardTitle className="text-xl mb-2">{item.title}</CardTitle>
-            <CardDescription className="text-muted-foreground">{item.category}</CardDescription>
-          </CardHeader>
-        </Card>
-      ))}
-    </div>
-  </div>
-</section>
-=======
->>>>>>> Stashed changes
 
       {/* Call to Action */}
       <section className="py-20 lg:py-32 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">

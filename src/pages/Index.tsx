@@ -8,7 +8,6 @@ import Logo from "@/components/Logo";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import heroImage from "@/assets/hero-real-estate.jpg";
-import Portfolio from "@/pages/Portfolio";
 const Index = () => {
   const { t } = useTranslation();
   
