@@ -339,7 +339,7 @@ const removeAmenity = (index: number) => {
 
   // Check authentication and admin access
   useEffect(() => {
-    console.log('🔐 Auth check - Loading:', loading, 'User:', user?.email, 'Profile:', profile);
+    console.log('🔐 Auth check - Loading:', loading, 'User:', user?.email);
     
     if (!loading) {
       if (!user) {
@@ -348,8 +348,8 @@ const removeAmenity = (index: number) => {
         return;
       }
 
-      // Check if user is the authorized admin (role-based)
-      if (profile?.role !== 'admin') {
+      // Check if user is the authorized admin
+      if (user.email !== 'hudaengineeringrealestate@gmail.com') {
         console.log('❌ Unauthorized user, redirecting to auth');
         toast({
           title: "Access Denied",
@@ -365,8 +365,7 @@ const removeAmenity = (index: number) => {
       fetchData();
       setupRealtimeSubscriptions();
     }
-  }, [user, profile, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
-
+  }, [user, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (!error) {
@@ -987,27 +986,6 @@ const handleEdit = (update) => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto p-1">
-            <TabsTrigger value="contacts" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1">
-              <span className="hidden sm:inline">Contact Forms</span>
-              <span className="sm:hidden">Contacts</span>
-              <span className="text-xs">({contacts.length})</span>
-            </TabsTrigger>
-            <TabsTrigger value="bookings" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1">
-              <span className="hidden sm:inline">Property Bookings</span>
-              <span className="sm:hidden">Bookings</span>
-              <span className="text-xs">({bookings.length})</span>
-            </TabsTrigger>
-            <TabsTrigger value="projects" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1">
-              <span>Projects</span>
-              <span className="text-xs">({projects.length})</span>
-            </TabsTrigger>
-            <TabsTrigger value="announcements" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1">
-              <span className="hidden sm:inline">Announcements</span>
-              <span className="sm:hidden">News</span>
-              <span className="text-xs">({announcements.length})</span>
-            </TabsTrigger>
-          </TabsList>
 
                       <TabsContent value="contacts" className="space-y-3 sm:space-y-4">
               <div className="flex justify-between items-center">
