@@ -327,14 +327,14 @@ const Index = () => {
           project: "Residential Complex Owner",
           content: "Huda Engineering delivered our apartment complex on time and within budget. Their attention to detail and professional approach exceeded our expectations.",
           rating: 5,
-          video: "https://www.youtube.com/embed/dQw4w9WgXcQ" // Example YouTube link
+          video: "/videos/testimonial1.mp4" // Example YouTube link
         },
         {
           name: "Meron Tadesse",
           project: "Commercial Building Client",
           content: "The quality of construction and the professionalism of the team was outstanding. They handled every aspect of our office building project perfectly.",
           rating: 5,
-          video: null // Example no video
+          video: "/videos/testimonial1.mp4" // Example no video
         },
         {
           name: "Solomon Bekele",
