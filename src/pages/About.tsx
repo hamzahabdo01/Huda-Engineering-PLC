@@ -355,6 +355,7 @@ const About = () => {
           </div>
         </div>
       </section>
+<<<<<<< Updated upstream
 {/* Embedded Portfolio Section */}
 <section className="py-20 lg:py-32 bg-muted">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -388,6 +389,8 @@ const About = () => {
     </div>
   </div>
 </section>
+=======
+>>>>>>> Stashed changes
 
       {/* Call to Action */}
       <section className="py-20 lg:py-32 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
@@ -404,7 +407,7 @@ const About = () => {
     </Button>
   </Link>
   <Link to="/projects">
-    <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg transition-transform hover:scale-105">
+    <Button size="lg" variant="outline" className="border-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg transition-transform hover:scale-105">
       {t("nav.projects")}
       <ArrowRight className="ml-2 h-5 w-5" />
     </Button>

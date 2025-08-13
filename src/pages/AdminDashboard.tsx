@@ -510,20 +510,20 @@ const removeAmenity = (index: number) => {
 
       if (error) throw error;
 
-      setNewProject({
-        title: "",
-        description: "",
-        short_description: "",
-        location: "",
-        project_type: "",
-        status: "active",
+      // setNewProject({
+      //   title: "",
+      //   description: "",
+      //   short_description: "",
+      //   location: "",
+      //   project_type: "",
+      //   status: "active",
         
-        start_date: "",
-        end_date: "",
-        image_url: "",
-        units: [],
-        Amenities: [],
-      });
+      //   start_date: "",
+      //   end_date: "",
+      //   image_url: "",
+      //   units: [],
+      //   Amenities: [],
+      // });
       setUnits({});
       setIsAddProjectOpen(false);
 
@@ -568,18 +568,18 @@ const removeAmenity = (index: number) => {
 // When edit is clicked
 const handleEditClick = (project: any) => {
   setEditingProjectId(project.id);
-  setNewProject({
-    title: project.title,
-    location: project.location,
-    project_type: project.project_type,
-    short_description: project.short_description,
-    description: project.description,
-    start_date: project.start_date,
-    end_date: project.end_date,
-    image_url: project.image_url,
-    status: project.status,
-    Amenities: project.Amenities || [],
-  });
+  // setNewProject({
+  //   title: project.title,
+  //   location: project.location,
+  //   project_type: project.project_type,
+  //   short_description: project.short_description,
+  //   description: project.description,
+  //   start_date: project.start_date,
+  //   end_date: project.end_date,
+  //   image_url: project.image_url,
+  //   status: project.status,
+  //   Amenities: project.Amenities || [],
+  // });
   setUnits(project.units || {});
   setIsAddProjectOpen(true);
 };
@@ -615,14 +615,14 @@ const handleSaveProject = async () => {
 
       if (error) throw error;
 
-      setNewAnnouncement({
-        title: "",
-        content: "",
-        short_description: "",
-        category: "general",
-        image_url: "",
-        is_published: false,
-      });
+      // setNewAnnouncement({
+      //   title: "",
+      //   content: "",
+      //   short_description: "",
+      //   category: "general",
+      //   image_url: "",
+      //   is_published: false,
+      // });
       setIsAddAnnouncementOpen(false);
 
       toast({
@@ -775,7 +775,7 @@ if (insertError) {
   alert("Error inserting update: " + insertError.message); // 👈 shows real reason
 } else {
   alert("Update added!");
-  fetchUpdates();
+  // fetchUpdates();
   setIsAddUpdateOpen(false);
   setUpdate({ project_id: "", description: "", file: null });
 }
@@ -818,12 +818,12 @@ const handleDelete = async (id: string) => {
     console.error(error);
   } else {
     alert("Deleted!");
-    fetchUpdates(); // re-fetch your updates
+    // fetchUpdates(); // re-fetch your updates
   }
 };
 
 const handleEdit = (update) => {
-  setEditingUpdate(update); // optional for update mode
+  // setEditingUpdate(update); // optional for update mode
   setUpdate({
     project_id: update.project_id,
     description: update.description,
@@ -1200,18 +1200,18 @@ const handleEdit = (update) => {
     className="w-full sm:w-auto"
     onClick={() => {
       setEditingProjectId(null); // <-- ensure we are adding, not editing
-      setNewProject({
-        title: "",
-        location: "",
-        project_type: "",
-        short_description: "",
-        description: "",
-        start_date: "",
-        end_date: "",
-        image_url: "",
-        status: "active",
-        Amenities: [],
-      });
+      // setNewProject({
+      //   title: "",
+      //   location: "",
+      //   project_type: "",
+      //   short_description: "",
+      //   description: "",
+      //   start_date: "",
+      //   end_date: "",
+      //   image_url: "",
+      //   status: "active",
+      //   Amenities: [],
+      // });
       setUnits({});       // reset units
       setAmenityInput(""); // clear input field
     }}
@@ -1435,7 +1435,7 @@ const handleEdit = (update) => {
 
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{update.id ? "Edit Update" : "Add Project Update"}</DialogTitle>
+          {/* <DialogTitle>{update.id ? "Edit Update" : "Add Project Update"}</DialogTitle> */}
           <DialogDescription>Attach a photo/video or description</DialogDescription>
         </DialogHeader>
 
@@ -1501,7 +1501,7 @@ const handleEdit = (update) => {
           </div>
 
           <Button onClick={handleAddUpdate} disabled={loading} className="w-full">
-            {loading ? "Uploading..." : update.id ? "Update" : "Submit Update"}
+            {/* {loading ? "Uploading..." : update.id ? "Update" : "Submit Update"} */}
           </Button>
         </div>
       </DialogContent>
@@ -1540,7 +1540,7 @@ const handleEdit = (update) => {
                 variant="outline"
                 onClick={() => {
                   setUpdate({
-                    id: update.id,
+                    // id: update.id,
                     project_id: update.project_id,
                     description: update.description,
                     file: null, // no existing file re-selection

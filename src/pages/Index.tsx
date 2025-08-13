@@ -53,7 +53,7 @@ const Index = () => {
                 asChild
               >
                 <Link to="/booking">
-                  {t("BookNow")}
+                  {t("Book Now")}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
@@ -354,7 +354,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground italic mb-4">"{testimonial.content}"</p>
-            {testimonial.video && (
+            {/* {testimonial.video && (
               testimonial.video.includes("youtube.com") ? (
                 <div className="aspect-w-16 aspect-h-9">
                   <iframe
@@ -370,7 +370,7 @@ const Index = () => {
                   Your browser does not support the video tag.
                 </video>
               )
-            )}
+            )} */}
           </CardContent>
         </Card>
       ))}
