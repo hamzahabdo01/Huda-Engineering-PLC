@@ -17,23 +17,9 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Admin credentials
-  const ADMIN_EMAIL = "hudaengineeringrealestate@gmail.com";
-  const ADMIN_PASSWORD = "HudA@2025";
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate admin credentials
-    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
-      toast({
-        title: "Access Denied",
-        description: "Invalid admin credentials. Only authorized administrators can access this system.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {

@@ -10,8 +10,10 @@ import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ReCAPTCHA from "react-google-recaptcha";
+import { SITE_RECAPTCHA_KEY } from "@/utils/env";
 
-const SITE_KEY = "6LcpLJIrAAAAAHCswRH3bneQHmnsrtktGrL8Fg1F";
+// Captcha site key is injected via env
+const SITE_KEY = SITE_RECAPTCHA_KEY;
 
 export default function Booking() {
   const { toast } = useToast();
@@ -29,6 +31,7 @@ export default function Booking() {
     nationalId: "",
     property: "",
     unitType: "",
+    preferredContact: "WhatsApp",
     moveInDate: "",
     appointmentDate: "",
     notes: "",
@@ -90,10 +93,11 @@ console.log("unit stock fetched:", data);
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'unit_stock' },
       (payload) => {
-        if (payload.new.project_id === formData.property) {
-          setUnits((prev) => ({
+        if (payload.new.property_id === formData.property) {
+          const available = (payload.new.total_units ?? 0) - (payload.new.booked_units ?? 0);
+          setStock((prev) => ({
             ...prev,
-            [payload.new.unit_type]: payload.new.available_units
+            [payload.new.unit_type]: available,
           }));
         }
       }
@@ -145,6 +149,7 @@ console.log("unit stock fetched:", data);
         {
           property_id: formData.property,
           unit_type: formData.unitType,
+          preferred_contact: formData.preferredContact,
           full_name: formData.fullName,
           email: formData.email,
           phone: formData.phone,
@@ -170,6 +175,7 @@ console.log("unit stock fetched:", data);
           full_name: formData.fullName,
           email: formData.email,
           phone: formData.phone,
+          preferred_contact: formData.preferredContact,
           secondary_phone: formData.secondary_phone,
           appointment_date: formData.appointmentDate,
           notes: formData.notes || null,
@@ -190,6 +196,7 @@ console.log("unit stock fetched:", data);
       nationalId: "",
       property: "",
       unitType: "",
+      preferredContact: "WhatsApp",
       moveInDate: "",
       appointmentDate: "",
       notes: "",
@@ -221,6 +228,7 @@ console.log("unit stock fetched:", data);
             <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
             <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
             <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+            <SelectPreferredContact value={formData.preferredContact} onChange={(v:any)=>setFormData({...formData, preferredContact:v})} />
             <InputGroup label="Secondary Phone" name="secondary_phone" type="tel" value={formData.secondary_phone} onChange={handleChange} required />
             <InputGroup label="National ID" name="nationalId" value={formData.nationalId} onChange={handleChange} required />
             <SelectProject projects={projects} value={formData.property} onChange={(v: any) => setFormData({ ...formData, property: v })} />
@@ -256,6 +264,7 @@ console.log("unit stock fetched:", data);
             <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
             <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
             <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+            <SelectPreferredContact value={formData.preferredContact} onChange={(v:any)=>setFormData({...formData, preferredContact:v})} />
             <InputGroup label="Secondary Phone" name="secondary_phone" type="tel" value={formData.secondary_phone} onChange={handleChange} required />
             <InputGroup label="Preferred Date & Time" name="appointmentDate" type="datetime-local" value={formData.appointmentDate} onChange={handleChange} required />
             <TextareaGroup label="Notes" name="notes" value={formData.notes} onChange={handleChange} />
@@ -304,5 +313,19 @@ const ConsentCheckbox = ({ checked, onChange }: any) => (
   <div className="flex items-center space-x-2">
     <Checkbox checked={checked} onCheckedChange={onChange} />
     <Label>I agree to be contacted.</Label>
+  </div>
+);
+
+const SelectPreferredContact = ({ value, onChange }: any) => (
+  <div className="space-y-2">
+    <Label>Preferred Contact Platform</Label>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger><SelectValue placeholder="Select platform" /></SelectTrigger>
+      <SelectContent>
+        {['WhatsApp','Telegram','Viber','WeChat','Phone','Email'].map((v)=> (
+          <SelectItem key={v} value={v}>{v}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   </div>
 );

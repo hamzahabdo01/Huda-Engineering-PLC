@@ -16,6 +16,7 @@ import {
   Wrench,
   CheckCircle,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -228,6 +229,58 @@ const fetchProjectUpdates = async (projectId: string) => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    <div className="space-y-2 text-sm text-muted-foreground mb-3">
+                      <div className="flex items-center space-x-2">
+                        <MapPin className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{project.location}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        <span>
+                          Started: {new Date(project.start_date).getFullYear()}
+                        </span>
+                      </div>
+                    </div>
+                    {project.units && (
+                      <div className="text-sm text-muted-foreground mb-3">
+                        <strong>Units & Pricing:</strong>
+                        <ul className="mt-1 space-y-1">
+                          {Object.entries(project.units).map(([type, price]) => (
+                            <li key={type}>
+                              {type}: {price}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {project.Amenities.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-3">
+                        {project.Amenities.map((Amenity, idx) => (
+                          <Badge
+                            key={idx}
+                            variant="outline"
+                            className="text-xs"
+                          >
+                            {Amenity}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-sm text-muted-foreground line-clamp-3 mt-3">
+                      {project.short_description}
+                    </p>
+
+                    {project.status === "active" && (
+                      <div className="mb-3">
+                        <div className="flex justify-between mb-1 text-xs text-muted-foreground">
+                          <span>Progress</span>
+                          <span>
+                            {Math.min(100, (selectedProjectUpdates.filter(u=>u.project_id===project.id).length || 0) * 10)}%
+                          </span>
+                        </div>
+                        <Progress value={Math.min(100, (selectedProjectUpdates.filter(u=>u.project_id===project.id).length || 0) * 10)} />
+                      </div>
+                    )}
                     <div className="space-y-2 text-sm text-muted-foreground mb-3">
                       <div className="flex items-center space-x-2">
                         <MapPin className="w-3 h-3 flex-shrink-0" />
