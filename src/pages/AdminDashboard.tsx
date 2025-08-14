@@ -1,56 +1,107 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Users, 
-  MessageSquare, 
-  Calendar, 
-  Building, 
-  LogOut,
-  RefreshCw,
-  Eye,
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Users,
+  Calendar,
+  MessageSquare,
+  Building2,
   Plus,
   Edit,
   Trash2,
+  Eye,
   CheckCircle,
-  XCircle
+  XCircle,
+  Clock,
+  Mail,
+  Phone,
+  MapPin,
+  Home,
+  Briefcase,
+  Layers,
+  BarChart3,
+  TrendingUp,
+  UserCheck,
+  MessageCircle,
+  Settings,
+  LogOut,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import Navbar from "@/components/Navbar";
 
+// Define interfaces
 interface ContactSubmission {
   id: string;
   name: string;
   email: string;
   phone: string;
-  project_type: string;
-  budget: string;
   message: string;
-  status: 'pending' | 'contacted' | 'closed';
+  status: string;
   created_at: string;
 }
 
 interface PropertyBooking {
   id: string;
   property_id: string;
+  unit_type: string;
   full_name: string;
   email: string;
   phone: string;
-  unit_type: string;
+  secondary_phone: string;
   national_id: string;
   move_in_date: string;
   notes: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
+  preferred_contact: string;
+  projects?: {
+    title: string;
+    location: string;
+  };
 }
 
 interface Project {
@@ -60,12 +111,13 @@ interface Project {
   short_description: string;
   location: string;
   project_type: string;
-  status: 'active' | 'completed' | 'upcoming';
+  status: 'planning' | 'active' | 'completed' | 'upcoming' | 'on-hold';
   start_date: string;
   end_date: string;
   image_url: string;
+  gallery_urls: string[];
   Amenities: string[];
-  units: string[] ;
+  units: Record<string, string>;
   created_at: string;
 }
 
@@ -81,44 +133,39 @@ interface Announcement {
 }
 
 const AdminDashboard = () => {
-  const { user, profile, signOut, loading } = useAuth();
+  const { t } = useTranslation();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [contacts, setContacts] = useState<ContactSubmission[]>([]);
-  const [bookings, setBookings] = useState<PropertyBooking[]>([]);
+  // State management
+  const [contactSubmissions, setContactSubmissions] = useState<ContactSubmission[]>([]);
+  const [propertyBookings, setPropertyBookings] = useState<PropertyBooking[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   // Dialog states
-  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
+  const [isEditPropertyOpen, setIsEditPropertyOpen] = useState(false);
   const [isAddAnnouncementOpen, setIsAddAnnouncementOpen] = useState(false);
-
-  const [isAddUpdateOpen, setIsAddUpdateOpen] = useState(false);
-const [update, setUpdate] = useState({
-  project_id: "",
-  description: "",
-  file: null,
-});
-const [loadingg, setLoading] = useState(false);
-const [ongoingProjects, setOngoingProjects] = useState([]);
-const [updates, setUpdates] = useState([]);
-
+  const [selectedProperty, setSelectedProperty] = useState<Project | null>(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
 
   // Form states
-  const [newProject, setNewProject] = useState({
+  const [newProperty, setNewProperty] = useState({
     title: "",
     description: "",
     short_description: "",
     location: "",
-    project_type: "",
-    status: "active" as const,
+    project_type: "residential",
+    status: "planning" as const,
     start_date: "",
     end_date: "",
     image_url: "",
-    units: "",
     Amenities: [] as string[],
+    units: {} as Record<string, string>,
   });
 
   const [newAnnouncement, setNewAnnouncement] = useState({
@@ -127,290 +174,142 @@ const [updates, setUpdates] = useState([]);
     short_description: "",
     category: "general",
     image_url: "",
-    scheduled_for:"",
     is_published: false,
   });
-  const [units, setUnits] = useState<{ [key: string]: string }>({});
-const [AmenityInput, setAmenityInput] = useState("");
-const addAmenity = () => {
-  if (!AmenityInput.trim()) return;
-  setNewProject(prev => ({ ...prev, Amenities: [...prev.Amenities, AmenityInput.trim()] }));
-  setAmenityInput("");
-};
-const removeAmenity = (index: number) => {
-  setNewProject(prev => ({
-    ...prev,
-    Amenities: prev.Amenities.filter((_, i) => i !== index),
-  }));
-};
 
+  // Check admin access
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
 
-  const [AmenitiesInput, setAmenitiesInput] = useState("");
-  const [activeTab, setActiveTab] = useState<'contacts' | 'bookings' | 'projects' | 'announcements'>("contacts");
-  const [deletingContact, setDeletingContact] = useState<string | null>(null);
-  const [deletingBooking, setDeletingBooking] = useState<string | null>(null);
+    // Check if user is admin
+    if (user.email !== "hudaengineeringrealestate@gmail.com") {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access this page.",
+        variant: "destructive",
+      });
+      navigate("/");
+      return;
+    }
 
-  const fetchData = useCallback(async () => {
-    console.log('🔄 Starting data fetch...');
-    setDataLoading(true);
-    
+    fetchData();
+  }, [user, navigate, toast]);
+
+  const fetchData = async () => {
     try {
-      console.log('🔐 Current user:', user?.email);
-      console.log('👤 Current profile:', profile);
-      
+      setLoading(true);
+
+      // Fetch all data
       const [contactsRes, bookingsRes, projectsRes, announcementsRes] = await Promise.all([
-        supabase.from('contact_submissions').select('*').order('created_at', { ascending: false }),
-        supabase.from('property_bookings').select('*').order('created_at', { ascending: false }),
-        supabase.from('projects').select('*').order('created_at', { ascending: false }),
-        supabase.from('announcements').select('*').order('created_at', { ascending: false }),
+        supabase.from("contact_submissions").select("*").order("created_at", { ascending: false }),
+        supabase.from("property_bookings").select(`
+          *,
+          projects:projects(title, location)
+        `).order("created_at", { ascending: false }),
+        supabase.from("projects").select("*").order("created_at", { ascending: false }),
+        supabase.from("announcements").select("*").order("created_at", { ascending: false }),
       ]);
 
-      console.log('📞 Contacts response:', contactsRes);
-      console.log('🏠 Bookings response:', bookingsRes);
-      console.log('🏗️ Projects response:', projectsRes);
-      console.log('📢 Announcements response:', announcementsRes);
-
-      if (contactsRes.error) {
-        console.error('❌ Contacts error:', contactsRes.error);
-        toast({
-          title: "Error fetching contacts",
-          description: contactsRes.error.message,
-          variant: "destructive",
-        });
-      } else {
-        console.log(`✅ Setting ${contactsRes.data?.length || 0} contacts`);
-        setContacts(contactsRes.data as ContactSubmission[] || []);
-      }
-
-      if (bookingsRes.error) {
-        console.error('❌ Bookings error:', bookingsRes.error);
-        toast({
-          title: "Error fetching bookings",
-          description: bookingsRes.error.message,
-          variant: "destructive",
-        });
-      } else {
-        console.log(`✅ Setting ${bookingsRes.data?.length || 0} bookings`);
-        setBookings(bookingsRes.data as PropertyBooking[] || []);
-      }
-
-      if (projectsRes.error) {
-        console.error('❌ Projects error:', projectsRes.error);
-        toast({
-          title: "Error fetching projects",
-          description: projectsRes.error.message,
-          variant: "destructive",
-        });
-      } else {
-        console.log(`✅ Setting ${projectsRes.data?.length || 0} projects`);
-        setProjects(projectsRes.data as unknown as Project[] || []);
-      }
-
-      if (announcementsRes.error) {
-        console.error('❌ Announcements error:', announcementsRes.error);
-        toast({
-          title: "Error fetching announcements",
-          description: announcementsRes.error.message,
-          variant: "destructive",
-        });
-      } else {
-        console.log(`✅ Setting ${announcementsRes.data?.length || 0} announcements`);
-        setAnnouncements(announcementsRes.data as Announcement[] || []);
-      }
-
+      if (contactsRes.data) setContactSubmissions(contactsRes.data);
+      if (bookingsRes.data) setPropertyBookings(bookingsRes.data);
+      if (projectsRes.data) setProjects(projectsRes.data);
+      if (announcementsRes.data) setAnnouncements(announcementsRes.data);
 
     } catch (error) {
-      console.error('💥 Error fetching data:', error);
+      console.error("Error fetching data:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch dashboard data",
+        description: "Failed to load dashboard data",
         variant: "destructive",
       });
     } finally {
-      setDataLoading(false);
-      console.log('✅ Data fetch completed');
-    }
-  }, [user, profile, toast]);
-
-  const setupRealtimeSubscriptions = useCallback(() => {
-    console.log('🔄 Setting up real-time subscriptions...');
-    
-    // Subscribe to contact submissions
-    const contactsSubscription = supabase
-      .channel('contact_submissions')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'contact_submissions' },
-        (payload) => {
-          console.log('📞 Contact submission change:', payload);
-          if (payload.eventType === 'INSERT') {
-            const newContact = payload.new as ContactSubmission;
-            setContacts(prev => [newContact, ...prev]);
-            toast({
-              title: "New Contact Submission",
-              description: `New contact from ${newContact.name}`,
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            setContacts(prev => prev.map(contact => 
-              contact.id === payload.new.id ? payload.new as ContactSubmission : contact
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setContacts(prev => prev.filter(contact => contact.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to property bookings
-    const bookingsSubscription = supabase
-      .channel('property_bookings')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'property_bookings' },
-        (payload) => {
-          console.log('🏠 Property booking change:', payload);
-          if (payload.eventType === 'INSERT') {
-            const newBooking = payload.new as PropertyBooking;
-            setBookings(prev => [newBooking, ...prev]);
-            toast({
-              title: "New Property Booking",
-              description: `New booking from ${newBooking.full_name}`,
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            setBookings(prev => prev.map(booking => 
-              booking.id === payload.new.id ? payload.new as PropertyBooking : booking
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setBookings(prev => prev.filter(booking => booking.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to projects
-    const projectsSubscription = supabase
-      .channel('projects')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'projects' },
-        (payload) => {
-          console.log('🏗️ Project change:', payload);
-          if (payload.eventType === 'INSERT') {
-            setProjects(prev => [payload.new as Project, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setProjects(prev => prev.map(project => 
-              project.id === payload.new.id ? payload.new as Project : project
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setProjects(prev => prev.filter(project => project.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to announcements
-    const announcementsSubscription = supabase
-      .channel('announcements')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'announcements' },
-        (payload) => {
-          console.log('📢 Announcement change:', payload);
-          if (payload.eventType === 'INSERT') {
-            setAnnouncements(prev => [payload.new as Announcement, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setAnnouncements(prev => prev.map(announcement => 
-              announcement.id === payload.new.id ? payload.new as Announcement : announcement
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setAnnouncements(prev => prev.filter(announcement => announcement.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    console.log('✅ Real-time subscriptions set up');
-
-    // Cleanup subscriptions on component unmount
-    return () => {
-      console.log('🧹 Cleaning up subscriptions');
-      contactsSubscription.unsubscribe();
-      bookingsSubscription.unsubscribe();
-      projectsSubscription.unsubscribe();
-      announcementsSubscription.unsubscribe();
-    };
-  }, [toast]);
-
-  // Check authentication and admin access
-  useEffect(() => {
-    console.log('🔐 Auth check - Loading:', loading, 'User:', user?.email);
-    
-    if (!loading) {
-      if (!user) {
-        console.log('❌ No user found, redirecting to auth');
-        navigate('/auth');
-        return;
-      }
-
-      // Check if user is the authorized admin
-      if (user.email !== 'hudaengineeringrealestate@gmail.com') {
-        console.log('❌ Unauthorized user, redirecting to auth');
-        toast({
-          title: "Access Denied",
-          description: "You are not authorized to access this dashboard.",
-          variant: "destructive",
-        });
-        navigate('/auth');
-        return;
-      }
-
-      console.log('✅ Admin user authenticated, fetching data and setting up subscriptions');
-      // If we reach here, user is the authorized admin
-      fetchData();
-      setupRealtimeSubscriptions();
-    }
-  }, [user, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
-  const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (!error) {
-      navigate('/');
+      setLoading(false);
     }
   };
 
-  const updateContactStatus = async (id: string, status: string) => {
+  // Email notification function
+  const sendBookingEmail = async (booking: PropertyBooking, status: 'approved' | 'rejected', rejectionReason?: string) => {
     try {
-      const { error } = await supabase
-        .from('contact_submissions')
-        .update({ status })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Contact status updated",
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-booking-email`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: booking.email,
+          customerName: booking.full_name,
+          propertyTitle: booking.projects?.title || 'Property',
+          unitType: booking.unit_type,
+          status: status,
+          rejectionReason: rejectionReason,
+          bookingId: booking.id,
+        }),
       });
-    } catch (error) {
-      console.error('Error updating contact status:', error);
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      const result = await response.json();
+      console.log('Email sent successfully:', result);
+      
       toast({
-        title: "Error",
-        description: "Failed to update contact status",
+        title: "Email Sent",
+        description: `${status === 'approved' ? 'Approval' : 'Update'} email sent to ${booking.full_name}`,
+      });
+
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Email Error",
+        description: "Failed to send notification email",
         variant: "destructive",
       });
     }
   };
 
-  const updateBookingStatus = async (id: string, status: string) => {
+  // Update booking status with email notification
+  const updateBookingStatus = async (bookingId: string, status: 'approved' | 'rejected', rejectionReason?: string) => {
     try {
+      // Find the booking to get customer details
+      const booking = propertyBookings.find(b => b.id === bookingId);
+      if (!booking) {
+        toast({
+          title: "Error",
+          description: "Booking not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update booking status in database
       const { error } = await supabase
-        .from('property_bookings')
-        .update({ status })
-        .eq('id', id);
+        .from("property_bookings")
+        .update({ 
+          status: status,
+          rejection_reason: rejectionReason || null
+        })
+        .eq("id", bookingId);
 
       if (error) throw error;
 
+      // Send email notification
+      await sendBookingEmail(booking, status, rejectionReason);
+
+      // Refresh data
+      fetchData();
+
       toast({
         title: "Success",
-        description: "Booking status updated",
+        description: `Booking ${status} and customer notified via email`,
       });
+
     } catch (error) {
-      console.error('Error updating booking status:', error);
+      console.error("Error updating booking:", error);
       toast({
         title: "Error",
         description: "Failed to update booking status",
@@ -419,218 +318,75 @@ const removeAmenity = (index: number) => {
     }
   };
 
-  const handleDeleteContact = async (id: string) => {
+  // Add new property
+  const addProperty = async () => {
     try {
-      setDeletingContact(id);
-      console.log('🗑️ Deleting contact with ID:', id);
-      
-      const { error } = await supabase
-        .from('contact_submissions')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('❌ Supabase delete error:', error);
-        throw error;
-      }
-
-      console.log('✅ Contact deleted from database');
-
-      // Immediately update local state
-      setContacts(prev => prev.filter(contact => contact.id !== id));
-
-      // Refresh data to ensure consistency
-      await fetchData();
-
-      toast({
-        title: "Success",
-        description: "Contact submission deleted successfully",
-      });
-    } catch (error) {
-      console.error('💥 Error deleting contact:', error);
-      toast({
-        title: "Error",
-        description: `Failed to delete contact submission: ${error.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setDeletingContact(null);
-    }
-  };
-
-  const handleDeleteBooking = async (id: string) => {
-    try {
-      setDeletingBooking(id);
-      console.log('🗑️ Deleting booking with ID:', id);
-      
-      const { error } = await supabase
-        .from('property_bookings')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('❌ Supabase delete error:', error);
-        throw error;
-      }
-
-      console.log('✅ Booking deleted from database');
-
-      // Immediately update local state
-      setBookings(prev => prev.filter(booking => booking.id !== id));
-
-      // Refresh data to ensure consistency
-      await fetchData();
-
-      toast({
-        title: "Success",
-        description: "Property booking deleted successfully",
-      });
-    } catch (error) {
-      console.error('💥 Error deleting booking:', error);
-      toast({
-        title: "Error",
-        description: `Failed to delete property booking: ${error.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setDeletingBooking(null);
-    }
-  };
-
-  const handleAddProject = async () => {
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .insert([{
-          ...newProject,
-           units: units,
-           Amenities: newProject.Amenities,
-          created_by: user?.id,
-        }]);
-
+      const { error } = await supabase.from("projects").insert([newProperty]);
       if (error) throw error;
 
-      // setNewProject({
-      //   title: "",
-      //   description: "",
-      //   short_description: "",
-      //   location: "",
-      //   project_type: "",
-      //   status: "active",
-        
-      //   start_date: "",
-      //   end_date: "",
-      //   image_url: "",
-      //   units: [],
-      //   Amenities: [],
-      // });
-      setUnits({});
-      setIsAddProjectOpen(false);
-
-      toast({
-        title: "Success",
-        description: "Project added successfully",
+      toast({ title: "Success", description: "Property added successfully" });
+      setIsAddPropertyOpen(false);
+      setNewProperty({
+        title: "",
+        description: "",
+        short_description: "",
+        location: "",
+        project_type: "residential",
+        status: "planning",
+        start_date: "",
+        end_date: "",
+        image_url: "",
+        Amenities: [],
+        units: {},
       });
+      fetchData();
     } catch (error) {
-      console.error('Error adding project:', error);
+      console.error("Error adding property:", error);
       toast({
         title: "Error",
-        description: "Failed to add project",
+        description: "Failed to add property",
         variant: "destructive",
       });
     }
   };
 
-  const handleDeleteProject = async (id: string) => {
+  // Delete property
+  const deleteProperty = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from("projects").delete().eq("id", id);
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Project deleted successfully",
-      });
+      toast({ title: "Success", description: "Property deleted successfully" });
+      fetchData();
     } catch (error) {
-      console.error('Error deleting project:', error);
+      console.error("Error deleting property:", error);
       toast({
         title: "Error",
-        description: "Failed to delete project",
+        description: "Failed to delete property",
         variant: "destructive",
       });
     }
   };
-  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
 
-// When edit is clicked
-const handleEditClick = (project: any) => {
-  setEditingProjectId(project.id);
-  // setNewProject({
-  //   title: project.title,
-  //   location: project.location,
-  //   project_type: project.project_type,
-  //   short_description: project.short_description,
-  //   description: project.description,
-  //   start_date: project.start_date,
-  //   end_date: project.end_date,
-  //   image_url: project.image_url,
-  //   status: project.status,
-  //   Amenities: project.Amenities || [],
-  // });
-  setUnits(project.units || {});
-  setIsAddProjectOpen(true);
-};
-
-// Save changes
-const handleSaveProject = async () => {
-  const { error } = await supabase
-    .from("projects")
-    .update({
-      ...newProject,
-      units,
-    })
-    .eq("id", editingProjectId);
-
-  if (!error) {
-    toast({ title: "Project Updated", description: "Changes saved." });
-    setIsAddProjectOpen(false);
-    setEditingProjectId(null);
-  } else {
-    toast({ title: "Error", description: error.message, variant: "destructive" });
-  }
-};
-
-
-  const handleAddAnnouncement = async () => {
+  // Add new announcement
+  const addAnnouncement = async () => {
     try {
-      const { error } = await supabase
-        .from('announcements')
-        .insert([{
-          ...newAnnouncement,
-          created_by: user?.id,
-        }]);
-
+      const { error } = await supabase.from("announcements").insert([newAnnouncement]);
       if (error) throw error;
 
-      // setNewAnnouncement({
-      //   title: "",
-      //   content: "",
-      //   short_description: "",
-      //   category: "general",
-      //   image_url: "",
-      //   is_published: false,
-      // });
+      toast({ title: "Success", description: "Announcement added successfully" });
       setIsAddAnnouncementOpen(false);
-
-      toast({
-        title: "Success",
-        description: "Announcement added successfully",
+      setNewAnnouncement({
+        title: "",
+        content: "",
+        short_description: "",
+        category: "general",
+        image_url: "",
+        is_published: false,
       });
+      fetchData();
     } catch (error) {
-      console.error('Error adding announcement:', error);
+      console.error("Error adding announcement:", error);
       toast({
         title: "Error",
         description: "Failed to add announcement",
@@ -638,1098 +394,722 @@ const handleSaveProject = async () => {
       });
     }
   };
-  const [editingAnnouncement, setEditingAnnouncement] = useState<any | null>(null);
-  const handleEditAnnouncement = (announcement: any) => {
-  setEditingAnnouncement(announcement);
-  setNewAnnouncement({
-    ...announcement,
-    scheduled_for: announcement.scheduled_for || "",
-  });
-  setIsAddAnnouncementOpen(true);
-};
 
-// save changes
-const handleSaveAnnouncement = async () => {
-  if (editingAnnouncement) {
-    const { error } = await supabase
-      .from("announcements")
-      .update({
-        title: newAnnouncement.title,
-        short_description: newAnnouncement.short_description,
-        content: newAnnouncement.content,
-        category: newAnnouncement.category,
-        image_url: newAnnouncement.image_url,
-        is_published: newAnnouncement.is_published,
-        scheduled_for: newAnnouncement.scheduled_for,
-      })
-      .eq("id", editingAnnouncement.id);
-    if (!error) toast({ title: "Updated", description: "Announcement updated" });
-  } else {
-    const { error } = await supabase.from("announcements").insert([
-      { ...newAnnouncement },
-    ]);
-    if (!error) toast({ title: "Added", description: "Announcement added" });
-  }
-  setIsAddAnnouncementOpen(false);
-  setEditingAnnouncement(null);
-};
-const handleOpenAddAnnouncement = () => {
-  setEditingAnnouncement(null);
-  setNewAnnouncement({
-    title: "",
-    short_description: "",
-    content: "",
-    category: "",
-    image_url: "",
-    is_published: false,
-    scheduled_for: "",
-  });
-  setIsAddAnnouncementOpen(true);
-};
-
-
-  const handleDeleteAnnouncement = async (id: string) => {
+  // Delete contact submission
+  const deleteContactSubmission = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('announcements')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from("contact_submissions").delete().eq("id", id);
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Announcement deleted successfully",
-      });
+      toast({ title: "Success", description: "Contact submission deleted" });
+      fetchData();
     } catch (error) {
-      console.error('Error deleting announcement:', error);
+      console.error("Error deleting contact:", error);
       toast({
         title: "Error",
-        description: "Failed to delete announcement",
+        description: "Failed to delete contact submission",
         variant: "destructive",
       });
     }
   };
 
-  const toggleAnnouncementPublish = async (id: string, currentStatus: boolean) => {
+  // Delete property booking
+  const deletePropertyBooking = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('announcements')
-        .update({ is_published: !currentStatus })
-        .eq('id', id);
-
+      const { error } = await supabase.from("property_bookings").delete().eq("id", id);
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: `Announcement ${!currentStatus ? 'published' : 'unpublished'} successfully`,
-      });
+      toast({ title: "Success", description: "Property booking deleted" });
+      fetchData();
     } catch (error) {
-      console.error('Error updating announcement:', error);
+      console.error("Error deleting booking:", error);
       toast({
         title: "Error",
-        description: "Failed to update announcement",
+        description: "Failed to delete property booking",
         variant: "destructive",
       });
     }
   };
-  const handleAddUpdate = async () => {
-  setLoading(true);
 
-  let media_url = null;
-  let update_type = "text";
-
-  if (update.file) {
-    const ext = update.file.name.split(".").pop();
-    update_type = update.file.type.startsWith("video") ? "video" : "image";
-    const filePath = `${Date.now()}-${update.file.name}`;
-    const { data, error } = await supabase.storage
-      .from("project-updates")
-      .upload(filePath, update.file);
-
+  const handleSignOut = async () => {
+    const { error } = await signOut();
     if (error) {
-  console.error("Supabase upload error:", error);
-  alert("Upload failed: " + error.message);
-  setLoading(false);
-  return;
-}
-
-
-    media_url = supabase.storage
-      .from("project-updates")
-      .getPublicUrl(filePath).data.publicUrl;
-  }
-
-  const { error: insertError } = await supabase
-  .from("project_updates")
-  .insert({
-    project_id: update.project_id,
-    description: update.description,
-    media_url: media_url,
-    update_type,
-  });
-
-
-if (insertError) {
-  console.error("Insert Error:", insertError); // 👈 this is crucial
-  alert("Error inserting update: " + insertError.message); // 👈 shows real reason
-} else {
-  alert("Update added!");
-  // fetchUpdates();
-  setIsAddUpdateOpen(false);
-  setUpdate({ project_id: "", description: "", file: null });
-}
-
-setLoading(false);
-  }
-
-useEffect(() => {
-  const fetchProjects = async () => {
-    const { data } = await supabase
-      .from("projects")
-      .select("id, title")
-      .eq("status", "active");
-    setOngoingProjects(data || []);
-  };
-
-  const fetchUpdates = async () => {
-    const { data } = await supabase
-      .from("project_updates")
-      .select("*, projects(title)")
-      .order("created_at", { ascending: false });
-
-    const formatted = data.map((u) => ({
-      ...u,
-      project_title: u.projects?.title || "Untitled",
-    }));
-
-    setUpdates(formatted);
-  };
-
-  fetchProjects();
-  fetchUpdates();
-}, []);
-const handleDelete = async (id: string) => {
-  if (!confirm("Are you sure you want to delete this update?")) return;
-
-  const { error } = await supabase.from("project_updates").delete().eq("id", id);
-  if (error) {
-    alert("Delete failed");
-    console.error(error);
-  } else {
-    alert("Deleted!");
-    // fetchUpdates(); // re-fetch your updates
-  }
-};
-
-const handleEdit = (update) => {
-  // setEditingUpdate(update); // optional for update mode
-  setUpdate({
-    project_id: update.project_id,
-    description: update.description,
-    file: null,
-  });
-  setIsAddUpdateOpen(true);
-};
-
-
-  
-
-  const addAmenities = () => {
-    if (AmenitiesInput.trim()) {
-      setNewProject(prev => ({
-        ...prev,
-        Amenities: [...prev.Amenities, AmenitiesInput.trim()]
-      }));
-      setAmenitiesInput("");
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
+    } else {
+      navigate("/");
     }
   };
 
-  const removeAmenities  = (index: number) => {
-    setNewProject(prev => ({
-      ...prev,
-      Amenities: prev.Amenities.filter((_, i) => i !== index)
-    }));
-  };
-
-  // Show loading while auth is being checked
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading...</p>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading dashboard...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Don't render anything if not authenticated
-  if (!user) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b bg-card">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-3 sm:py-4 gap-3 sm:gap-4">
+      <Navbar />
+      
+      {/* Header */}
+      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-sm sm:text-base text-muted-foreground">Welcome back, Administrator</p>
-              <p className="text-xs text-muted-foreground">Secure admin portal - {user?.email}</p>
+              <h1 className="text-3xl font-bold">{t("admin.title")}</h1>
+              <p className="text-primary-foreground/80">Welcome back, {user?.email}</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-              <Button variant="outline" onClick={fetchData} size="sm" className="flex-1 sm:flex-none">
-                <RefreshCw className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Refresh</span>
-              </Button>
-              <Button variant="outline" onClick={() => {
-                console.log('🧪 Manual test - Current state:');
-                console.log('User:', user);
-                console.log('Profile:', profile);
-                console.log('Loading:', loading);
-                console.log('Data Loading:', dataLoading);
-                console.log('Contacts:', contacts);
-                console.log('Bookings:', bookings);
-                console.log('Projects:', projects);
-                console.log('Announcements:', announcements);
-              }} size="sm" className="flex-1 sm:flex-none">
-                <span>Debug</span>
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/')} size="sm" className="flex-1 sm:flex-none">
-                <Eye className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">View Site</span>
-              </Button>
-              <Button variant="outline" onClick={handleSignOut} size="sm" className="flex-1 sm:flex-none">
-                <LogOut className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </Button>
-            </div>
+            <Button onClick={handleSignOut} variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+              <LogOut className="h-4 w-4 mr-2" />
+              {t("navbar.signOut")}
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('contacts')}>
-            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
-              <MessageSquare className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600 flex-shrink-0" />
-              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Contact Forms</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{contacts.length}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {contacts.filter(c => c.status === 'pending').length} pending
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('bookings')}>
-            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
-              <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-600 flex-shrink-0" />
-              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Property Bookings</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{bookings.length}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {bookings.filter(b => b.status === 'pending').length} pending
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('projects')}>
-            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
-              <Building className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-600 flex-shrink-0" />
-              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Projects</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{projects.length}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {projects.filter(p => p.status === 'active').length} active
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('announcements')}>
-            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
-              <Users className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-600 flex-shrink-0" />
-              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Announcements</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{announcements.length}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {announcements.filter(a => a.is_published).length} published
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              {t("admin.dashboard")}
+            </TabsTrigger>
+            <TabsTrigger value="bookings" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              {t("admin.bookings")}
+            </TabsTrigger>
+            <TabsTrigger value="announcements" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              {t("admin.announcements")}
+            </TabsTrigger>
+            <TabsTrigger value="contacts" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              {t("admin.contacts")}
+            </TabsTrigger>
+            <TabsTrigger value="properties" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              {t("admin.properties")}
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Debug Info */}
-        {process.env.NODE_ENV === 'development' && (
-          <Card className="mb-8 border-yellow-200 bg-yellow-50">
-            <CardHeader>
-              <CardTitle className="text-yellow-800 text-sm sm:text-base">Debug Information</CardTitle>
-            </CardHeader>
-            <CardContent className="text-yellow-700 text-xs sm:text-sm">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <p>User: {user?.email}</p>
-                <p>Profile: {profile?.full_name} ({profile?.role})</p>
-                <p>Loading: {loading.toString()}</p>
-                <p>Data Loading: {dataLoading.toString()}</p>
-                <p>Contacts: {contacts.length}</p>
-                <p>Bookings: {bookings.length}</p>
-                <p>Projects: {projects.length}</p>
-                <p>Announcements: {announcements.length}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          {/* Dashboard Overview */}
+          <TabsContent value="dashboard" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{projects.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {projects.filter(p => p.status === 'active').length} active
+                  </p>
+                </CardContent>
+              </Card>
 
-        {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{t("admin.newContacts")}</CardTitle>
+                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{contactSubmissions.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {contactSubmissions.filter(c => c.status === 'pending').length} pending
+                  </p>
+                </CardContent>
+              </Card>
 
-                      <TabsContent value="contacts" className="space-y-3 sm:space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg sm:text-xl font-semibold">Contact Submissions</h2>
-              </div>
-            {dataLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-                          ) : (
-                <div className="space-y-3 sm:space-y-4">
-                  {contacts.length === 0 ? (
-                    <Card>
-                      <CardContent className="flex items-center justify-center py-6 sm:py-8">
-                        <p className="text-muted-foreground text-sm sm:text-base">No contact submissions yet</p>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    contacts.map((contact) => (
-                      <Card key={contact.id}>
-                        <CardHeader className="pb-3 sm:pb-6">
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
-                            <div className="min-w-0 flex-1">
-                              <CardTitle className="text-base sm:text-lg truncate">{contact.name}</CardTitle>
-                              <CardDescription className="text-xs sm:text-sm">
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                                  <span className="truncate">{contact.email}</span>
-                                  <span className="hidden sm:inline">•</span>
-                                  <span>{contact.phone}</span>
-                                </div>
-                              </CardDescription>
-                            </div>
-                            <Badge variant={contact.status === 'pending' ? 'destructive' : contact.status === 'contacted' ? 'default' : 'secondary'} className="self-start">
-                              {contact.status}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <div className="space-y-3 sm:space-y-4">
-                            <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
-                              <div><strong>Project Type:</strong> {contact.project_type}</div>
-                              <div><strong>Budget:</strong> {contact.budget}</div>
-                            </div>
-                            <p className="text-sm sm:text-base">{contact.message}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Submitted: {new Date(contact.created_at).toLocaleDateString()}
-                            </p>
-                                                    <div className="flex flex-col sm:flex-row gap-2">
-                              <Button 
-                                size="sm" 
-                                onClick={() => updateContactStatus(contact.id, 'contacted')}
-                                disabled={contact.status !== 'pending'}
-                                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                              >
-                                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                <span className="hidden sm:inline">Mark as Contacted</span>
-                                <span className="sm:hidden">Contacted</span>
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => updateContactStatus(contact.id, 'closed')}
-                                disabled={contact.status === 'closed'}
-                                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                              >
-                                <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                Close
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="destructive"
-                                onClick={() => handleDeleteContact(contact.id)}
-                                disabled={deletingContact === contact.id}
-                                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                              >
-                                {deletingContact === contact.id ? (
-                                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1"></div>
-                                ) : (
-                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                )}
-                                {deletingContact === contact.id ? 'Deleting...' : 'Delete'}
-                              </Button>
-                            </div>
-                          </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-            )}
-          </TabsContent>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Property Bookings</CardTitle>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{propertyBookings.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {propertyBookings.filter(b => b.status === 'pending').length} pending approval
+                  </p>
+                </CardContent>
+              </Card>
 
-                      <TabsContent value="bookings" className="space-y-3 sm:space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg sm:text-xl font-semibold">Property Bookings</h2>
-              </div>
-            {dataLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-                          ) : (
-                <div className="space-y-3 sm:space-y-4">
-                  {bookings.length === 0 ? (
-                    <Card>
-                      <CardContent className="flex items-center justify-center py-6 sm:py-8">
-                        <p className="text-muted-foreground text-sm sm:text-base">No property bookings yet</p>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    bookings.map((booking) => (
-                      <Card key={booking.id}>
-                        <CardHeader className="pb-3 sm:pb-6">
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
-                            <div className="min-w-0 flex-1">
-                              <CardTitle className="text-base sm:text-lg truncate">{booking.full_name}</CardTitle>
-                              <CardDescription className="text-xs sm:text-sm">
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                                  <span className="truncate">{booking.email}</span>
-                                  <span className="hidden sm:inline">•</span>
-                                  <span>{booking.phone}</span>
-                                </div>
-                              </CardDescription>
-                            </div>
-                            <Badge variant={booking.status === 'pending' ? 'destructive' : booking.status === 'approved' ? 'default' : 'secondary'} className="self-start">
-                              {booking.status}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <div className="space-y-3 sm:space-y-4">
-                            <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
-                              <div><strong>Property ID:</strong> {booking.property_id}</div>
-                              <div><strong>National ID:</strong> {booking.national_id}</div>
-                              <div><strong>Move-in Date:</strong> {booking.move_in_date || 'Not specified'}</div>
-                            </div>
-                            {booking.notes && <p className="text-sm sm:text-base">{booking.notes}</p>}
-                            <p className="text-xs text-muted-foreground">
-                              Submitted: {new Date(booking.created_at).toLocaleDateString()}
-                            </p>
-                                                    <div className="flex flex-col sm:flex-row gap-2">
-                              <Button 
-                                size="sm" 
-                                onClick={() => updateBookingStatus(booking.id, 'approved')}
-                                disabled={booking.status !== 'pending'}
-                                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                              >
-                                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => updateBookingStatus(booking.id, 'rejected')}
-                                disabled={booking.status !== 'pending'}
-                                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                              >
-                                <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                Reject
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="destructive"
-                                onClick={() => handleDeleteBooking(booking.id)}
-                                disabled={deletingBooking === booking.id}
-                                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                              >
-                                {deletingBooking === booking.id ? (
-                                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1"></div>
-                                ) : (
-                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                )}
-                                {deletingBooking === booking.id ? 'Deleting...' : 'Delete'}
-                              </Button>
-                            </div>
-                          </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-            )}
-          </TabsContent>
-
-                      <TabsContent value="projects" className="space-y-3 sm:space-y-4">
-   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
-    <h2 className="text-lg sm:text-xl font-semibold">Projects</h2>
-    <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
-      <DialogTrigger asChild>
-   <Button
-    size="sm"
-    className="w-full sm:w-auto"
-    onClick={() => {
-      setEditingProjectId(null); // <-- ensure we are adding, not editing
-      // setNewProject({
-      //   title: "",
-      //   location: "",
-      //   project_type: "",
-      //   short_description: "",
-      //   description: "",
-      //   start_date: "",
-      //   end_date: "",
-      //   image_url: "",
-      //   status: "active",
-      //   Amenities: [],
-      // });
-      setUnits({});       // reset units
-      setAmenityInput(""); // clear input field
-    }}
-   >
-    <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-    <span className="text-xs sm:text-sm">Add Project</span>
-   </Button>
-   </DialogTrigger>
-
-
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add New Project</DialogTitle>
-          <DialogDescription>Create a new project in your portfolio</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="title">Project Title</Label>
-              <Input
-                id="title"
-                value={newProject.title}
-                onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-              />
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{t("admin.publishedAnnouncements")}</CardTitle>
+                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{announcements.filter(a => a.is_published).length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {announcements.filter(a => !a.is_published).length} drafts
+                  </p>
+                </CardContent>
+              </Card>
             </div>
-            <div>
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={newProject.location}
-                onChange={(e) => setNewProject({ ...newProject, location: e.target.value })}
-              />
-            </div>
-          </div>
 
-          <div>
-            <Label htmlFor="project_type">Project Type</Label>
-            <Input
-              id="project_type"
-              value={newProject.project_type}
-              onChange={(e) => setNewProject({ ...newProject, project_type: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="short_description">Short Description</Label>
-            <Input
-              id="short_description"
-              value={newProject.short_description}
-              onChange={(e) => setNewProject({ ...newProject, short_description: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="description">Full Description</Label>
-            <Textarea
-              id="description"
-              value={newProject.description}
-              onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-              rows={4}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="start_date">Start Date</Label>
-              <Input
-                id="start_date"
-                type="date"
-                value={newProject.start_date}
-                onChange={(e) => setNewProject({ ...newProject, start_date: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="end_date">End Date</Label>
-              <Input
-                id="end_date"
-                type="date"
-                value={newProject.end_date}
-                onChange={(e) => setNewProject({ ...newProject, end_date: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="image_url">Project Image</Label>
-            <div className="flex gap-2 items-center">
-                <Input
-                  id="image_url"
-                  placeholder="Or paste image URL"
-                  value={newProject.image_url}
-                  onChange={(e) => setNewProject({ ...newProject, image_url: e.target.value })}
-                />
-                <Input type="file" accept="image/*" onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const filePath = `projects/${Date.now()}-${file.name}`;
-                  const { error } = await supabase.storage.from('project-media').upload(filePath, file);
-                  if (error) {
-                    toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-                  } else {
-                    const url = supabase.storage.from('project-media').getPublicUrl(filePath).data.publicUrl;
-                    setNewProject({ ...newProject, image_url: url });
-                    toast({ title: 'Uploaded', description: 'Image uploaded successfully' });
-                  }
-                }} />
-            </div>
-          </div>
-
-          {/* Unit Types Pricing */}
-          <div>
-            <Label>Unit Types & Pricing</Label>
-            {["1B", "2B", "3B", "4B"].map((unit) => (
-              <div key={unit} className="flex gap-2 my-1">
-                <Input
-                  value={units[unit] || ""}
-                  onChange={(e) => setUnits({ ...units, [unit]: e.target.value })}
-                  placeholder={`${unit} Price`}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Amenities */}
-          <div>
-            <Label>Amenities</Label>
-            <div className="flex gap-2 mb-2">
-              <Input
-                value={AmenityInput}
-                onChange={(e) => setAmenityInput(e.target.value)}
-                placeholder="Enter an Amenity"
-                onKeyPress={(e) => e.key === "Enter" && addAmenity()}
-              />
-              <Button type="button" onClick={addAmenity}>Add</Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {newProject.Amenities.map((Amenity, index) => (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="cursor-pointer"
-                  onClick={() => removeAmenity(index)}
-                >
-                  {Amenity} ×
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="status">Status</Label>
-            <Select onValueChange={(value) => setNewProject({ ...newProject, status: value as any })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="upcoming">Upcoming</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button onClick={editingProjectId ? handleSaveProject : handleAddProject} className="w-full">
-   {editingProjectId ? "Save Changes" : "Add Project"}
-   </Button>
-
-        </div>
-      </DialogContent>
-    </Dialog>
-   </div>
-   {dataLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-                          ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-                  {projects.length === 0 ? (
-                    <Card className="col-span-full">
-                      <CardContent className="flex items-center justify-center py-6 sm:py-8">
-                        <p className="text-muted-foreground text-sm sm:text-base">No projects yet</p>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    projects.map((project) => (
-                      <Card key={project.id}>
-                        <CardHeader className="pb-3 sm:pb-6">
-                          <CardTitle className="text-base sm:text-lg line-clamp-2">{project.title}</CardTitle>
-                          <CardDescription className="text-xs sm:text-sm">{project.location}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <div className="space-y-3 sm:space-y-4">
-                            <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
-                              <div><strong>Type:</strong> {project.project_type}</div>
-                              <div><strong>Status:</strong> {project.status}</div>
-                              <div>
-   <strong>Units & Pricing:</strong>
-   <ul className="list-disc list-inside">
-    {Object.entries(project.units || {}).map(([unit, price]) => (
-      <li key={unit}>
-        {unit}: {price}
-      </li>
-    ))}
-   </ul>
-   </div>
-
-                            </div>
-                            <p className="text-xs sm:text-sm line-clamp-3">{project.short_description}</p>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <Button size="sm" variant="outline" onClick={() => handleEditClick(project)} className="flex-1 sm:flex-none text-xs sm:text-sm">
-                                <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                Edit
-                              </Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleDeleteProject(project.id)} className="flex-1 sm:flex-none text-xs sm:text-sm">
-                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                Delete
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-            )}
-            <Tabs value="progress-updates" className="space-y-3 sm:space-y-4">
-  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
-    <h2 className="text-lg sm:text-xl font-semibold">Progress Updates</h2>
-
-    <Dialog open={isAddUpdateOpen} onOpenChange={setIsAddUpdateOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" onClick={() => setIsAddUpdateOpen(true)}>
-          <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-          <span className="text-xs sm:text-sm">Add Update</span>
-        </Button>
-      </DialogTrigger>
-
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          {/* <DialogTitle>{update.id ? "Edit Update" : "Add Project Update"}</DialogTitle> */}
-          <DialogDescription>Attach a photo/video or description</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="update_project">Project</Label>
-            <select
-              id="update_project"
-              className="w-full border rounded p-2"
-              value={update.project_id}
-              onChange={(e) => setUpdate({ ...update, project_id: e.target.value })}
-            >
-              <option value="">-- Select Project --</option>
-              {ongoingProjects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.title}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <Label>Description</Label>
-            <Textarea
-              rows={3}
-              value={update.description}
-              onChange={(e) => setUpdate({ ...update, description: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label>Upload Image/Video</Label>
-            <div
-              className="mt-2 border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                const file = e.dataTransfer.files?.[0];
-                if (file) setUpdate({ ...update, file });
-              }}
-            >
-              <p className="text-sm text-muted-foreground mb-3">Drag & drop a file here, or click to select</p>
-              <Input
-                type="file"
-                accept="image/*,video/*"
-                onChange={(e) => setUpdate({ ...update, file: e.target.files?.[0] })}
-              />
-              {update.file && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium">Selected: {update.file.name}</p>
-                  {update.file.type.startsWith("image") && (
-                    <img src={URL.createObjectURL(update.file)} alt="preview" className="mt-2 max-h-48 rounded" />
-                  )}
-                  {update.file.type.startsWith("video") && (
-                    <video src={URL.createObjectURL(update.file)} controls className="mt-2 w-full rounded max-h-64" />
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <Button onClick={handleAddUpdate} disabled={loading} className="w-full">
-            {loading ? "Uploading..." : "Submit Update"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  </div>
-
-  <TabsContent value="progress-updates" className="space-y-4">
-    {updates.length === 0 ? (
-      <Card>
-        <CardContent className="py-6 text-center text-muted-foreground">
-          No updates yet
-        </CardContent>
-      </Card>
-    ) : (
-      updates.map((update) => (
-        <Card key={update.id}>
-          <CardHeader>
-            <CardTitle>{update.project_title}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {update.media_url && update.update_type === "image" && (
-              <img src={update.media_url} className="rounded" alt="Update image" />
-            )}
-            {update.media_url && update.update_type === "video" && (
-              <video src={update.media_url} controls className="w-full rounded" />
-            )}
-            <p>{update.description}</p>
-            <p className="text-muted-foreground text-xs">
-              {new Date(update.created_at).toLocaleString()}
-            </p>
-
-            {/* Edit/Delete Buttons */}
-            <div className="flex gap-2 pt-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setUpdate({
-                    // id: update.id,
-                    project_id: update.project_id,
-                    description: update.description,
-                    file: null, // no existing file re-selection
-                  });
-                  setIsAddUpdateOpen(true);
-                }}
-              >
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => handleDelete(update.id)}
-              >
-                Delete
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))
-    )}
-  </TabsContent>
-</Tabs>
-
-
-          
-     </TabsContent>
-
-
-                      <TabsContent value="announcements" className="space-y-3 sm:space-y-4">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
-                <h2 className="text-lg sm:text-xl font-semibold">Announcements</h2>
-                              <Dialog open={isAddAnnouncementOpen} onOpenChange={setIsAddAnnouncementOpen}>
-                  <DialogTrigger asChild>
-  <Button
-    size="sm"
-    className="w-full sm:w-auto"
-    onClick={handleOpenAddAnnouncement}
-  >
-    <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-    <span className="text-xs sm:text-sm">Add Announcement</span>
-  </Button>
-</DialogTrigger>
-
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Add New Announcement</DialogTitle>
-                    <DialogDescription>Create a new announcement</DialogDescription>
-                  </DialogHeader>
+            {/* Recent Activity */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Contact Submissions</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="ann_title">Title</Label>
-                      <Input
-                        id="ann_title"
-                        value={newAnnouncement.title}
-                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="ann_short_description">Short Description</Label>
-                      <Input
-                        id="ann_short_description"
-                        value={newAnnouncement.short_description}
-                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, short_description: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="ann_content">Content</Label>
-                      <Textarea
-                        id="ann_content"
-                        value={newAnnouncement.content}
-                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
-                        rows={4}
-                      />
-                    </div>
-                    <div>
-  <Label htmlFor="ann_scheduled_for">Schedule For</Label>
-  <Input
-    id="ann_scheduled_for"
-    type="datetime-local"
-    value={newAnnouncement.scheduled_for}
-    onChange={(e) =>
-      setNewAnnouncement({ ...newAnnouncement, scheduled_for: e.target.value })
-    }
-  />
-</div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="ann_category">Category</Label>
-                        <Input
-                          id="ann_category"
-                          value={newAnnouncement.category}
-                          onChange={(e) => setNewAnnouncement({ ...newAnnouncement, category: e.target.value })}
-                        />
+                    {contactSubmissions.slice(0, 3).map((contact) => (
+                      <div key={contact.id} className="flex items-center space-x-4">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{contact.name}</p>
+                          <p className="text-xs text-muted-foreground">{contact.email}</p>
+                        </div>
+                        <Badge variant={contact.status === 'pending' ? 'default' : 'secondary'}>
+                          {contact.status}
+                        </Badge>
                       </div>
-                      <div>
-                        <Label htmlFor="ann_image_url">Announcement Image</Label>
-                        <div className="flex gap-2 items-center">
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Property Bookings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {propertyBookings.slice(0, 3).map((booking) => (
+                      <div key={booking.id} className="flex items-center space-x-4">
+                        <div className="w-2 h-2 bg-accent rounded-full"></div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{booking.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{booking.unit_type}</p>
+                        </div>
+                        <Badge variant={booking.status === 'pending' ? 'default' : booking.status === 'approved' ? 'secondary' : 'destructive'}>
+                          {booking.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Property Bookings Management */}
+          <TabsContent value="bookings" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("admin.bookings")}</CardTitle>
+                <CardDescription>Manage property booking requests and send email notifications</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("admin.name")}</TableHead>
+                      <TableHead>Property</TableHead>
+                      <TableHead>Unit Type</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>{t("admin.status")}</TableHead>
+                      <TableHead>{t("common.actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {propertyBookings.map((booking) => (
+                      <TableRow key={booking.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{booking.full_name}</div>
+                            <div className="text-sm text-muted-foreground">{booking.email}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{booking.projects?.title || 'Unknown'}</div>
+                            <div className="text-sm text-muted-foreground">{booking.projects?.location}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{booking.unit_type}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div>{booking.phone}</div>
+                            <div className="text-muted-foreground">{booking.preferred_contact}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            booking.status === 'pending' ? 'default' : 
+                            booking.status === 'approved' ? 'secondary' : 
+                            'destructive'
+                          }>
+                            {booking.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            {booking.status === 'pending' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => updateBookingStatus(booking.id, 'approved')}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                                
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="destructive">
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Reject Booking</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Please provide a reason for rejecting this booking. This will be sent to the customer via email.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <div className="py-4">
+                                      <Label htmlFor="rejection-reason">Rejection Reason</Label>
+                                      <Textarea
+                                        id="rejection-reason"
+                                        placeholder="Please explain why this booking cannot be approved..."
+                                        className="mt-2"
+                                        onChange={(e) => {
+                                          // Store the rejection reason temporarily
+                                          (e.target as any).rejectionReason = e.target.value;
+                                        }}
+                                      />
+                                    </div>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={(e) => {
+                                          const textarea = document.getElementById('rejection-reason') as HTMLTextAreaElement;
+                                          const reason = textarea?.value || 'No specific reason provided';
+                                          updateBookingStatus(booking.id, 'rejected', reason);
+                                        }}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Send Rejection Email
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </>
+                            )}
+                            
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="outline">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Booking</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this booking? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => deletePropertyBooking(booking.id)}>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Announcements Management */}
+          <TabsContent value="announcements" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>{t("admin.announcements")}</CardTitle>
+                    <CardDescription>{t("admin.createAndManage")}</CardDescription>
+                  </div>
+                  <Dialog open={isAddAnnouncementOpen} onOpenChange={setIsAddAnnouncementOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Announcement
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Add New Announcement</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="title">Title</Label>
                           <Input
-                            id="ann_image_url"
-                            placeholder="Or paste image URL"
-                            value={newAnnouncement.image_url}
-                            onChange={(e) => setNewAnnouncement({ ...newAnnouncement, image_url: e.target.value })}
+                            id="title"
+                            value={newAnnouncement.title}
+                            onChange={(e) => setNewAnnouncement({...newAnnouncement, title: e.target.value})}
                           />
-                          <Input type="file" accept="image/*" onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const filePath = `announcements/${Date.now()}-${file.name}`;
-                            const { error } = await supabase.storage.from('announcement-media').upload(filePath, file);
-                            if (error) {
-                              toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-                            } else {
-                              const url = supabase.storage.from('announcement-media').getPublicUrl(filePath).data.publicUrl;
-                              setNewAnnouncement({ ...newAnnouncement, image_url: url });
-                              toast({ title: 'Uploaded', description: 'Image uploaded successfully' });
-                            }
-                          }} />
+                        </div>
+                        <div>
+                          <Label htmlFor="short_description">Short Description</Label>
+                          <Input
+                            id="short_description"
+                            value={newAnnouncement.short_description}
+                            onChange={(e) => setNewAnnouncement({...newAnnouncement, short_description: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="content">Content</Label>
+                          <Textarea
+                            id="content"
+                            value={newAnnouncement.content}
+                            onChange={(e) => setNewAnnouncement({...newAnnouncement, content: e.target.value})}
+                            rows={4}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="category">Category</Label>
+                          <Select value={newAnnouncement.category} onValueChange={(value) => setNewAnnouncement({...newAnnouncement, category: value})}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="general">General</SelectItem>
+                              <SelectItem value="new-project">New Project</SelectItem>
+                              <SelectItem value="construction">Construction Update</SelectItem>
+                              <SelectItem value="sales">Sales</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="image_url">Image URL</Label>
+                          <Input
+                            id="image_url"
+                            value={newAnnouncement.image_url}
+                            onChange={(e) => setNewAnnouncement({...newAnnouncement, image_url: e.target.value})}
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="is_published"
+                            checked={newAnnouncement.is_published}
+                            onChange={(e) => setNewAnnouncement({...newAnnouncement, is_published: e.target.checked})}
+                          />
+                          <Label htmlFor="is_published">Publish immediately</Label>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="ann_published"
-                        checked={newAnnouncement.is_published}
-                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, is_published: e.target.checked })}
-                      />
-                      <Label htmlFor="ann_published">Publish immediately</Label>
-                    </div>
-                    <Button onClick={handleSaveAnnouncement} className="w-full">
-  {editingAnnouncement ? "Save Changes" : "Add Announcement"}
-</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-            {dataLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-                          ) : (
-                <div className="space-y-3 sm:space-y-4">
-                  {announcements.length === 0 ? (
-                    <Card>
-                      <CardContent className="flex items-center justify-center py-6 sm:py-8">
-                        <p className="text-muted-foreground text-sm sm:text-base">No announcements yet</p>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    announcements.map((announcement) => (
-                      <Card key={announcement.id}>
-                        <CardHeader className="pb-3 sm:pb-6">
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
-                            <div className="min-w-0 flex-1">
-                              <CardTitle className="text-base sm:text-lg line-clamp-2">{announcement.title}</CardTitle>
-                              <CardDescription className="text-xs sm:text-sm">Category: {announcement.category}</CardDescription>
-                            </div>
-                            <Badge variant={announcement.is_published ? 'default' : 'secondary'} className="self-start">
-                              {announcement.is_published ? 'Published' : 'Draft'}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <div className="space-y-3 sm:space-y-4">
-                            <p className="text-xs sm:text-sm line-clamp-3">{announcement.short_description}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Created: {new Date(announcement.created_at).toLocaleDateString()}
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => toggleAnnouncementPublish(announcement.id, announcement.is_published)}
-                                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                              >
-                                {announcement.is_published ? 'Unpublish' : 'Publish'}
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => handleEditAnnouncement(announcement)} className="flex-1 sm:flex-none text-xs sm:text-sm">
-                                <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                Edit
-                              </Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleDeleteAnnouncement(announcement.id)} className="flex-1 sm:flex-none text-xs sm:text-sm">
-                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                Delete
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
+                      <DialogFooter>
+                        <Button onClick={addAnnouncement}>Add Announcement</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-            )}
-          </TabsContent>          
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>{t("admin.status")}</TableHead>
+                      <TableHead>{t("common.date")}</TableHead>
+                      <TableHead>{t("common.actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {announcements.map((announcement) => (
+                      <TableRow key={announcement.id}>
+                        <TableCell className="font-medium">{announcement.title}</TableCell>
+                        <TableCell>{announcement.category}</TableCell>
+                        <TableCell>
+                          <Badge variant={announcement.is_published ? 'default' : 'secondary'}>
+                            {announcement.is_published ? 'Published' : 'Draft'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{new Date(announcement.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Button size="sm" variant="outline">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Contact Submissions */}
+          <TabsContent value="contacts" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("admin.contacts")}</CardTitle>
+                <CardDescription>{t("admin.viewAndRespond")}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("admin.name")}</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>{t("common.message")}</TableHead>
+                      <TableHead>{t("admin.status")}</TableHead>
+                      <TableHead>{t("common.actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contactSubmissions.map((contact) => (
+                      <TableRow key={contact.id}>
+                        <TableCell className="font-medium">{contact.name}</TableCell>
+                        <TableCell>{contact.email}</TableCell>
+                        <TableCell>{contact.phone}</TableCell>
+                        <TableCell className="max-w-xs truncate">{contact.message}</TableCell>
+                        <TableCell>
+                          <Badge variant={contact.status === 'pending' ? 'default' : 'secondary'}>
+                            {contact.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Button size="sm" variant="outline">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="outline">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this contact submission?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => deleteContactSubmission(contact.id)}>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Properties Management */}
+          <TabsContent value="properties" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>{t("admin.properties")}</CardTitle>
+                    <CardDescription>Manage your property portfolio</CardDescription>
+                  </div>
+                  <Dialog open={isAddPropertyOpen} onOpenChange={setIsAddPropertyOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        {t("admin.addProperty")}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>{t("admin.addProperty")}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        <div>
+                          <Label htmlFor="title">Title</Label>
+                          <Input
+                            id="title"
+                            value={newProperty.title}
+                            onChange={(e) => setNewProperty({...newProperty, title: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="location">Location</Label>
+                          <Input
+                            id="location"
+                            value={newProperty.location}
+                            onChange={(e) => setNewProperty({...newProperty, location: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="project_type">Project Type</Label>
+                          <Select value={newProperty.project_type} onValueChange={(value) => setNewProperty({...newProperty, project_type: value})}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="residential">Residential</SelectItem>
+                              <SelectItem value="commercial">Commercial</SelectItem>
+                              <SelectItem value="mixed-use">Mixed Use</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="status">Status</Label>
+                          <Select value={newProperty.status} onValueChange={(value: any) => setNewProperty({...newProperty, status: value})}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="planning">Planning</SelectItem>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="upcoming">Upcoming</SelectItem>
+                              <SelectItem value="on-hold">On Hold</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="description">Description</Label>
+                          <Textarea
+                            id="description"
+                            value={newProperty.description}
+                            onChange={(e) => setNewProperty({...newProperty, description: e.target.value})}
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="short_description">Short Description</Label>
+                          <Input
+                            id="short_description"
+                            value={newProperty.short_description}
+                            onChange={(e) => setNewProperty({...newProperty, short_description: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="image_url">Image URL</Label>
+                          <Input
+                            id="image_url"
+                            value={newProperty.image_url}
+                            onChange={(e) => setNewProperty({...newProperty, image_url: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="start_date">Start Date</Label>
+                          <Input
+                            id="start_date"
+                            type="date"
+                            value={newProperty.start_date}
+                            onChange={(e) => setNewProperty({...newProperty, start_date: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="end_date">End Date</Label>
+                          <Input
+                            id="end_date"
+                            type="date"
+                            value={newProperty.end_date}
+                            onChange={(e) => setNewProperty({...newProperty, end_date: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button onClick={addProperty}>Add Property</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>{t("admin.status")}</TableHead>
+                      <TableHead>{t("common.actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {projects.map((project) => (
+                      <TableRow key={project.id}>
+                        <TableCell className="font-medium">{project.title}</TableCell>
+                        <TableCell>{project.location}</TableCell>
+                        <TableCell>{project.project_type}</TableCell>
+                        <TableCell>
+                          <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
+                            {project.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Button size="sm" variant="outline">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="outline">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Property</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this property?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => deleteProperty(project.id)}>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </div>
