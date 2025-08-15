@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import BookingStatusNotification from "@/components/BookingStatusNotification";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ReCAPTCHA from "react-google-recaptcha";
 import { SITE_RECAPTCHA_KEY } from "@/utils/env";
+import { useBookingNotifications } from "@/hooks/useBookingNotifications";
 
 // Captcha site key is injected via env
 const SITE_KEY = SITE_RECAPTCHA_KEY;
@@ -311,6 +313,17 @@ console.log("unit stock fetched:", data);
           </form>
         )}
       </main>
+      
+      {/* Booking Status Notification Section */}
+      <section className="bg-gray-50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold text-center mb-8">Check Your Booking Status</h2>
+            <BookingStatusNotification userEmail={formData.email} />
+          </div>
+        </div>
+      </section>
+      
       <Footer />
     </div>
   );
