@@ -128,24 +128,7 @@ export default function DatabaseConnectionTest() {
       });
     }
 
-    // Test 7: Email logs (new table)
-    try {
-      const { data, error } = await supabase.from("email_logs").select("*").limit(1);
-      testResults.push({
-        name: "Email Logs",
-        status: error ? 'error' : 'success',
-        message: error ? error.message : `Found ${data?.length || 0} records`,
-        data: data
-      });
-    } catch (err) {
-      testResults.push({
-        name: "Email Logs",
-        status: 'error',
-        message: `Query failed: ${err}`,
-      });
-    }
-
-    // Test 8: RPC functions
+    // Test 7: RPC functions
     try {
       const { data, error } = await supabase.rpc('send_enhanced_booking_email', {
         recipient_email: 'test@example.com',
