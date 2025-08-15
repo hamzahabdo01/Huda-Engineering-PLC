@@ -1,4 +1,6 @@
-// Email service utility for sending booking notifications
+// Email service utility for sending booking notifications using Supabase
+import { supabase } from '@/integrations/supabase/client';
+
 export const sendBookingNotification = async (
   booking: {
     id: string;
@@ -14,13 +16,9 @@ export const sendBookingNotification = async (
   rejectionReason?: string
 ) => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-booking-email`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    // Call the Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke('send-booking-email', {
+      body: {
         to: booking.email,
         customerName: booking.full_name,
         propertyTitle: booking.projects?.title || 'Property',
@@ -28,16 +26,14 @@ export const sendBookingNotification = async (
         status: status,
         rejectionReason: rejectionReason,
         bookingId: booking.id,
-      }),
+      },
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to send email');
+    if (error) {
+      throw new Error(error.message || 'Failed to send email');
     }
 
-    const result = await response.json();
-    return { success: true, emailId: result.emailId };
+    return { success: true, emailId: data?.emailId || 'sent' };
 
   } catch (error) {
     console.error('Error sending booking notification:', error);

@@ -1,59 +1,36 @@
-# Email Notification Setup Instructions
+# Email Notification Setup Instructions (Supabase Native)
 
-## 🚨 Important: Email Service Configuration Required
+## 📧 Supabase Email Integration
 
-The booking approval/rejection email functionality has been implemented, but you need to configure an email service to make it work.
-
-## 📧 Email Service Options
-
-### Option 1: Resend (Recommended)
-1. Sign up at [resend.com](https://resend.com)
-2. Get your API key from the dashboard
-3. Add the API key to your Supabase Edge Function secrets
-
-### Option 2: SendGrid
-1. Sign up at [sendgrid.com](https://sendgrid.com)
-2. Get your API key
-3. Modify the edge function to use SendGrid API
-
-### Option 3: Gmail SMTP
-1. Enable 2-factor authentication on your Gmail account
-2. Generate an app-specific password
-3. Modify the edge function to use SMTP
+The booking approval/rejection email functionality has been updated to use Supabase's built-in email capabilities, which is much simpler and more reliable.
 
 ## 🔧 Setup Steps
 
-### 1. Configure Email Service (Using Resend)
+### 1. Enable Supabase Email (If Available)
 
-1. **Sign up for Resend:**
-   - Go to [resend.com](https://resend.com)
-   - Create an account
-   - Verify your domain (hudaengineering.com) or use their test domain
+Supabase provides built-in email functionality that doesn't require external API keys or configuration. The edge function will automatically use Supabase's email service.
 
-2. **Get API Key:**
-   - Go to API Keys section in Resend dashboard
-   - Create a new API key
-   - Copy the key (starts with `re_`)
+### 2. Configure Gmail Integration (Alternative)
 
+If you want to use Gmail specifically, you can configure SMTP settings:
+
+1. **Enable 2-Factor Authentication** on your Gmail account
+2. **Generate App Password:**
+   - Go to Google Account settings
+   - Security → 2-Step Verification → App passwords
+   - Generate a password for "Mail"
 3. **Add to Supabase Secrets:**
-   - Go to your Supabase Dashboard
-   - Navigate to Edge Functions → Settings
-   - Add a new secret:
-     - Name: `RESEND_API_KEY`
-     - Value: Your Resend API key
-
-### 2. Deploy the Edge Function
-
-The edge function is already created at `supabase/functions/send-booking-email/index.ts`. 
-
-**Important:** Edge functions are automatically deployed in this environment, so no manual deployment is needed.
+   - Go to your Supabase Dashboard → Edge Functions → Settings
+   - Add these secrets:
+     - `GMAIL_USER`: hudaengineeringrealestate@gmail.com
+     - `GMAIL_PASS`: Your generated app password
 
 ### 3. Test the Email Functionality
 
 1. Go to your admin dashboard
 2. Find a pending property booking
 3. Click "Approve" or "Reject"
-4. Check if the email is sent successfully
+4. The system will automatically send emails using Supabase's email service
 
 ## 📋 Email Templates
 

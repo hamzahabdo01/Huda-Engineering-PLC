@@ -233,40 +233,33 @@ const AdminDashboard = () => {
   // Email notification function
   const sendBookingEmail = async (booking: PropertyBooking, status: 'approved' | 'rejected', rejectionReason?: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-booking-email`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: booking.email,
-          customerName: booking.full_name,
-          propertyTitle: booking.projects?.title || 'Property',
-          unitType: booking.unit_type,
-          status: status,
-          rejectionReason: rejectionReason,
-          bookingId: booking.id,
-        }),
+      // Use Supabase database function for email sending
+      const { data, error } = await supabase.rpc('send_booking_email', {
+        recipient_email: booking.email,
+        customer_name: booking.full_name,
+        property_title: booking.projects?.title || 'Property',
+        unit_type: booking.unit_type,
+        booking_status: status,
+        booking_id: booking.id,
+        rejection_reason: rejectionReason || null
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to send email');
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const result = await response.json();
-      console.log('Email sent successfully:', result);
+      console.log('Email notification result:', data);
       
       toast({
-        title: "Email Sent",
-        description: `${status === 'approved' ? 'Approval' : 'Update'} email sent to ${booking.full_name}`,
+        title: "Email Notification",
+        description: `${status === 'approved' ? 'Approval' : 'Update'} notification sent to ${booking.full_name}`,
       });
 
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Error sending email notification:', error);
       toast({
-        title: "Email Error",
-        description: "Failed to send notification email",
+        title: "Email Warning",
+        description: "Booking updated successfully. Email notification may have failed.",
         variant: "destructive",
       });
     }
