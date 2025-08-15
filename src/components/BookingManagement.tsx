@@ -50,27 +50,26 @@ import {
   MapPin,
   Eye,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 interface PropertyBooking {
   id: string;
   property_id: string;
-  unit_type: string;
   full_name: string;
   email: string;
   phone: string;
-  secondary_phone: string;
   national_id: string;
-  move_in_date: string;
-  notes: string;
+  move_in_date: string | null;
+  notes: string | null;
   status: 'pending' | 'approved' | 'rejected';
-  rejection_reason?: string;
+  rejection_reason?: string | null;
   created_at: string;
-  preferred_contact: string;
-  projects?: {
-    title: string;
-    location: string;
-  };
+  updated_at?: string;
+  // Optional fields that might not exist in the current table
+  unit_type?: string;
+  secondary_phone?: string;
+  preferred_contact?: string;
 }
 
 interface EmailLog {
@@ -93,37 +92,69 @@ export default function BookingManagement() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showEmailLogs, setShowEmailLogs] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch bookings and email logs
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      const [bookingsRes, emailLogsRes] = await Promise.all([
-        supabase
-          .from("property_bookings")
-          .select(`
-            *,
-            projects:projects(title, location)
-          `)
-          .order("created_at", { ascending: false }),
-        supabase
+      console.log("Fetching booking data...");
+      
+      // First, let's check what columns actually exist in the property_bookings table
+      const { data: tableInfo, error: tableError } = await supabase
+        .from('information_schema.columns')
+        .select('column_name, data_type')
+        .eq('table_name', 'property_bookings')
+        .eq('table_schema', 'public');
+      
+      if (tableError) {
+        console.warn("Could not fetch table schema:", tableError);
+      } else {
+        console.log("Available columns:", tableInfo);
+      }
+      
+      // Fetch bookings with a simple query first
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from("property_bookings")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (bookingsError) {
+        console.error("Error fetching bookings:", bookingsError);
+        throw new Error(`Failed to fetch bookings: ${bookingsError.message}`);
+      }
+
+      console.log("Bookings fetched:", bookingsData);
+      setBookings(bookingsData || []);
+
+      // Try to fetch email logs if the table exists
+      try {
+        const { data: emailLogsData, error: emailLogsError } = await supabase
           .from("email_logs")
           .select("*")
           .order("created_at", { ascending: false })
-          .limit(50)
-      ]);
+          .limit(50);
 
-      if (bookingsRes.error) throw bookingsRes.error;
-      if (emailLogsRes.error) throw emailLogsRes.error;
+        if (emailLogsError) {
+          console.warn("Email logs table might not exist:", emailLogsError);
+          setEmailLogs([]);
+        } else {
+          setEmailLogs(emailLogsData || []);
+        }
+      } catch (emailError) {
+        console.warn("Email logs not available:", emailError);
+        setEmailLogs([]);
+      }
 
-      setBookings(bookingsRes.data || []);
-      setEmailLogs(emailLogsRes.data || []);
     } catch (error) {
       console.error("Error fetching data:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      setError(errorMessage);
       toast({
         title: "Error",
-        description: "Failed to load booking data",
+        description: `Failed to load booking data: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
@@ -152,7 +183,7 @@ export default function BookingManagement() {
       )
       .subscribe();
 
-    // Subscribe to email log changes
+    // Subscribe to email log changes (if table exists)
     const emailChannel = supabase
       .channel('email_log_changes')
       .on(
@@ -179,22 +210,39 @@ export default function BookingManagement() {
   const handleApproveBooking = async (bookingId: string) => {
     setProcessingBooking(bookingId);
     try {
+      // First try the enhanced function
       const { data, error } = await supabase.rpc('update_booking_status_with_enhanced_email', {
         p_booking_id: bookingId,
         p_status: 'approved'
       });
 
-      if (error) throw error;
-
-      if (data?.success) {
+      if (error) {
+        // Fallback to simple update if function doesn't exist
+        console.warn("Enhanced function failed, trying simple update:", error);
+        const { error: simpleError } = await supabase
+          .from('property_bookings')
+          .update({ 
+            status: 'approved',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', bookingId);
+        
+        if (simpleError) throw simpleError;
+        
+        toast({
+          title: "Booking Approved",
+          description: "The booking has been approved.",
+        });
+      } else if (data?.success) {
         toast({
           title: "Booking Approved",
           description: "The booking has been approved and the customer has been notified via email.",
         });
-        fetchData(); // Refresh data
       } else {
         throw new Error(data?.error || 'Unknown error occurred');
       }
+      
+      fetchData(); // Refresh data
     } catch (error) {
       console.error("Error approving booking:", error);
       toast({
@@ -220,26 +268,44 @@ export default function BookingManagement() {
 
     setProcessingBooking(selectedBooking.id);
     try {
+      // First try the enhanced function
       const { data, error } = await supabase.rpc('update_booking_status_with_enhanced_email', {
         p_booking_id: selectedBooking.id,
         p_status: 'rejected',
         p_rejection_reason: rejectionReason.trim()
       });
 
-      if (error) throw error;
-
-      if (data?.success) {
+      if (error) {
+        // Fallback to simple update if function doesn't exist
+        console.warn("Enhanced function failed, trying simple update:", error);
+        const { error: simpleError } = await supabase
+          .from('property_bookings')
+          .update({ 
+            status: 'rejected',
+            rejection_reason: rejectionReason.trim(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', selectedBooking.id);
+        
+        if (simpleError) throw simpleError;
+        
+        toast({
+          title: "Booking Rejected",
+          description: "The booking has been rejected.",
+        });
+      } else if (data?.success) {
         toast({
           title: "Booking Rejected",
           description: "The booking has been rejected and the customer has been notified via email.",
         });
-        setShowRejectDialog(false);
-        setRejectionReason("");
-        setSelectedBooking(null);
-        fetchData(); // Refresh data
       } else {
         throw new Error(data?.error || 'Unknown error occurred');
       }
+      
+      setShowRejectDialog(false);
+      setRejectionReason("");
+      setSelectedBooking(null);
+      fetchData(); // Refresh data
     } catch (error) {
       console.error("Error rejecting booking:", error);
       toast({
@@ -266,13 +332,18 @@ export default function BookingManagement() {
 
   // Format date
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
   };
 
   if (loading) {
@@ -280,6 +351,22 @@ export default function BookingManagement() {
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin" />
         <span className="ml-2">Loading bookings...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 space-y-4">
+        <AlertCircle className="h-12 w-12 text-red-500" />
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-red-600">Error Loading Data</h3>
+          <p className="text-gray-600 mt-2">{error}</p>
+          <Button onClick={fetchData} className="mt-4">
+            <Loader2 className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
@@ -298,6 +385,19 @@ export default function BookingManagement() {
         </Button>
       </div>
 
+      {/* Debug Info */}
+      <Card className="bg-blue-50">
+        <CardHeader>
+          <CardTitle className="text-blue-800">Debug Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-blue-700">
+            Total bookings loaded: {bookings.length} | 
+            Email logs available: {emailLogs.length > 0 ? 'Yes' : 'No'}
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Bookings Table */}
       <Card>
         <CardHeader>
@@ -307,133 +407,149 @@ export default function BookingManagement() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Property</TableHead>
-                <TableHead>Unit Type</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {bookings.map((booking) => (
-                <TableRow key={booking.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{booking.full_name}</p>
-                      <p className="text-sm text-gray-500">{booking.email}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{booking.projects?.title || 'Property'}</p>
-                      <p className="text-sm text-gray-500">{booking.projects?.location}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{booking.unit_type}</TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center text-sm">
-                        <Phone className="h-3 w-3 mr-1" />
-                        {booking.phone}
+          {bookings.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>No bookings found</p>
+              <p className="text-sm">New booking requests will appear here</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Property ID</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {bookings.map((booking) => (
+                  <TableRow key={booking.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{booking.full_name}</p>
+                        <p className="text-sm text-gray-500">{booking.email}</p>
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        {booking.preferred_contact}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(booking.status)}</TableCell>
-                  <TableCell className="text-sm">
-                    {formatDate(booking.created_at)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      {booking.status === 'pending' && (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() => handleApproveBooking(booking.id)}
-                            disabled={processingBooking === booking.id}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            {processingBooking === booking.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <CheckCircle className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => {
-                              setSelectedBooking(booking);
-                              setShowRejectDialog(true);
-                            }}
-                            disabled={processingBooking === booking.id}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>Booking Details</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label>Full Name</Label>
-                              <p className="text-sm">{booking.full_name}</p>
-                            </div>
-                            <div>
-                              <Label>Email</Label>
-                              <p className="text-sm">{booking.email}</p>
-                            </div>
-                            <div>
-                              <Label>Phone Numbers</Label>
-                              <p className="text-sm">{booking.phone}</p>
-                              {booking.secondary_phone && (
-                                <p className="text-sm text-gray-500">{booking.secondary_phone}</p>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{booking.property_id}</p>
+                        {booking.unit_type && (
+                          <p className="text-sm text-gray-500">{booking.unit_type}</p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center text-sm">
+                          <Phone className="h-3 w-3 mr-1" />
+                          {booking.phone}
+                        </div>
+                        {booking.preferred_contact && (
+                          <Badge variant="outline" className="text-xs">
+                            {booking.preferred_contact}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                    <TableCell className="text-sm">
+                      {formatDate(booking.created_at)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        {booking.status === 'pending' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleApproveBooking(booking.id)}
+                              disabled={processingBooking === booking.id}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              {processingBooking === booking.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <CheckCircle className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                setSelectedBooking(booking);
+                                setShowRejectDialog(true);
+                              }}
+                              disabled={processingBooking === booking.id}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Booking Details</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <Label>Full Name</Label>
+                                <p className="text-sm">{booking.full_name}</p>
+                              </div>
+                              <div>
+                                <Label>Email</Label>
+                                <p className="text-sm">{booking.email}</p>
+                              </div>
+                              <div>
+                                <Label>Phone Number</Label>
+                                <p className="text-sm">{booking.phone}</p>
+                                {booking.secondary_phone && (
+                                  <p className="text-sm text-gray-500">{booking.secondary_phone}</p>
+                                )}
+                              </div>
+                              <div>
+                                <Label>National ID</Label>
+                                <p className="text-sm">{booking.national_id}</p>
+                              </div>
+                              <div>
+                                <Label>Property ID</Label>
+                                <p className="text-sm">{booking.property_id}</p>
+                              </div>
+                              {booking.move_in_date && (
+                                <div>
+                                  <Label>Move-in Date</Label>
+                                  <p className="text-sm">{booking.move_in_date}</p>
+                                </div>
+                              )}
+                              {booking.notes && (
+                                <div>
+                                  <Label>Notes</Label>
+                                  <p className="text-sm">{booking.notes}</p>
+                                </div>
+                              )}
+                              {booking.rejection_reason && (
+                                <div>
+                                  <Label>Rejection Reason</Label>
+                                  <p className="text-sm text-red-600">{booking.rejection_reason}</p>
+                                </div>
                               )}
                             </div>
-                            <div>
-                              <Label>National ID</Label>
-                              <p className="text-sm">{booking.national_id}</p>
-                            </div>
-                            <div>
-                              <Label>Move-in Date</Label>
-                              <p className="text-sm">{booking.move_in_date}</p>
-                            </div>
-                            {booking.notes && (
-                              <div>
-                                <Label>Notes</Label>
-                                <p className="text-sm">{booking.notes}</p>
-                              </div>
-                            )}
-                            {booking.rejection_reason && (
-                              <div>
-                                <Label>Rejection Reason</Label>
-                                <p className="text-sm text-red-600">{booking.rejection_reason}</p>
-                              </div>
-                            )}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -482,32 +598,40 @@ export default function BookingManagement() {
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-96 overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Recipient</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {emailLogs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-sm">{log.recipient_email}</TableCell>
-                    <TableCell className="text-sm">{log.subject}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        className={log.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
-                      >
-                        {log.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">{formatDate(log.created_at)}</TableCell>
+            {emailLogs.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No email logs available</p>
+                <p className="text-sm">Email logging may not be set up yet</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Recipient</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {emailLogs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-sm">{log.recipient_email}</TableCell>
+                      <TableCell className="text-sm">{log.subject}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          className={log.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                        >
+                          {log.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{formatDate(log.created_at)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
           <DialogFooter>
             <Button onClick={() => setShowEmailLogs(false)}>Close</Button>

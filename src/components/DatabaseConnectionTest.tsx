@@ -71,26 +71,23 @@ export default function DatabaseConnectionTest() {
       });
     }
 
-    // Test 4: Property bookings with join
+    // Test 4: Property bookings
     try {
       const { data, error } = await supabase
         .from("property_bookings")
-        .select(`
-          *,
-          projects:property_id(title, location)
-        `)
+        .select("*")
         .limit(1);
       testResults.push({
-        name: "Property Bookings (With Join)",
+        name: "Property Bookings",
         status: error ? 'error' : 'success',
-        message: error ? error.message : `Join successful with ${data?.length || 0} records`,
+        message: error ? error.message : `Found ${data?.length || 0} records`,
         data: data
       });
     } catch (err) {
       testResults.push({
-        name: "Property Bookings (With Join)",
+        name: "Property Bookings",
         status: 'error',
-        message: `Join failed: ${err}`,
+        message: `Query failed: ${err}`,
       });
     }
 

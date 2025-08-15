@@ -207,10 +207,7 @@ const AdminDashboard = () => {
       // Fetch all data with individual error handling
       const [contactsRes, bookingsRes, projectsRes, announcementsRes] = await Promise.all([
         supabase.from("contact_submissions").select("*").order("created_at", { ascending: false }),
-        supabase.from("property_bookings").select(`
-          *,
-          projects:property_id(title, location)
-        `).order("created_at", { ascending: false }),
+        supabase.from("property_bookings").select("*").order("created_at", { ascending: false }),
         supabase.from("projects").select("*").order("created_at", { ascending: false }),
         supabase.from("announcements").select("*").order("created_at", { ascending: false }),
       ]);
