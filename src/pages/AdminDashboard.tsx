@@ -47,6 +47,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import BookingManagement from "@/components/BookingManagement";
+import DatabaseConnectionTest from "@/components/DatabaseConnectionTest";
 import {
   Users,
   Calendar,
@@ -203,24 +204,72 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
 
-      // Fetch all data
+      // Fetch all data with individual error handling
       const [contactsRes, bookingsRes, projectsRes, announcementsRes] = await Promise.all([
         supabase.from("contact_submissions").select("*").order("created_at", { ascending: false }),
         supabase.from("property_bookings").select(`
           *,
-          projects:projects(title, location)
+          projects:property_id(title, location)
         `).order("created_at", { ascending: false }),
         supabase.from("projects").select("*").order("created_at", { ascending: false }),
         supabase.from("announcements").select("*").order("created_at", { ascending: false }),
       ]);
 
-      if (contactsRes.data) setContactSubmissions(contactsRes.data);
-      if (bookingsRes.data) setPropertyBookings(bookingsRes.data);
-      if (projectsRes.data) setProjects(projectsRes.data);
-      if (announcementsRes.data) setAnnouncements(announcementsRes.data);
+      // Handle each response with error checking
+      if (contactsRes.error) {
+        console.error("Contacts error:", contactsRes.error);
+        toast({
+          title: "Warning",
+          description: "Failed to load contact submissions",
+          variant: "destructive",
+        });
+      } else if (contactsRes.data) {
+        setContactSubmissions(contactsRes.data);
+      }
+
+      if (bookingsRes.error) {
+        console.error("Bookings error:", bookingsRes.error);
+        // Try fallback without join
+        const fallbackBookings = await supabase
+          .from("property_bookings")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (fallbackBookings.data) {
+          setPropertyBookings(fallbackBookings.data);
+        }
+        toast({
+          title: "Warning", 
+          description: "Loaded bookings without property details",
+        });
+      } else if (bookingsRes.data) {
+        setPropertyBookings(bookingsRes.data);
+      }
+
+      if (projectsRes.error) {
+        console.error("Projects error:", projectsRes.error);
+        toast({
+          title: "Warning",
+          description: "Failed to load projects",
+          variant: "destructive",
+        });
+      } else if (projectsRes.data) {
+        setProjects(projectsRes.data);
+      }
+
+      if (announcementsRes.error) {
+        console.error("Announcements error:", announcementsRes.error);
+        toast({
+          title: "Warning",
+          description: "Failed to load announcements",
+          variant: "destructive",
+        });
+      } else if (announcementsRes.data) {
+        setAnnouncements(announcementsRes.data);
+      }
 
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("General error fetching data:", error);
       toast({
         title: "Error",
         description: "Failed to load dashboard data",
@@ -231,86 +280,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // Email notification function
-  const sendBookingEmail = async (booking: PropertyBooking, status: 'approved' | 'rejected', rejectionReason?: string) => {
-    try {
-      // Use Supabase database function for email sending
-      const { data, error } = await supabase.rpc('send_booking_email', {
-        recipient_email: booking.email,
-        customer_name: booking.full_name,
-        property_title: booking.projects?.title || 'Property',
-        unit_type: booking.unit_type,
-        booking_status: status,
-        booking_id: booking.id,
-        rejection_reason: rejectionReason || null
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      console.log('Email notification result:', data);
-      
-      toast({
-        title: "Email Notification",
-        description: `${status === 'approved' ? 'Approval' : 'Update'} notification sent to ${booking.full_name}`,
-      });
-
-    } catch (error) {
-      console.error('Error sending email notification:', error);
-      toast({
-        title: "Email Warning",
-        description: "Booking updated successfully. Email notification may have failed.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Update booking status with email notification
-  const updateBookingStatus = async (bookingId: string, status: 'approved' | 'rejected', rejectionReason?: string) => {
-    try {
-      // Find the booking to get customer details
-      const booking = propertyBookings.find(b => b.id === bookingId);
-      if (!booking) {
-        toast({
-          title: "Error",
-          description: "Booking not found",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Update booking status in database
-      const { error } = await supabase
-        .from("property_bookings")
-        .update({ 
-          status: status,
-          rejection_reason: rejectionReason || null
-        })
-        .eq("id", bookingId);
-
-      if (error) throw error;
-
-      // Send email notification
-      await sendBookingEmail(booking, status, rejectionReason);
-
-      // Refresh data
-      fetchData();
-
-      toast({
-        title: "Success",
-        description: `Booking ${status} and customer notified via email`,
-      });
-
-    } catch (error) {
-      console.error("Error updating booking:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update booking status",
-        variant: "destructive",
-      });
-    }
-  };
+  // These functions are now handled by the BookingManagement component
 
   // Add new property
   const addProperty = async () => {
@@ -474,7 +444,7 @@ const AdminDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               {t("admin.dashboard")}
@@ -494,6 +464,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="properties" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               {t("admin.properties")}
+            </TabsTrigger>
+            <TabsTrigger value="debug" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Debug
             </TabsTrigger>
           </TabsList>
 
@@ -970,6 +944,11 @@ const AdminDashboard = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Debug Tab */}
+          <TabsContent value="debug" className="space-y-6">
+            <DatabaseConnectionTest />
           </TabsContent>
         </Tabs>
       </div>

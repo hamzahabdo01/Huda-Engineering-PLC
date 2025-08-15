@@ -26,8 +26,7 @@ export default function Booking() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [bookingType, setBookingType] = useState<"appointment" | "property">("property");
   
-  // Initialize booking notifications for this user
-  const { bookingStatuses, getBookingCounts } = useBookingNotifications(formData.email);
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -150,7 +149,7 @@ console.log("unit stock fetched:", data);
 
     let error = null;
     if (type === "property") {
-      const { error: insertError } = await supabase.from("property_bookings").insert([
+      const { data: insertData, error: insertError } = await supabase.from("property_bookings").insert([
         {
           property_id: formData.property,
           unit_type: formData.unitType,
@@ -164,9 +163,19 @@ console.log("unit stock fetched:", data);
           notes: formData.notes || null,
           recaptcha_token: captchaToken,
         },
-      ]);
+      ]).select();
 
-      if (!insertError) {
+      if (!insertError && insertData && insertData.length > 0) {
+        // Send booking confirmation email
+        try {
+          await supabase.rpc('send_booking_confirmation', {
+            p_booking_id: insertData[0].id
+          });
+        } catch (emailError) {
+          console.error('Email confirmation failed:', emailError);
+          // Don't fail the booking if email fails
+        }
+
         await supabase.rpc("increment_booked_units", {
           property_id: formData.property,
           unit_type: formData.unitType,
@@ -192,7 +201,12 @@ console.log("unit stock fetched:", data);
 
     if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
 
-    toast({ title: "Success", description: type === "property" ? "Property booked successfully" : "Appointment scheduled" });
+    toast({ 
+      title: "Success", 
+      description: type === "property" 
+        ? "Property booking submitted successfully! Check your email for confirmation details." 
+        : "Appointment scheduled successfully!" 
+    });
     setFormData({
       fullName: "",
       email: "",
@@ -261,8 +275,24 @@ console.log("unit stock fetched:", data);
               <Checkbox checked={formData.acceptTnC} onCheckedChange={(v: any) => setFormData({ ...formData, acceptTnC: !!v })} />
               <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
             </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h4 className="font-medium text-blue-800 mb-2">📧 Email Updates</h4>
+              <p className="text-sm text-blue-700">
+                After submitting your booking, you'll receive:
+              </p>
+              <ul className="list-disc list-inside text-sm text-blue-700 mt-2 space-y-1">
+                <li><strong>Instant confirmation</strong> with your booking reference number</li>
+                <li><strong>Status updates</strong> (approved/under review) within 24-48 hours</li>
+                <li><strong>Direct contact</strong> from our sales team if approved</li>
+                <li><strong>All communication</strong> via email - no need to visit the website</li>
+              </ul>
+              <p className="text-sm text-blue-800 font-medium mt-3">
+                💡 Keep your booking reference number for easy communication with our team.
+              </p>
+            </div>
+            
             <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
-            <Button type="submit" className="w-full bg-primary" disabled={!formData.consent || !formData.acceptTnC}>Submit</Button>
+            <Button type="submit" className="w-full bg-primary" disabled={!formData.consent || !formData.acceptTnC}>Submit Booking</Button>
           </form>
         ) : (
           <form onSubmit={(e) => handleSubmit(e, "appointment")} className="space-y-6 max-w-2xl mx-auto">

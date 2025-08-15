@@ -179,7 +179,7 @@ export default function BookingManagement() {
   const handleApproveBooking = async (bookingId: string) => {
     setProcessingBooking(bookingId);
     try {
-      const { data, error } = await supabase.rpc('update_booking_status_with_email', {
+      const { data, error } = await supabase.rpc('update_booking_status_with_enhanced_email', {
         p_booking_id: bookingId,
         p_status: 'approved'
       });
@@ -220,7 +220,7 @@ export default function BookingManagement() {
 
     setProcessingBooking(selectedBooking.id);
     try {
-      const { data, error } = await supabase.rpc('update_booking_status_with_email', {
+      const { data, error } = await supabase.rpc('update_booking_status_with_enhanced_email', {
         p_booking_id: selectedBooking.id,
         p_status: 'rejected',
         p_rejection_reason: rejectionReason.trim()
