@@ -46,6 +46,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import BookingManagement from "@/components/BookingManagement";
 import {
   Users,
   Calendar,
@@ -602,140 +603,7 @@ const AdminDashboard = () => {
 
           {/* Property Bookings Management */}
           <TabsContent value="bookings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("admin.bookings")}</CardTitle>
-                <CardDescription>Manage property booking requests and send email notifications</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("admin.name")}</TableHead>
-                      <TableHead>Property</TableHead>
-                      <TableHead>Unit Type</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>{t("admin.status")}</TableHead>
-                      <TableHead>{t("common.actions")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {propertyBookings.map((booking) => (
-                      <TableRow key={booking.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{booking.full_name}</div>
-                            <div className="text-sm text-muted-foreground">{booking.email}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{booking.projects?.title || 'Unknown'}</div>
-                            <div className="text-sm text-muted-foreground">{booking.projects?.location}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{booking.unit_type}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div>{booking.phone}</div>
-                            <div className="text-muted-foreground">{booking.preferred_contact}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={
-                            booking.status === 'pending' ? 'default' : 
-                            booking.status === 'approved' ? 'secondary' : 
-                            'destructive'
-                          }>
-                            {booking.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            {booking.status === 'pending' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  onClick={() => updateBookingStatus(booking.id, 'approved')}
-                                  className="bg-green-600 hover:bg-green-700"
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Approve
-                                </Button>
-                                
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button size="sm" variant="destructive">
-                                      <XCircle className="h-4 w-4 mr-1" />
-                                      Reject
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Reject Booking</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Please provide a reason for rejecting this booking. This will be sent to the customer via email.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <div className="py-4">
-                                      <Label htmlFor="rejection-reason">Rejection Reason</Label>
-                                      <Textarea
-                                        id="rejection-reason"
-                                        placeholder="Please explain why this booking cannot be approved..."
-                                        className="mt-2"
-                                        onChange={(e) => {
-                                          // Store the rejection reason temporarily
-                                          (e.target as any).rejectionReason = e.target.value;
-                                        }}
-                                      />
-                                    </div>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={(e) => {
-                                          const textarea = document.getElementById('rejection-reason') as HTMLTextAreaElement;
-                                          const reason = textarea?.value || 'No specific reason provided';
-                                          updateBookingStatus(booking.id, 'rejected', reason);
-                                        }}
-                                        className="bg-red-600 hover:bg-red-700"
-                                      >
-                                        Send Rejection Email
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </>
-                            )}
-                            
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="outline">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Booking</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete this booking? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deletePropertyBooking(booking.id)}>
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <BookingManagement />
           </TabsContent>
 
           {/* Announcements Management */}
