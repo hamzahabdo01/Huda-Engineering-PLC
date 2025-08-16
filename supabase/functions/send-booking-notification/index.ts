@@ -14,28 +14,56 @@ serve(async (req) => {
     });
   }
   try {
+    console.log('🔧 Function invoked with method:', req.method)
+    
     // Validate request method
     if (req.method !== 'POST') {
-      return new Response(JSON.stringify({
-        error: 'Method not allowed'
-      }), {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
+      console.log('❌ Invalid method:', req.method)
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 405,
         },
         status: 405
       });
     }
-    const requestBody = await req.json();
-    const { booking_id, status, recipient_email, full_name, property_id, unit_type } = requestBody;
-    // Validate required fields
-    if (!booking_id || !status || !recipient_email || !full_name || !property_id) {
-      return new Response(JSON.stringify({
-        error: 'Missing required fields'
-      }), {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
+    let requestBody
+    try {
+      requestBody = await req.json()
+      console.log('📨 Received request body:', JSON.stringify(requestBody, null, 2))
+    } catch (parseError) {
+      console.error('❌ Failed to parse JSON:', parseError)
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        },
+      )
+    }
+
+    const { booking_id, status, recipient_email, full_name, property_id, unit_type } = requestBody
+
+    // Validate required fields with detailed logging
+    const missingFields = []
+    if (!booking_id) missingFields.push('booking_id')
+    if (!status) missingFields.push('status')
+    if (!recipient_email) missingFields.push('recipient_email')
+    if (!full_name) missingFields.push('full_name')
+    if (!property_id) missingFields.push('property_id')
+
+    if (missingFields.length > 0) {
+      console.error('❌ Missing required fields:', missingFields)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Missing required fields', 
+          missing_fields: missingFields,
+          received_data: requestBody
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
         },
         status: 400
       });
@@ -55,31 +83,62 @@ serve(async (req) => {
       text: emailContent.text
     };
     // Using Resend as example (you'll need to set up Resend API key)
-    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
+    console.log('🔑 Resend API key configured:', !!resendApiKey)
+    
     if (!resendApiKey) {
-      throw new Error('RESEND_API_KEY environment variable is required');
+      console.error('❌ RESEND_API_KEY environment variable is missing')
+      return new Response(
+        JSON.stringify({ error: 'RESEND_API_KEY environment variable is required' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        },
+      )
     }
+
+    console.log('📤 Sending email via Resend...')
+    
+    const emailPayload = {
+      from: 'onboarding@resend.dev', // Using Resend's free sending domain
+      to: [recipient_email],
+      subject: emailContent.subject,
+      html: emailContent.html,
+      reply_to: 'noreply@huda-engineering-plc.netlify.app', // Your Netlify domain for replies
+    }
+    
+    console.log('📧 Email payload:', JSON.stringify(emailPayload, null, 2))
+
+
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        from: 'info@hudaengineering.com',
-        to: [
-          recipient_email
-        ],
-        subject: emailContent.subject,
-        html: emailContent.html,
-        reply_to: 'noreply@huda-engineering-plc.netlify.app'
-      })
-    });
+      body: JSON.stringify(emailPayload),
+    })
+
+    console.log('📬 Resend response status:', resendResponse.status)
+
     if (!resendResponse.ok) {
-      const error = await resendResponse.text();
-      throw new Error(`Failed to send email: ${error}`);
+      const error = await resendResponse.text()
+      console.error('❌ Resend API error:', error)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to send email', 
+          details: error,
+          status: resendResponse.status 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        },
+      )
     }
-    const result = await resendResponse.json();
+
+    const result = await resendResponse.json()
+    console.log('✅ Email sent successfully:', result)
     // Log the email sent in your database (optional)
     try {
       const { error: logError } = await supabaseClient.from('email_logs').insert({
