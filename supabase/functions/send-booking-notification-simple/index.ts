@@ -39,12 +39,16 @@ serve(async (req) => {
     }
 
     console.log('All required fields present, simulating email send...')
+    console.log(`📧 Email will be sent to: ${recipient_email}`)
+    console.log(`👤 Customer: ${full_name}`)
+    console.log(`🏠 Property: ${property_id} (${unit_type})`)
+    console.log(`📋 Status: ${status}`)
 
     // For now, just simulate sending email
     const emailContent = {
       to: recipient_email,
-      subject: `Booking ${status === 'approved' ? 'Approved' : 'Update'} - ${property_id}`,
-      message: `Dear ${full_name}, your booking has been ${status}.`
+      subject: `🏠 Your Property Booking ${status === 'approved' ? 'Has Been Approved!' : 'Status Update'} - ${property_id}`,
+      message: `Dear ${full_name}, your booking for ${property_id} (${unit_type}) has been ${status}.`
     }
 
     console.log('Email content:', emailContent)

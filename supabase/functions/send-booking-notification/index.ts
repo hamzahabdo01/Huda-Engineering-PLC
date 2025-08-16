@@ -52,6 +52,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     )
 
+    console.log(`📧 Preparing to send email to: ${recipient_email} for booking ${booking_id}`)
+    console.log(`📋 Booking details: ${full_name}, ${property_id}, ${unit_type}, Status: ${status}`)
+    
     // Generate email content based on status
     const emailContent = generateEmailContent(status, full_name, property_id, unit_type)
     
@@ -135,7 +138,7 @@ serve(async (req) => {
 
 function generateEmailContent(status: string, fullName: string, propertyId: string, unitType: string) {
   const isApproved = status === 'approved'
-  const subject = `Booking ${isApproved ? 'Approved' : 'Update'} - ${propertyId}`
+  const subject = `🏠 Your Property Booking ${isApproved ? 'Has Been Approved!' : 'Status Update'} - ${propertyId}`
   
   const html = `
     <!DOCTYPE html>
@@ -167,12 +170,13 @@ function generateEmailContent(status: string, fullName: string, propertyId: stri
                 
                 <p>We hope this email finds you well. We're writing to update you on the status of your property booking.</p>
                 
-                <div class="details">
-                    <h3>Booking Details</h3>
-                    <p><strong>Property:</strong> ${propertyId}</p>
-                    <p><strong>Unit Type:</strong> ${unitType}</p>
-                    <p><strong>Status:</strong> <span class="status-badge ${isApproved ? 'approved' : 'rejected'}">${status}</span></p>
-                </div>
+                                 <div class="details">
+                     <h3>📋 Your Booking Details</h3>
+                     <p><strong>🏠 Property:</strong> ${propertyId}</p>
+                     <p><strong>🏠 Unit Type:</strong> ${unitType}</p>
+                     <p><strong>📅 Booking Date:</strong> ${new Date().toLocaleDateString()}</p>
+                     <p><strong>📋 Status:</strong> <span class="status-badge ${isApproved ? 'approved' : 'rejected'}">${status.toUpperCase()}</span></p>
+                 </div>
                 
                 ${isApproved ? `
                     <p><strong>🎉 Congratulations!</strong> Your booking has been approved. Our team will contact you within 24 hours to discuss the next steps and schedule a property viewing.</p>

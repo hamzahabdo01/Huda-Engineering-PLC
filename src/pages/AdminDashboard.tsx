@@ -499,9 +499,11 @@ const removeAmenity = (index: number) => {
               variant: "default",
             });
           } else {
+            console.log('✅ Email notification sent successfully to:', booking.email);
             toast({
-              title: "Success",
-              description: `Booking ${status} and notification email sent to ${booking.email}`,
+              title: "Success", 
+              description: `Booking ${status} successfully! 📧 Notification email sent to ${booking.email}`,
+              duration: 6000,
             });
           }
         } catch (emailError) {
