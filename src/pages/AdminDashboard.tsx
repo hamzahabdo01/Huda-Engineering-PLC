@@ -23,7 +23,10 @@ import {
   Edit,
   Trash2,
   CheckCircle,
-  XCircle
+  XCircle,
+  MapPin,
+  Building2,
+  Target
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -453,6 +456,16 @@ const removeAmenity = (index: number) => {
 
   const updateBookingStatus = async (id: string, status: string) => {
     try {
+      // First, get the booking details for email notification
+      const { data: booking, error: fetchError } = await supabase
+        .from('property_bookings')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update the booking status
       const { error } = await supabase
         .from('property_bookings')
         .update({ status })
@@ -460,10 +473,48 @@ const removeAmenity = (index: number) => {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Booking status updated",
-      });
+      // Send email notification if status is approved or rejected
+      if (status === 'approved' || status === 'rejected') {
+        try {
+          const { data, error: emailError } = await supabase.functions.invoke('send-booking-notification', {
+            body: {
+              booking_id: id,
+              status,
+              recipient_email: booking.email,
+              full_name: booking.full_name,
+              property_id: booking.property_id,
+              unit_type: booking.unit_type
+            }
+          });
+
+          if (emailError) {
+            console.error('Email notification error:', emailError);
+            // Don't fail the status update if email fails
+            toast({
+              title: "Status Updated",
+              description: `Booking ${status} successfully, but email notification failed to send.`,
+              variant: "default",
+            });
+          } else {
+            toast({
+              title: "Success",
+              description: `Booking ${status} and notification email sent to ${booking.email}`,
+            });
+          }
+        } catch (emailError) {
+          console.error('Failed to send email notification:', emailError);
+          toast({
+            title: "Status Updated",
+            description: `Booking ${status} successfully, but email notification failed to send.`,
+            variant: "default",
+          });
+        }
+      } else {
+        toast({
+          title: "Success",
+          description: "Booking status updated",
+        });
+      }
     } catch (error) {
       console.error('Error updating booking status:', error);
       toast({
@@ -685,18 +736,19 @@ const removeAmenity = (index: number) => {
 // When edit is clicked
 const handleEditClick = (project: any) => {
   setEditingProjectId(project.id);
-  // setNewProject({
-  //   title: project.title,
-  //   location: project.location,
-  //   project_type: project.project_type,
-  //   short_description: project.short_description,
-  //   description: project.description,
-  //   start_date: project.start_date,
-  //   end_date: project.end_date,
-  //   image_url: project.image_url,
-  //   status: project.status,
-  //   Amenities: project.Amenities || [],
-  // });
+  setNewProject({
+    title: project.title,
+    location: project.location,
+    project_type: project.project_type,
+    short_description: project.short_description,
+    description: project.description,
+    start_date: project.start_date,
+    end_date: project.end_date,
+    image_url: project.image_url,
+    status: project.status,
+    Amenities: project.Amenities || [],
+    units: project.units || "",
+  });
   setUnits(project.units || {});
   setIsAddProjectOpen(true);
 };
@@ -1412,18 +1464,19 @@ const handleEdit = (update) => {
     className="w-full sm:w-auto"
     onClick={() => {
       setEditingProjectId(null); // <-- ensure we are adding, not editing
-      // setNewProject({
-      //   title: "",
-      //   location: "",
-      //   project_type: "",
-      //   short_description: "",
-      //   description: "",
-      //   start_date: "",
-      //   end_date: "",
-      //   image_url: "",
-      //   status: "active",
-      //   Amenities: [],
-      // });
+      setNewProject({
+        title: "",
+        location: "",
+        project_type: "",
+        short_description: "",
+        description: "",
+        start_date: "",
+        end_date: "",
+        image_url: "",
+        status: "active",
+        Amenities: [],
+        units: "",
+      });
       setUnits({});       // reset units
       setAmenityInput(""); // clear input field
     }}
@@ -1436,8 +1489,10 @@ const handleEdit = (update) => {
 
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Project</DialogTitle>
-          <DialogDescription>Create a new project in your portfolio</DialogDescription>
+          <DialogTitle>{editingProjectId ? "Edit Project" : "Add New Project"}</DialogTitle>
+          <DialogDescription>
+            {editingProjectId ? "Update the project details" : "Create a new project in your portfolio"}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -1575,7 +1630,7 @@ const handleEdit = (update) => {
 
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select onValueChange={(value) => setNewProject({ ...newProject, status: value as any })}>
+            <Select value={newProject.status} onValueChange={(value) => setNewProject({ ...newProject, status: value as any })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
@@ -1609,30 +1664,103 @@ const handleEdit = (update) => {
                     </Card>
                   ) : (
                     projects.map((project) => (
-                      <Card key={project.id}>
+                      <Card key={project.id} className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary/20">
                         <CardHeader className="pb-3 sm:pb-6">
-                          <CardTitle className="text-base sm:text-lg line-clamp-2">{project.title}</CardTitle>
-                          <CardDescription className="text-xs sm:text-sm">{project.location}</CardDescription>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-base sm:text-lg line-clamp-2 mb-2">{project.title}</CardTitle>
+                              <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                                <MapPin className="w-3 h-3" />
+                                <span>{project.location}</span>
+                              </div>
+                            </div>
+                            <Badge 
+                              variant={project.status === 'active' ? 'default' : project.status === 'completed' ? 'secondary' : 'outline'}
+                              className="capitalize"
+                            >
+                              {project.status}
+                            </Badge>
+                          </div>
                         </CardHeader>
+                        {project.image_url && (
+                          <div className="px-6 pb-4">
+                            <img 
+                              src={project.image_url} 
+                              alt={project.title}
+                              className="w-full h-32 object-cover rounded-lg"
+                            />
+                          </div>
+                        )}
                         <CardContent className="pt-0">
                           <div className="space-y-3 sm:space-y-4">
-                            <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
-                              <div><strong>Type:</strong> {project.project_type}</div>
-                              <div><strong>Status:</strong> {project.status}</div>
-                              <div>
-   <strong>Units & Pricing:</strong>
-   <ul className="list-disc list-inside">
-    {Object.entries(project.units || {}).map(([unit, price]) => (
-      <li key={unit}>
-        {unit}: {price}
-      </li>
-    ))}
-   </ul>
-   </div>
-
+                            <div className="grid grid-cols-2 gap-4 text-xs sm:text-sm">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <Building2 className="w-3 h-3 text-primary" />
+                                  <span className="text-muted-foreground">Type:</span>
+                                  <span className="font-medium">{project.project_type}</span>
+                                </div>
+                                {project.start_date && (
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="w-3 h-3 text-primary" />
+                                    <span className="text-muted-foreground">Started:</span>
+                                    <span className="font-medium">{new Date(project.start_date).toLocaleDateString()}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="space-y-2">
+                                {project.end_date && (
+                                  <div className="flex items-center gap-2">
+                                    <Target className="w-3 h-3 text-primary" />
+                                    <span className="text-muted-foreground">Target:</span>
+                                    <span className="font-medium">{new Date(project.end_date).toLocaleDateString()}</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-xs sm:text-sm line-clamp-3">{project.short_description}</p>
-                            <div className="flex flex-col sm:flex-row gap-2">
+                            
+                            {Object.keys(project.units || {}).length > 0 && (
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                                  <Users className="w-3 h-3 text-primary" />
+                                  <span className="text-muted-foreground font-medium">Units & Pricing:</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {Object.entries(project.units || {}).map(([unit, price]) => (
+                                    <div key={unit} className="bg-secondary/50 p-2 rounded-md text-xs">
+                                      <span className="font-medium">{unit}:</span> {price}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {project.Amenities && project.Amenities.length > 0 && (
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                                  <CheckCircle className="w-3 h-3 text-primary" />
+                                  <span className="text-muted-foreground font-medium">Amenities:</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {project.Amenities.slice(0, 3).map((amenity, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs">
+                                      {amenity}
+                                    </Badge>
+                                  ))}
+                                  {project.Amenities.length > 3 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{project.Amenities.length - 3} more
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            
+                            <p className="text-xs sm:text-sm line-clamp-2 text-muted-foreground bg-secondary/30 p-3 rounded-md">
+                              {project.short_description}
+                            </p>
+                            
+                            <div className="flex flex-col sm:flex-row gap-2 pt-2">
                               <Button size="sm" variant="outline" onClick={() => handleEditClick(project)} className="flex-1 sm:flex-none text-xs sm:text-sm">
                                 <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                                 Edit

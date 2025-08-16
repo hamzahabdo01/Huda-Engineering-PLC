@@ -200,140 +200,146 @@ const fetchProjectUpdates = async (projectId: string) => {
               {filteredProjects.map((project) => (
                 <Card
                   key={project.id}
-                  className="hover:shadow-lg transition-shadow"
+                  className="hover:shadow-xl transition-all duration-300 overflow-hidden border-0 bg-white/80 backdrop-blur-sm"
                 >
-                  <div
-                    className={`bg-gradient-to-br ${getStatusColor(
-                      project.status
-                    )} h-48 flex items-center justify-center overflow-hidden`}
-                  >
-                    {project.image_url ? (
-                      <img
-                        src={project.image_url}
-                        alt={project.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Building2 className="w-16 h-16 text-white" />
-                    )}
-                  </div>
-                  <CardHeader>
-                    <div className="flex justify-between items-start mb-2">
-                      <CardTitle className="text-lg line-clamp-2">
-                        {project.title}
-                      </CardTitle>
-                      {getStatusBadge(project.status)}
-                    </div>
-                    <CardDescription className="line-clamp-1">
-                      {project.project_type}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm text-muted-foreground mb-3">
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">{project.location}</span>
+                  <div className="relative">
+                    <div
+                      className={`bg-gradient-to-br ${getStatusColor(
+                        project.status
+                      )} h-56 flex items-center justify-center overflow-hidden relative`}
+                    >
+                      {project.image_url ? (
+                        <img
+                          src={project.image_url}
+                          alt={project.title}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        />
+                      ) : (
+                        <Building2 className="w-16 h-16 text-white" />
+                      )}
+                      <div className="absolute top-4 right-4">
+                        {getStatusBadge(project.status)}
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-3 h-3 flex-shrink-0" />
-                        <span>
-                          Started: {new Date(project.start_date).getFullYear()}
-                        </span>
-                      </div>
-                    </div>
-                    {project.units && (
-                      <div className="text-sm text-muted-foreground mb-3">
-                        <strong>Units & Pricing:</strong>
-                        <ul className="mt-1 space-y-1">
-                          {Object.entries(project.units).map(([type, price]) => (
-                            <li key={type}>
-                              {type}: {price}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {project.Amenities.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-3">
-                        {project.Amenities.map((Amenity, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {Amenity}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    <p className="text-sm text-muted-foreground line-clamp-3 mt-3">
-                      {project.short_description}
-                    </p>
-
-                    {project.status === "active" && (
-                      <div className="mb-3">
-                        <div className="flex justify-between mb-1 text-xs text-muted-foreground">
-                          <span>Progress</span>
-                          <span>
-                            {Math.min(100, (selectedProjectUpdates.filter(u=>u.project_id===project.id).length || 0) * 10)}%
-                          </span>
+                      {project.status === "active" && (
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <div className="bg-white/10 backdrop-blur-md rounded-lg p-3">
+                            <div className="flex justify-between mb-2 text-xs text-white">
+                              <span>Project Progress</span>
+                              <span>
+                                {Math.min(100, (selectedProjectUpdates.filter(u=>u.project_id===project.id).length || 0) * 10)}%
+                              </span>
+                            </div>
+                            <Progress 
+                              value={Math.min(100, (selectedProjectUpdates.filter(u=>u.project_id===project.id).length || 0) * 10)} 
+                              className="h-2 bg-white/20"
+                            />
+                          </div>
                         </div>
-                        <Progress value={Math.min(100, (selectedProjectUpdates.filter(u=>u.project_id===project.id).length || 0) * 10)} />
-                      </div>
-                    )}
-                    <div className="space-y-2 text-sm text-muted-foreground mb-3">
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="w-3 h-3 flex-shrink-0" />
+                      )}
+                    </div>
+                  </div>
+                  
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl line-clamp-2 mb-2">
+                      {project.title}
+                    </CardTitle>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Building2 className="w-4 h-4 text-primary" />
+                      <span className="line-clamp-1">{project.project_type}</span>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
                         <span className="truncate">{project.location}</span>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-3 h-3 flex-shrink-0" />
-                        <span>
-                          Started: {new Date(project.start_date).getFullYear()}
-                        </span>
+                      
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span>Started: {new Date(project.start_date).getFullYear()}</span>
+                        {project.end_date && (
+                          <>
+                            <span>•</span>
+                            <span>Target: {new Date(project.end_date).getFullYear()}</span>
+                          </>
+                        )}
                       </div>
                     </div>
-                    {project.units && (
-                      <div className="text-sm text-muted-foreground mb-3">
-                        <strong>Units & Pricing:</strong>
-                        <ul className="mt-1 space-y-1">
+
+                    {Object.keys(project.units || {}).length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                          <Users className="w-4 h-4 text-primary" />
+                          <span>Available Units</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                           {Object.entries(project.units).map(([type, price]) => (
-                            <li key={type}>
-                              {type}: {price}
-                            </li>
+                            <div key={type} className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-center">
+                              <div className="text-sm font-medium text-primary">{type}</div>
+                              <div className="text-xs text-muted-foreground">{price}</div>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     )}
-                    {project.Amenities.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-3">
-                        {project.Amenities.map((Amenity, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {Amenity}
-                          </Badge>
-                        ))}
+
+                    {project.Amenities && project.Amenities.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                          <CheckCircle className="w-4 h-4 text-primary" />
+                          <span>Key Amenities</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {project.Amenities.slice(0, 4).map((amenity, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="secondary"
+                              className="text-xs bg-primary/10 text-primary hover:bg-primary/20"
+                            >
+                              {amenity}
+                            </Badge>
+                          ))}
+                          {project.Amenities.length > 4 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{project.Amenities.length - 4} more
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     )}
-                    <p className="text-sm text-muted-foreground line-clamp-3 mt-3">
-                      {project.short_description}
-                    </p>
 
-                    {project.status === "active" && (
-  <button
-    onClick={() => {
-      setActiveProjectId(project.id);
-      fetchProjectUpdates(project.id);
-    }}
-    className="mt-4 text-sm text-blue-600 underline"
-  >
-    See Progress
-  </button>
-)}
+                    <div className="bg-secondary/30 rounded-lg p-3">
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {project.short_description}
+                      </p>
+                    </div>
 
+                    <div className="flex gap-2 pt-2">
+                      {project.status === "active" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setActiveProjectId(project.id);
+                            fetchProjectUpdates(project.id);
+                          }}
+                          className="flex-1 text-xs"
+                        >
+                          <Wrench className="w-3 h-3 mr-1" />
+                          View Progress
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={() => {/* Add booking logic */}}
+                      >
+                        <Target className="w-3 h-3 mr-1" />
+                        Book Now
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
