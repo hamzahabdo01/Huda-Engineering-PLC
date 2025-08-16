@@ -1,145 +1,129 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-interface EmailRequest {
-  to: string
-  subject: string
-  html: string
-  text: string
-}
-
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+};
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders, status: 200 })
+    return new Response('ok', {
+      headers: corsHeaders,
+      status: 200
+    });
   }
-
   try {
     // Validate request method
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 405,
+      return new Response(JSON.stringify({
+        error: 'Method not allowed'
+      }), {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
         },
-      )
+        status: 405
+      });
     }
-
-    const requestBody = await req.json()
-    const { booking_id, status, recipient_email, full_name, property_id, unit_type } = requestBody
-
+    const requestBody = await req.json();
+    const { booking_id, status, recipient_email, full_name, property_id, unit_type } = requestBody;
     // Validate required fields
     if (!booking_id || !status || !recipient_email || !full_name || !property_id) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
+      return new Response(JSON.stringify({
+        error: 'Missing required fields'
+      }), {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
         },
-      )
+        status: 400
+      });
     }
-
     // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    )
-
-    console.log(`📧 Preparing to send email to: ${recipient_email} for booking ${booking_id}`)
-    console.log(`📋 Booking details: ${full_name}, ${property_id}, ${unit_type}, Status: ${status}`)
-    
+    const supabaseClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_ANON_KEY') ?? '');
+    console.log(`📧 Preparing to send email to: ${recipient_email} for booking ${booking_id}`);
+    console.log(`📋 Booking details: ${full_name}, ${property_id}, ${unit_type}, Status: ${status}`);
     // Generate email content based on status
-    const emailContent = generateEmailContent(status, full_name, property_id, unit_type)
-    
+    const emailContent = generateEmailContent(status, full_name, property_id, unit_type);
     // Send email using your preferred email service
     // For Gmail SMTP, you would typically use a service like Resend, SendGrid, or direct SMTP
-    const emailRequest: EmailRequest = {
+    const emailRequest = {
       to: recipient_email,
       subject: emailContent.subject,
       html: emailContent.html,
       text: emailContent.text
-    }
-
+    };
     // Using Resend as example (you'll need to set up Resend API key)
-    const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (!resendApiKey) {
-      throw new Error('RESEND_API_KEY environment variable is required')
+      throw new Error('RESEND_API_KEY environment variable is required');
     }
-
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'onboarding@resend.dev', // Using Resend's free sending domain
-        to: [recipient_email],
+        from: 'info@hudaengineering.com',
+        to: [
+          recipient_email
+        ],
         subject: emailContent.subject,
         html: emailContent.html,
-        reply_to: 'noreply@huda-engineering-plc.netlify.app', // Your Netlify domain for replies
-      }),
-    })
-
+        reply_to: 'noreply@huda-engineering-plc.netlify.app'
+      })
+    });
     if (!resendResponse.ok) {
-      const error = await resendResponse.text()
-      throw new Error(`Failed to send email: ${error}`)
+      const error = await resendResponse.text();
+      throw new Error(`Failed to send email: ${error}`);
     }
-
-    const result = await resendResponse.json()
-
+    const result = await resendResponse.json();
     // Log the email sent in your database (optional)
     try {
-      const { error: logError } = await supabaseClient
-        .from('email_logs')
-        .insert({
-          booking_id,
-          recipient_email,
-          status,
-          email_id: result.id,
-          sent_at: new Date().toISOString()
-        })
-      
+      const { error: logError } = await supabaseClient.from('email_logs').insert({
+        booking_id,
+        recipient_email,
+        status,
+        email_id: result.id,
+        sent_at: new Date().toISOString()
+      });
       if (logError) {
-        console.error('Failed to log email:', logError)
+        console.error('Failed to log email:', logError);
         // Don't fail the entire request if logging fails
       }
     } catch (logError) {
-      console.error('Failed to log email:', logError)
+      console.error('Failed to log email:', logError);
       // Don't fail the entire request if logging fails
     }
-
-    return new Response(
-      JSON.stringify({ success: true, message: 'Email sent successfully', email_id: result.id }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Email sent successfully',
+      email_id: result.id
+    }), {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
       },
-    )
+      status: 200
+    });
   } catch (error) {
-    console.error('Error sending email:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+    console.error('Error sending email:', error);
+    return new Response(JSON.stringify({
+      error: error.message
+    }), {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
       },
-    )
+      status: 400
+    });
   }
-})
-
-function generateEmailContent(status: string, fullName: string, propertyId: string, unitType: string) {
-  const isApproved = status === 'approved'
-  const subject = `🏠 Your Property Booking ${isApproved ? 'Has Been Approved!' : 'Status Update'} - ${propertyId}`
-  
+});
+function generateEmailContent(status, fullName, propertyId, unitType) {
+  const isApproved = status === 'approved';
+  const subject = `🏠 Your Property Booking ${isApproved ? 'Has Been Approved!' : 'Status Update'} - ${propertyId}`;
   const html = `
     <!DOCTYPE html>
     <html>
@@ -213,8 +197,7 @@ function generateEmailContent(status: string, fullName: string, propertyId: stri
         </div>
     </body>
     </html>
-  `
-  
+  `;
   const text = `
     Dear ${fullName},
 
@@ -225,10 +208,7 @@ function generateEmailContent(status: string, fullName: string, propertyId: stri
     - Unit Type: ${unitType}
     - Status: ${status.toUpperCase()}
 
-    ${isApproved 
-      ? 'Congratulations! Your booking has been approved. Our team will contact you within 24 hours to discuss the next steps.'
-      : 'We regret to inform you that your booking request could not be approved at this time. Our team will contact you to discuss alternative options.'
-    }
+    ${isApproved ? 'Congratulations! Your booking has been approved. Our team will contact you within 24 hours to discuss the next steps.' : 'We regret to inform you that your booking request could not be approved at this time. Our team will contact you to discuss alternative options.'}
 
          Contact us:
      Phone: +1-234-567-8900
@@ -237,7 +217,10 @@ function generateEmailContent(status: string, fullName: string, propertyId: stri
 
     Best regards,
     The Huda Engineering Team
-  `
-
-  return { subject, html, text }
+  `;
+  return {
+    subject,
+    html,
+    text
+  };
 }
