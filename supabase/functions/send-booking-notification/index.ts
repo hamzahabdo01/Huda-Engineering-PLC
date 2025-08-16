@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 interface EmailRequest {
@@ -16,16 +17,39 @@ interface EmailRequest {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders, status: 200 })
   }
 
   try {
-    const { booking_id, status, recipient_email, full_name, property_id, unit_type } = await req.json()
+    // Validate request method
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 405,
+        },
+      )
+    }
+
+    const requestBody = await req.json()
+    const { booking_id, status, recipient_email, full_name, property_id, unit_type } = requestBody
+
+    // Validate required fields
+    if (!booking_id || !status || !recipient_email || !full_name || !property_id) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        },
+      )
+    }
 
     // Create Supabase client
     const supabaseClient = createClient(
-      Denv.get('SUPABASE_URL') ?? '',
-      Denv.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     )
 
     // Generate email content based on status
@@ -41,7 +65,7 @@ serve(async (req) => {
     }
 
     // Using Resend as example (you'll need to set up Resend API key)
-    const resendApiKey = Denv.get('RESEND_API_KEY')
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
     
     if (!resendApiKey) {
       throw new Error('RESEND_API_KEY environment variable is required')
@@ -70,15 +94,25 @@ serve(async (req) => {
     const result = await resendResponse.json()
 
     // Log the email sent in your database (optional)
-    await supabaseClient
-      .from('email_logs')
-      .insert({
-        booking_id,
-        recipient_email,
-        status,
-        email_id: result.id,
-        sent_at: new Date().toISOString()
-      })
+    try {
+      const { error: logError } = await supabaseClient
+        .from('email_logs')
+        .insert({
+          booking_id,
+          recipient_email,
+          status,
+          email_id: result.id,
+          sent_at: new Date().toISOString()
+        })
+      
+      if (logError) {
+        console.error('Failed to log email:', logError)
+        // Don't fail the entire request if logging fails
+      }
+    } catch (logError) {
+      console.error('Failed to log email:', logError)
+      // Don't fail the entire request if logging fails
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: 'Email sent successfully', email_id: result.id }),

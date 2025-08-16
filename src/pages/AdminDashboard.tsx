@@ -476,14 +476,17 @@ const removeAmenity = (index: number) => {
       // Send email notification if status is approved or rejected
       if (status === 'approved' || status === 'rejected') {
         try {
-          const { data, error: emailError } = await supabase.functions.invoke('send-booking-notification', {
+          const { data, error: emailError } = await supabase.functions.invoke('send-booking-notification-simple', {
             body: {
               booking_id: id,
               status,
               recipient_email: booking.email,
               full_name: booking.full_name,
               property_id: booking.property_id,
-              unit_type: booking.unit_type
+              unit_type: booking.unit_type || 'Standard'
+            },
+            headers: {
+              'Content-Type': 'application/json',
             }
           });
 
