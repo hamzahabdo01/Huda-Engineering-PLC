@@ -476,14 +476,17 @@ const removeAmenity = (index: number) => {
       // Send email notification if status is approved or rejected
       if (status === 'approved' || status === 'rejected') {
         try {
-          const { data, error: emailError } = await supabase.functions.invoke('send-booking-notification', {
+          const { data, error: emailError } = await supabase.functions.invoke('send-booking-notification-simple', {
             body: {
               booking_id: id,
               status,
               recipient_email: booking.email,
               full_name: booking.full_name,
               property_id: booking.property_id,
-              unit_type: booking.unit_type
+              unit_type: booking.unit_type || 'Standard'
+            },
+            headers: {
+              'Content-Type': 'application/json',
             }
           });
 
@@ -496,9 +499,11 @@ const removeAmenity = (index: number) => {
               variant: "default",
             });
           } else {
+            console.log('✅ Email notification sent successfully to:', booking.email);
             toast({
-              title: "Success",
-              description: `Booking ${status} and notification email sent to ${booking.email}`,
+              title: "Success", 
+              description: `Booking ${status} successfully! 📧 Notification email sent to ${booking.email}`,
+              duration: 6000,
             });
           }
         } catch (emailError) {

@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 interface EmailRequest {
@@ -16,18 +17,44 @@ interface EmailRequest {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders, status: 200 })
   }
 
   try {
-    const { booking_id, status, recipient_email, full_name, property_id, unit_type } = await req.json()
+    // Validate request method
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 405,
+        },
+      )
+    }
+
+    const requestBody = await req.json()
+    const { booking_id, status, recipient_email, full_name, property_id, unit_type } = requestBody
+
+    // Validate required fields
+    if (!booking_id || !status || !recipient_email || !full_name || !property_id) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        },
+      )
+    }
 
     // Create Supabase client
     const supabaseClient = createClient(
-      Denv.get('SUPABASE_URL') ?? '',
-      Denv.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     )
 
+    console.log(`📧 Preparing to send email to: ${recipient_email} for booking ${booking_id}`)
+    console.log(`📋 Booking details: ${full_name}, ${property_id}, ${unit_type}, Status: ${status}`)
+    
     // Generate email content based on status
     const emailContent = generateEmailContent(status, full_name, property_id, unit_type)
     
@@ -41,7 +68,7 @@ serve(async (req) => {
     }
 
     // Using Resend as example (you'll need to set up Resend API key)
-    const resendApiKey = Denv.get('RESEND_API_KEY')
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
     
     if (!resendApiKey) {
       throw new Error('RESEND_API_KEY environment variable is required')
@@ -70,15 +97,25 @@ serve(async (req) => {
     const result = await resendResponse.json()
 
     // Log the email sent in your database (optional)
-    await supabaseClient
-      .from('email_logs')
-      .insert({
-        booking_id,
-        recipient_email,
-        status,
-        email_id: result.id,
-        sent_at: new Date().toISOString()
-      })
+    try {
+      const { error: logError } = await supabaseClient
+        .from('email_logs')
+        .insert({
+          booking_id,
+          recipient_email,
+          status,
+          email_id: result.id,
+          sent_at: new Date().toISOString()
+        })
+      
+      if (logError) {
+        console.error('Failed to log email:', logError)
+        // Don't fail the entire request if logging fails
+      }
+    } catch (logError) {
+      console.error('Failed to log email:', logError)
+      // Don't fail the entire request if logging fails
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: 'Email sent successfully', email_id: result.id }),
@@ -101,7 +138,7 @@ serve(async (req) => {
 
 function generateEmailContent(status: string, fullName: string, propertyId: string, unitType: string) {
   const isApproved = status === 'approved'
-  const subject = `Booking ${isApproved ? 'Approved' : 'Update'} - ${propertyId}`
+  const subject = `🏠 Your Property Booking ${isApproved ? 'Has Been Approved!' : 'Status Update'} - ${propertyId}`
   
   const html = `
     <!DOCTYPE html>
@@ -133,12 +170,13 @@ function generateEmailContent(status: string, fullName: string, propertyId: stri
                 
                 <p>We hope this email finds you well. We're writing to update you on the status of your property booking.</p>
                 
-                <div class="details">
-                    <h3>Booking Details</h3>
-                    <p><strong>Property:</strong> ${propertyId}</p>
-                    <p><strong>Unit Type:</strong> ${unitType}</p>
-                    <p><strong>Status:</strong> <span class="status-badge ${isApproved ? 'approved' : 'rejected'}">${status}</span></p>
-                </div>
+                                 <div class="details">
+                     <h3>📋 Your Booking Details</h3>
+                     <p><strong>🏠 Property:</strong> ${propertyId}</p>
+                     <p><strong>🏠 Unit Type:</strong> ${unitType}</p>
+                     <p><strong>📅 Booking Date:</strong> ${new Date().toLocaleDateString()}</p>
+                     <p><strong>📋 Status:</strong> <span class="status-badge ${isApproved ? 'approved' : 'rejected'}">${status.toUpperCase()}</span></p>
+                 </div>
                 
                 ${isApproved ? `
                     <p><strong>🎉 Congratulations!</strong> Your booking has been approved. Our team will contact you within 24 hours to discuss the next steps and schedule a property viewing.</p>
