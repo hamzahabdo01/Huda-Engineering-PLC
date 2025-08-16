@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+const ADMIN_EMAIL = 'hudaengineeringrealestate@gmail.com';
+
 interface Profile {
   id: string;
   user_id: string;
@@ -42,7 +44,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const upsertProfileIfMissing = async (userId: string, email: string) => {
+    try {
+      const role = email === ADMIN_EMAIL ? 'admin' : 'user';
+      const { error } = await supabase.from('profiles').insert({
+        user_id: userId,
+        email,
+        full_name: email,
+        role,
+      });
+      if (error) {
+        // If conflict due to unique constraint, ignore
+        if (error.code !== '23505') {
+          console.error('Error inserting profile:', error);
+        }
+      }
+    } catch (e) {
+      console.error('Unexpected error inserting profile:', e);
+    }
+  };
+
+  const fetchProfile = async (userId: string, email: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -51,6 +73,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .single();
 
       if (error) {
+        // If no profile exists, create it then refetch
+        if ((error as any).code === 'PGRST116') {
+          await upsertProfileIfMissing(userId, email);
+          const { data: created } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+          if (created) setProfile(created as Profile);
+          return;
+        }
         console.error('Error fetching profile:', error);
         return;
       }
@@ -62,40 +95,41 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer profile fetch to avoid RLS issues
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
+    let isMounted = true;
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(() => {
-          fetchProfile(session.user.id);
-        }, 0);
+    const init = async () => {
+      setLoading(true);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentSession = sessionData.session ?? null;
+      if (!isMounted) return;
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      if (currentSession?.user) {
+        await fetchProfile(currentSession.user.id, currentSession.user.email ?? '');
+      } else {
+        setProfile(null);
       }
-      
+      if (isMounted) setLoading(false);
+    };
+
+    init();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      setLoading(true);
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      if (newSession?.user) {
+        await fetchProfile(newSession.user.id, newSession.user.email ?? '');
+      } else {
+        setProfile(null);
+      }
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Signup removed - admin-only access
@@ -105,7 +139,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       email,
       password,
     });
-    
     return { error };
   };
 
@@ -114,7 +147,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return { error };
   };
 
-  const isAdmin = profile?.role === 'admin';
+  const isAdmin = (profile?.role === 'admin') || (user?.email === ADMIN_EMAIL);
 
   const value = {
     user,

@@ -80,6 +80,19 @@ interface Announcement {
   created_at: string;
 }
 
+interface Appointment {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  preferred_contact?: string | null;
+  secondary_phone?: string | null;
+  appointment_date: string;
+  notes?: string | null;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const { user, profile, signOut, loading } = useAuth();
   const navigate = useNavigate();
@@ -89,6 +102,7 @@ const AdminDashboard = () => {
   const [bookings, setBookings] = useState<PropertyBooking[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   // Dialog states
@@ -146,9 +160,10 @@ const removeAmenity = (index: number) => {
 
 
   const [AmenitiesInput, setAmenitiesInput] = useState("");
-  const [activeTab, setActiveTab] = useState<'contacts' | 'bookings' | 'projects' | 'announcements'>("contacts");
+  const [activeTab, setActiveTab] = useState<'contacts' | 'bookings' | 'projects' | 'announcements' | 'appointments'>("contacts");
   const [deletingContact, setDeletingContact] = useState<string | null>(null);
   const [deletingBooking, setDeletingBooking] = useState<string | null>(null);
+  const [deletingAppointment, setDeletingAppointment] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     console.log('🔄 Starting data fetch...');
@@ -216,6 +231,18 @@ const removeAmenity = (index: number) => {
       } else {
         console.log(`✅ Setting ${announcementsRes.data?.length || 0} announcements`);
         setAnnouncements(announcementsRes.data as Announcement[] || []);
+      }
+
+      // Fetch appointments separately to not break older DBs lacking the table
+      const appointmentsRes = await supabase
+        .from('appointments')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!appointmentsRes.error) {
+        setAppointments(appointmentsRes.data as Appointment[] || []);
+      } else {
+        console.warn('Appointments fetch error (table may not exist):', appointmentsRes.error?.message);
       }
 
 
@@ -325,6 +352,23 @@ const removeAmenity = (index: number) => {
       )
       .subscribe();
 
+    // Subscribe to appointments if table exists
+    const appointmentsSubscription = supabase
+      .channel('appointments')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setAppointments(prev => [payload.new as Appointment, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setAppointments(prev => prev.map(a => a.id === payload.new.id ? payload.new as Appointment : a));
+          } else if (payload.eventType === 'DELETE') {
+            setAppointments(prev => prev.filter(a => a.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
     console.log('✅ Real-time subscriptions set up');
 
     // Cleanup subscriptions on component unmount
@@ -334,6 +378,7 @@ const removeAmenity = (index: number) => {
       bookingsSubscription.unsubscribe();
       projectsSubscription.unsubscribe();
       announcementsSubscription.unsubscribe();
+      appointmentsSubscription.unsubscribe();
     };
   }, [toast]);
 
@@ -348,9 +393,15 @@ const removeAmenity = (index: number) => {
         return;
       }
 
-      // Check if user is the authorized admin
-      if (user.email !== 'hudaengineeringrealestate@gmail.com') {
-        console.log('❌ Unauthorized user, redirecting to auth');
+      // Wait for profile to load before checking admin access
+      if (!profile) {
+        console.log('⏳ Profile not loaded yet; waiting before admin check');
+        return;
+      }
+
+      // Check if user has admin role per profile
+      if (profile.role !== 'admin') {
+        console.log('❌ Unauthorized user (no admin role), redirecting to auth');
         toast({
           title: "Access Denied",
           description: "You are not authorized to access this dashboard.",
@@ -360,12 +411,11 @@ const removeAmenity = (index: number) => {
         return;
       }
 
-      console.log('✅ Admin user authenticated, fetching data and setting up subscriptions');
-      // If we reach here, user is the authorized admin
+      console.log('✅ Admin user authenticated (role check), fetching data and setting up subscriptions');
       fetchData();
       setupRealtimeSubscriptions();
     }
-  }, [user, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
+  }, [user, profile, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (!error) {
@@ -381,6 +431,8 @@ const removeAmenity = (index: number) => {
         .eq('id', id);
 
       if (error) throw error;
+
+      setContacts(prev => prev.map(c => c.id === id ? { ...c, status: status as any } : c));
 
       toast({
         title: "Success",
@@ -852,6 +904,35 @@ const handleEdit = (update) => {
     }));
   };
 
+  const updateAppointmentStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status })
+        .eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Success', description: 'Appointment status updated' });
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      toast({ title: 'Error', description: 'Failed to update appointment status', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteAppointment = async (id: string) => {
+    try {
+      setDeletingAppointment(id);
+      const { error } = await supabase.from('appointments').delete().eq('id', id);
+      if (error) throw error;
+      setAppointments(prev => prev.filter(a => a.id !== id));
+      toast({ title: 'Success', description: 'Appointment deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      toast({ title: 'Error', description: 'Failed to delete appointment', variant: 'destructive' });
+    } finally {
+      setDeletingAppointment(null);
+    }
+  };
+
   // Show loading while auth is being checked
   if (loading) {
     return (
@@ -933,6 +1014,18 @@ const handleEdit = (update) => {
                 <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{bookings.length}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {bookings.filter(b => b.status === 'pending').length} pending
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('appointments')}>
+            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
+              <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-teal-600 flex-shrink-0" />
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Appointments</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{appointments.length}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {appointments.filter(a => a.status === 'pending').length} pending
                 </p>
               </div>
             </CardContent>
@@ -1033,7 +1126,7 @@ const handleEdit = (update) => {
                             <p className="text-xs text-muted-foreground">
                               Submitted: {new Date(contact.created_at).toLocaleDateString()}
                             </p>
-                                                    <div className="flex flex-col sm:flex-row gap-2">
+                                                   <div className="flex flex-col sm:flex-row gap-2">
                               <Button 
                                 size="sm" 
                                 onClick={() => updateContactStatus(contact.id, 'contacted')}
@@ -1043,16 +1136,6 @@ const handleEdit = (update) => {
                                 <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                                 <span className="hidden sm:inline">Mark as Contacted</span>
                                 <span className="sm:hidden">Contacted</span>
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => updateContactStatus(contact.id, 'closed')}
-                                disabled={contact.status === 'closed'}
-                                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                              >
-                                <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                Close
                               </Button>
                               <Button 
                                 size="sm" 
@@ -1161,6 +1244,76 @@ const handleEdit = (update) => {
                               </Button>
                             </div>
                           </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+                      <TabsContent value="appointments" className="space-y-3 sm:space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg sm:text-xl font-semibold">Appointments</h2>
+            </div>
+            {dataLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-3 sm:space-y-4">
+                {appointments.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex items-center justify-center py-6 sm:py-8">
+                      <p className="text-muted-foreground text-sm sm:text-base">No appointments yet</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  appointments.map((appt) => (
+                    <Card key={appt.id}>
+                      <CardHeader className="pb-3 sm:pb-6">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="text-base sm:text-lg truncate">{appt.full_name}</CardTitle>
+                            <CardDescription className="text-xs sm:text-sm">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                <span className="truncate">{appt.email}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span>{appt.phone}</span>
+                              </div>
+                            </CardDescription>
+                          </div>
+                          <Badge className="self-start">{appt.status}</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
+                            <div><strong>Preferred Contact:</strong> {appt.preferred_contact || 'Not specified'}</div>
+                            <div><strong>Secondary Phone:</strong> {appt.secondary_phone || 'Not specified'}</div>
+                            <div><strong>Date & Time:</strong> {new Date(appt.appointment_date).toLocaleString()}</div>
+                          </div>
+                          {appt.notes && <p className="text-sm sm:text-base">{appt.notes}</p>}
+                          <p className="text-xs text-muted-foreground">Submitted: {new Date(appt.created_at).toLocaleDateString()}</p>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Button size="sm" onClick={() => updateAppointmentStatus(appt.id, 'confirmed')} disabled={appt.status !== 'pending'} className="flex-1 sm:flex-none text-xs sm:text-sm">
+                              <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              Confirm
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => updateAppointmentStatus(appt.id, 'cancelled')} disabled={appt.status !== 'pending'} className="flex-1 sm:flex-none text-xs sm:text-sm">
+                              <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              Cancel
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteAppointment(appt.id)} disabled={deletingAppointment === appt.id} className="flex-1 sm:flex-none text-xs sm:text-sm">
+                              {deletingAppointment === appt.id ? (
+                                <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1"></div>
+                              ) : (
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              )}
+                              {deletingAppointment === appt.id ? 'Deleting...' : 'Delete'}
+                            </Button>
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   ))

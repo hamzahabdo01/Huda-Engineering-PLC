@@ -40,10 +40,15 @@ export default function Booking() {
   });
 
   useEffect(() => {
-    supabase.from("projects").select("*").in("status", ["active", "completed"]).then(({ data }) => {
+    const fetchProjects = async () => {
+      const { data, error } = await supabase.from("projects").select("*").eq('status','active').order("created_at", { ascending: false });
+      if (error) {
+        console.error('Projects fetch error:', error);
+      }
       setProjects(data || []);
       setLoading(false);
-    });
+    };
+    fetchProjects();
   }, []);
 
   useEffect(() => {
@@ -59,57 +64,53 @@ export default function Booking() {
   }, [formData.property, projects]);
 
   const fetchStock = async (propertyId: string) => {
-  console.log("Fetching stock for propertyId:", propertyId);
-  const { data, error } = await supabase
-    .from("unit_stock")
-    .select("unit_type, total_units, booked_units, property_id")
-    .eq("property_id", propertyId);
+    try {
+      const { data, error } = await supabase
+        .from("unit_stock")
+        .select("unit_type, total_units, booked_units, property_id")
+        .eq("property_id", propertyId);
 
-  if (error) {
-    console.error("Stock fetch error:", error);
-    return;
-  }
+      if (error) {
+        console.warn("Unit stock fetch error (maybe table missing):", error.message);
+        setStock({});
+        return;
+      }
 
-  console.log("Unit stock rows:", data);
-
-  if (data) {
-    const stockMap: Record<string, number> = {};
-    data.forEach((s) => {
-      const available = (s.total_units ?? 0) - (s.booked_units ?? 0);
-      stockMap[s.unit_type] = available;
-    });
-    setStock(stockMap);
-  }
-  console.log("propertyId used:", propertyId);
-console.log("unit stock fetched:", data);
-
-};
-
+      const stockMap: Record<string, number> = {};
+      (data || []).forEach((s: any) => {
+        const available = (s.total_units ?? 0) - (s.booked_units ?? 0);
+        stockMap[s.unit_type] = available;
+      });
+      setStock(stockMap);
+    } catch (e) {
+      console.error('Unexpected error fetching stock', e);
+      setStock({});
+    }
+  };
 
   useEffect(() => {
-  const channel = supabase
-    .channel('unit_stock_changes')
-    .on(
-      'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'unit_stock' },
-      (payload) => {
-        if (payload.new.property_id === formData.property) {
-          const available = (payload.new.total_units ?? 0) - (payload.new.booked_units ?? 0);
-          setStock((prev) => ({
-            ...prev,
-            [payload.new.unit_type]: available,
-          }));
+    if (!formData.property) return;
+    const channel = supabase
+      .channel('unit_stock_changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'unit_stock' },
+        (payload) => {
+          // @ts-expect-error dynamic payload typing
+          if (payload.new.property_id === formData.property) {
+            // @ts-expect-error dynamic payload typing
+            const available = (payload.new.total_units ?? 0) - (payload.new.booked_units ?? 0);
+            // @ts-expect-error dynamic payload typing
+            setStock((prev) => ({ ...prev, [payload.new.unit_type]: available }));
+          }
         }
-      }
-    )
-    .subscribe();
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [formData.property]);
-
-  
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [formData.property]);
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
@@ -162,10 +163,14 @@ console.log("unit stock fetched:", data);
       ]);
 
       if (!insertError) {
-        await supabase.rpc("increment_booked_units", {
-          property_id: formData.property,
-          unit_type: formData.unitType,
-        });
+        try {
+          await supabase.rpc("increment_booked_units", {
+            property_id: formData.property,
+            unit_type: formData.unitType,
+          });
+        } catch (_e) {
+          // RPC may not exist; ignore gracefully
+        }
         fetchStock(formData.property);
       }
       error = insertError;
@@ -185,7 +190,7 @@ console.log("unit stock fetched:", data);
       error = insertError;
     }
 
-    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (error) return toast({ title: "Error", description: (error as any).message, variant: "destructive" });
 
     toast({ title: "Success", description: type === "property" ? "Property booked successfully" : "Appointment scheduled" });
     setFormData({
@@ -219,8 +224,12 @@ console.log("unit stock fetched:", data);
       </section>
       <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
         <div className="flex gap-4 mb-8 justify-center">
-          <Button variant={bookingType === "appointment" ? "default" : "outline"} onClick={() => setBookingType("appointment")}>Book Appointment</Button>
-          <Button variant={bookingType === "property" ? "default" : "outline"} onClick={() => setBookingType("property")}>Book Property</Button>
+          <Button variant={bookingType === "appointment" ? "default" : "outline"} onClick={() => setBookingType("appointment")}>
+            Book Appointment
+          </Button>
+          <Button variant={bookingType === "property" ? "default" : "outline"} onClick={() => setBookingType("property")}>
+            Book Property
+          </Button>
         </div>
 
         {bookingType === "property" ? (
@@ -238,14 +247,15 @@ console.log("unit stock fetched:", data);
               <Select value={formData.unitType} onValueChange={(v) => setFormData({ ...formData, unitType: v })}>
                 <SelectTrigger><SelectValue placeholder="Select unit type" /></SelectTrigger>
                 <SelectContent>
-  {Object.keys(units).map((unit) => (
-  <SelectItem key={unit} value={unit}>
-    {unit} - Available: {stock[unit] ?? 0}
-  </SelectItem>
-))}
-
-</SelectContent>
-
+                  {Object.keys(units).length === 0 && (
+                    <div className="px-2 py-1 text-sm text-muted-foreground">No unit types configured for this property</div>
+                  )}
+                  {Object.keys(units).map((unit) => (
+                    <SelectItem key={unit} value={unit}>
+                      {unit} {stock[unit] !== undefined ? `- Available: ${stock[unit]}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
 
