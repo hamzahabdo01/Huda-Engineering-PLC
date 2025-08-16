@@ -12,14 +12,25 @@ The email notification system automatically sends professional emails to clients
 
 ## Setup Instructions
 
-### 1. Set up Resend Account
+### 1. Current Setup (Netlify Domain)
+
+✅ **Good news!** The email system is already configured for your Netlify domain `huda-engineering-plc.netlify.app`. You can start using it immediately with Resend's free tier.
+
+**Benefits of current setup:**
+- No domain verification required
+- Uses Resend's reliable `onboarding@resend.dev` sending domain
+- Reply-to address uses your Netlify domain for branding
+- 3,000 free emails per month
+- Professional email templates already include your Netlify domain
+
+### 2. Set up Resend Account
 
 1. Visit [resend.com](https://resend.com) and create an account
 2. Verify your domain or use the sandbox domain for testing
 3. Create an API key from the dashboard
 4. Note down your API key for the next step
 
-### 2. Configure Supabase Environment Variables
+### 3. Configure Supabase Environment Variables
 
 Add the following environment variables to your Supabase project:
 
@@ -30,15 +41,22 @@ SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-### 3. Update Email Domain
+### 4. Email Domain Configuration
 
-In the Edge Function file (`supabase/functions/send-booking-notification/index.ts`), update:
+**For Netlify Domain (Current Setup):**
+The email function is already configured to use:
+- `from: 'onboarding@resend.dev'` (Resend's free sending domain)
+- `reply_to: 'noreply@huda-engineering-plc.netlify.app'` (Your Netlify domain)
+
+**For Future Custom Domain:**
+When you purchase your custom domain, update the Edge Function:
 
 ```typescript
-from: 'notifications@yourdomain.com', // Replace with your verified domain
+from: 'notifications@yourcustomdomain.com', // Your verified custom domain
+reply_to: 'noreply@yourcustomdomain.com',
 ```
 
-### 4. Deploy the Edge Function
+### 5. Deploy the Edge Function
 
 Deploy the email notification function to Supabase:
 
@@ -56,13 +74,66 @@ supabase link --project-ref your-project-ref
 supabase functions deploy send-booking-notification
 ```
 
-### 5. Apply Database Migrations
+### 6. Apply Database Migrations
 
 Apply the email logs migration:
 
 ```bash
 supabase db push
 ```
+
+## Migrating to Custom Domain (Future)
+
+When you purchase your custom domain, follow these steps to migrate:
+
+### 1. Domain Verification
+
+1. **Add your domain to Resend:**
+   - Go to Resend dashboard > Domains
+   - Add your custom domain (e.g., `hudaengineering.com`)
+   - Add the required DNS records to your domain provider
+
+2. **Verify domain ownership:**
+   - Add TXT records for domain verification
+   - Wait for verification (usually takes a few minutes)
+
+### 2. Update Email Function
+
+Update the Edge Function with your custom domain:
+
+```typescript
+// In supabase/functions/send-booking-notification/index.ts
+body: JSON.stringify({
+  from: 'notifications@yourcustomdomain.com', // Your verified domain
+  to: [recipient_email],
+  subject: emailContent.subject,
+  html: emailContent.html,
+  reply_to: 'noreply@yourcustomdomain.com',
+}),
+```
+
+### 3. Update Email Templates
+
+Update contact information in the email templates:
+
+```typescript
+// Replace all instances of huda-engineering-plc.netlify.app with your custom domain
+<li>📧 Email: info@yourcustomdomain.com</li>
+<li>🌐 Website: <a href="https://yourcustomdomain.com">yourcustomdomain.com</a></li>
+```
+
+### 4. Redeploy Function
+
+```bash
+supabase functions deploy send-booking-notification
+```
+
+### 5. Benefits of Custom Domain
+
+- **Professional appearance**: Emails from `notifications@hudaengineering.com`
+- **Better deliverability**: Custom domains often have better inbox rates
+- **Brand consistency**: Matches your website domain
+- **Custom email addresses**: Can set up `info@`, `support@`, etc.
 
 ## Alternative Email Services
 
@@ -83,7 +154,8 @@ const sendgridResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
       to: [{ email: recipient_email }],
       subject: emailContent.subject
     }],
-    from: { email: 'notifications@yourdomain.com' },
+    from: { email: 'noreply@huda-engineering-plc.netlify.app' }, // Using your Netlify domain
+    reply_to: { email: 'noreply@huda-engineering-plc.netlify.app' },
     content: [{
       type: 'text/html',
       value: emailContent.html

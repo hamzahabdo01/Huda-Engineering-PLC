@@ -54,10 +54,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'notifications@yourdomain.com', // Replace with your verified domain
+        from: 'onboarding@resend.dev', // Using Resend's free sending domain
         to: [recipient_email],
         subject: emailContent.subject,
         html: emailContent.html,
+        reply_to: 'noreply@huda-engineering-plc.netlify.app', // Your Netlify domain for replies
       }),
     })
 
@@ -155,12 +156,12 @@ function generateEmailContent(status: string, fullName: string, propertyId: stri
                     <p><strong>Don't worry!</strong> We have other excellent options available that might interest you. Our team will contact you to discuss alternative units and properties that match your requirements.</p>
                 `}
                 
-                <p>If you have any questions or concerns, please don't hesitate to contact us:</p>
-                <ul>
-                    <li>📞 Phone: +1-234-567-8900</li>
-                    <li>📧 Email: info@hudaengineering.com</li>
-                    <li>🌐 Website: www.hudaengineering.com</li>
-                </ul>
+                                 <p>If you have any questions or concerns, please don't hesitate to contact us:</p>
+                 <ul>
+                     <li>📞 Phone: +1-234-567-8900</li>
+                     <li>📧 Email: info@huda-engineering-plc.netlify.app</li>
+                     <li>🌐 Website: <a href="https://huda-engineering-plc.netlify.app" style="color: #667eea;">huda-engineering-plc.netlify.app</a></li>
+                 </ul>
                 
                 <p>Thank you for choosing Huda Engineering Real Estate. We look forward to serving you!</p>
                 
@@ -191,10 +192,10 @@ function generateEmailContent(status: string, fullName: string, propertyId: stri
       : 'We regret to inform you that your booking request could not be approved at this time. Our team will contact you to discuss alternative options.'
     }
 
-    Contact us:
-    Phone: +1-234-567-8900
-    Email: info@hudaengineering.com
-    Website: www.hudaengineering.com
+         Contact us:
+     Phone: +1-234-567-8900
+     Email: info@huda-engineering-plc.netlify.app
+     Website: https://huda-engineering-plc.netlify.app
 
     Best regards,
     The Huda Engineering Team
