@@ -80,6 +80,19 @@ interface Announcement {
   created_at: string;
 }
 
+interface Appointment {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  preferred_contact: string;
+  secondary_phone: string;
+  appointment_date: string;
+  notes: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const { user, profile, signOut, loading } = useAuth();
   const navigate = useNavigate();
@@ -89,6 +102,7 @@ const AdminDashboard = () => {
   const [bookings, setBookings] = useState<PropertyBooking[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   // Dialog states
@@ -146,9 +160,10 @@ const removeAmenity = (index: number) => {
 
 
   const [AmenitiesInput, setAmenitiesInput] = useState("");
-  const [activeTab, setActiveTab] = useState<'contacts' | 'bookings' | 'projects' | 'announcements'>("contacts");
+  const [activeTab, setActiveTab] = useState<'contacts' | 'bookings' | 'projects' | 'announcements' | 'appointments'>("contacts");
   const [deletingContact, setDeletingContact] = useState<string | null>(null);
   const [deletingBooking, setDeletingBooking] = useState<string | null>(null);
+  const [deletingAppointment, setDeletingAppointment] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     console.log('🔄 Starting data fetch...');
@@ -158,17 +173,19 @@ const removeAmenity = (index: number) => {
       console.log('🔐 Current user:', user?.email);
       console.log('👤 Current profile:', profile);
       
-      const [contactsRes, bookingsRes, projectsRes, announcementsRes] = await Promise.all([
+      const [contactsRes, bookingsRes, projectsRes, announcementsRes, appointmentsRes] = await Promise.all([
         supabase.from('contact_submissions').select('*').order('created_at', { ascending: false }),
         supabase.from('property_bookings').select('*').order('created_at', { ascending: false }),
         supabase.from('projects').select('*').order('created_at', { ascending: false }),
         supabase.from('announcements').select('*').order('created_at', { ascending: false }),
+        supabase.from('appointments').select('*').order('created_at', { ascending: false }),
       ]);
 
       console.log('📞 Contacts response:', contactsRes);
       console.log('🏠 Bookings response:', bookingsRes);
       console.log('🏗️ Projects response:', projectsRes);
       console.log('📢 Announcements response:', announcementsRes);
+      console.log('📅 Appointments response:', appointmentsRes);
 
       if (contactsRes.error) {
         console.error('❌ Contacts error:', contactsRes.error);
@@ -216,6 +233,18 @@ const removeAmenity = (index: number) => {
       } else {
         console.log(`✅ Setting ${announcementsRes.data?.length || 0} announcements`);
         setAnnouncements(announcementsRes.data as Announcement[] || []);
+      }
+
+      if (appointmentsRes.error) {
+        console.error('❌ Appointments error:', appointmentsRes.error);
+        toast({
+          title: "Error fetching appointments",
+          description: appointmentsRes.error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log(`✅ Setting ${appointmentsRes.data?.length || 0} appointments`);
+        setAppointments(appointmentsRes.data as Appointment[] || []);
       }
 
 
@@ -325,6 +354,31 @@ const removeAmenity = (index: number) => {
       )
       .subscribe();
 
+    // Subscribe to appointments
+    const appointmentsSubscription = supabase
+      .channel('appointments')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        (payload) => {
+          console.log('📅 Appointment change:', payload);
+          if (payload.eventType === 'INSERT') {
+            const newAppointment = payload.new as Appointment;
+            setAppointments(prev => [newAppointment, ...prev]);
+            toast({
+              title: "New Appointment",
+              description: `New appointment from ${newAppointment.full_name}`,
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setAppointments(prev => prev.map(appointment => 
+              appointment.id === payload.new.id ? payload.new as Appointment : appointment
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setAppointments(prev => prev.filter(appointment => appointment.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
     console.log('✅ Real-time subscriptions set up');
 
     // Cleanup subscriptions on component unmount
@@ -334,6 +388,7 @@ const removeAmenity = (index: number) => {
       bookingsSubscription.unsubscribe();
       projectsSubscription.unsubscribe();
       announcementsSubscription.unsubscribe();
+      appointmentsSubscription.unsubscribe();
     };
   }, [toast]);
 
@@ -419,6 +474,29 @@ const removeAmenity = (index: number) => {
     }
   };
 
+  const updateAppointmentStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Appointment status updated",
+      });
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update appointment status",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDeleteContact = async (id: string) => {
     try {
       setDeletingContact(id);
@@ -494,6 +572,45 @@ const removeAmenity = (index: number) => {
       });
     } finally {
       setDeletingBooking(null);
+    }
+  };
+
+  const handleDeleteAppointment = async (id: string) => {
+    try {
+      setDeletingAppointment(id);
+      console.log('🗑️ Deleting appointment with ID:', id);
+      
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('❌ Supabase delete error:', error);
+        throw error;
+      }
+
+      console.log('✅ Appointment deleted from database');
+
+      // Immediately update local state
+      setAppointments(prev => prev.filter(appointment => appointment.id !== id));
+
+      // Refresh data to ensure consistency
+      await fetchData();
+
+      toast({
+        title: "Success",
+        description: "Appointment deleted successfully",
+      });
+    } catch (error) {
+      console.error('💥 Error deleting appointment:', error);
+      toast({
+        title: "Error",
+        description: `Failed to delete appointment: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingAppointment(null);
     }
   };
 
@@ -894,6 +1011,7 @@ const handleEdit = (update) => {
                 console.log('Bookings:', bookings);
                 console.log('Projects:', projects);
                 console.log('Announcements:', announcements);
+                console.log('Appointments:', appointments);
               }} size="sm" className="flex-1 sm:flex-none">
                 <span>Debug</span>
               </Button>
@@ -912,7 +1030,7 @@ const handleEdit = (update) => {
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
           <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('contacts')}>
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <MessageSquare className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600 flex-shrink-0" />
@@ -961,6 +1079,18 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('appointments')}>
+            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
+              <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-red-600 flex-shrink-0" />
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Appointments</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{appointments.length}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {appointments.filter(a => a.status === 'pending').length} pending
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Debug Info */}
@@ -979,6 +1109,7 @@ const handleEdit = (update) => {
                 <p>Bookings: {bookings.length}</p>
                 <p>Projects: {projects.length}</p>
                 <p>Announcements: {announcements.length}</p>
+                <p>Appointments: {appointments.length}</p>
               </div>
             </CardContent>
           </Card>
@@ -986,6 +1117,13 @@ const handleEdit = (update) => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="contacts">Contacts</TabsTrigger>
+            <TabsTrigger value="bookings">Bookings</TabsTrigger>
+            <TabsTrigger value="appointments">Appointments</TabsTrigger>
+            <TabsTrigger value="projects">Projects</TabsTrigger>
+            <TabsTrigger value="announcements">Announcements</TabsTrigger>
+          </TabsList>
 
                       <TabsContent value="contacts" className="space-y-3 sm:space-y-4">
               <div className="flex justify-between items-center">
@@ -1037,22 +1175,16 @@ const handleEdit = (update) => {
                               <Button 
                                 size="sm" 
                                 onClick={() => updateContactStatus(contact.id, 'contacted')}
-                                disabled={contact.status !== 'pending'}
+                                disabled={contact.status === 'contacted'}
                                 className="flex-1 sm:flex-none text-xs sm:text-sm"
                               >
                                 <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                <span className="hidden sm:inline">Mark as Contacted</span>
-                                <span className="sm:hidden">Contacted</span>
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => updateContactStatus(contact.id, 'closed')}
-                                disabled={contact.status === 'closed'}
-                                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                              >
-                                <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                Close
+                                <span className="hidden sm:inline">
+                                  {contact.status === 'contacted' ? 'Already Contacted' : 'Mark as Contacted'}
+                                </span>
+                                <span className="sm:hidden">
+                                  {contact.status === 'contacted' ? 'Contacted' : 'Contact'}
+                                </span>
                               </Button>
                               <Button 
                                 size="sm" 
@@ -1168,6 +1300,107 @@ const handleEdit = (update) => {
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="appointments" className="space-y-3 sm:space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg sm:text-xl font-semibold">Appointments</h2>
+            </div>
+            {dataLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-3 sm:space-y-4">
+                {appointments.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex items-center justify-center py-6 sm:py-8">
+                      <p className="text-muted-foreground text-sm sm:text-base">No appointments yet</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  appointments.map((appointment) => (
+                    <Card key={appointment.id}>
+                      <CardHeader className="pb-3 sm:pb-6">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="text-base sm:text-lg truncate">{appointment.full_name}</CardTitle>
+                            <CardDescription className="text-xs sm:text-sm">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                <span className="truncate">{appointment.email}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span>{appointment.phone}</span>
+                              </div>
+                            </CardDescription>
+                          </div>
+                          <Badge variant={appointment.status === 'pending' ? 'destructive' : appointment.status === 'confirmed' ? 'default' : 'secondary'} className="self-start">
+                            {appointment.status}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
+                            <div><strong>Appointment Date:</strong> {new Date(appointment.appointment_date).toLocaleString()}</div>
+                            <div><strong>Preferred Contact:</strong> {appointment.preferred_contact}</div>
+                            {appointment.secondary_phone && <div><strong>Secondary Phone:</strong> {appointment.secondary_phone}</div>}
+                          </div>
+                          {appointment.notes && <p className="text-sm sm:text-base">{appointment.notes}</p>}
+                          <p className="text-xs text-muted-foreground">
+                            Submitted: {new Date(appointment.created_at).toLocaleDateString()}
+                          </p>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={() => updateAppointmentStatus(appointment.id, 'confirmed')}
+                              disabled={appointment.status !== 'pending'}
+                              className="flex-1 sm:flex-none text-xs sm:text-sm"
+                            >
+                              <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              Confirm
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => updateAppointmentStatus(appointment.id, 'completed')}
+                              disabled={appointment.status !== 'confirmed'}
+                              className="flex-1 sm:flex-none text-xs sm:text-sm"
+                            >
+                              <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              Complete
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => updateAppointmentStatus(appointment.id, 'cancelled')}
+                              disabled={appointment.status === 'cancelled' || appointment.status === 'completed'}
+                              className="flex-1 sm:flex-none text-xs sm:text-sm"
+                            >
+                              <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              Cancel
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => handleDeleteAppointment(appointment.id)}
+                              disabled={deletingAppointment === appointment.id}
+                              className="flex-1 sm:flex-none text-xs sm:text-sm"
+                            >
+                              {deletingAppointment === appointment.id ? (
+                                <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1"></div>
+                              ) : (
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              )}
+                              {deletingAppointment === appointment.id ? 'Deleting...' : 'Delete'}
+                            </Button>
+                          </div>
+                        </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          )}
+        </TabsContent>
 
                       <TabsContent value="projects" className="space-y-3 sm:space-y-4">
    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
