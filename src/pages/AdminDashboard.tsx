@@ -94,7 +94,7 @@ interface Appointment {
 }
 
 const AdminDashboard = () => {
-  const { user, profile, signOut, loading } = useAuth();
+  const { user, profile, isAdmin, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -386,22 +386,18 @@ const removeAmenity = (index: number) => {
   useEffect(() => {
     console.log('🔐 Auth check - Loading:', loading, 'User:', user?.email);
     
-    if (!loading) {
-      if (!user) {
-        console.log('❌ No user found, redirecting to auth');
-        navigate('/auth');
-        return;
-      }
+    if (loading) return;
 
-      // Wait for profile to load before checking admin access
-      if (!profile) {
-        console.log('⏳ Profile not loaded yet; waiting before admin check');
-        return;
-      }
+    if (!user) {
+      console.log('❌ No user found, redirecting to auth');
+      navigate('/auth');
+      return;
+    }
 
-      // Check if user has admin role per profile
+    // If profile loaded, use role check
+    if (profile) {
       if (profile.role !== 'admin') {
-        console.log('❌ Unauthorized user (no admin role), redirecting to auth');
+        console.log('❌ Unauthorized user, redirecting to auth');
         toast({
           title: "Access Denied",
           description: "You are not authorized to access this dashboard.",
@@ -410,16 +406,35 @@ const removeAmenity = (index: number) => {
         navigate('/auth');
         return;
       }
-
       console.log('✅ Admin user authenticated (role check), fetching data and setting up subscriptions');
       fetchData();
       setupRealtimeSubscriptions();
+      return;
     }
-  }, [user, profile, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
+
+    // Fallback: if profile not yet available but context marks user as admin (email-based), proceed
+    if (isAdmin) {
+      console.log('✅ Proceeding with admin access based on email while profile loads');
+      fetchData();
+      setupRealtimeSubscriptions();
+      return;
+    }
+
+    // Otherwise wait for profile
+    console.log('⏳ Waiting for profile to load...');
+  }, [user, profile, isAdmin, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
+
+  const [signingOut, setSigningOut] = useState(false);
   const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (!error) {
-      navigate('/');
+    try {
+      setSigningOut(true);
+      const { error } = await signOut();
+      if (error) throw error;
+    } catch (e) {
+      console.error('Sign out error:', e);
+    } finally {
+      setSigningOut(false);
+      navigate('/auth', { replace: true });
     }
   };
 
@@ -982,9 +997,9 @@ const handleEdit = (update) => {
                 <Eye className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">View Site</span>
               </Button>
-              <Button variant="outline" onClick={handleSignOut} size="sm" className="flex-1 sm:flex-none">
+              <Button variant="outline" onClick={handleSignOut} size="sm" className="flex-1 sm:flex-none" disabled={signingOut}>
                 <LogOut className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Sign Out</span>
+                <span className="hidden sm:inline">{signingOut ? 'Signing Out...' : 'Sign Out'}</span>
               </Button>
             </div>
           </div>

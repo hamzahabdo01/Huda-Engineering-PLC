@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,19 +12,25 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [authenticating, setAuthenticating] = useState(false);
+  const { signIn, user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (loading) return;
+    if (user && isAdmin) {
+      // Already authenticated as admin
+      navigate('/admin-dashboard', { replace: true });
+    }
+  }, [user, isAdmin, loading, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    setLoading(true);
+    setAuthenticating(true);
 
     try {
       const { error } = await signIn(email, password);
-      
       if (error) {
         console.error("Sign in error:", error);
         toast({
@@ -37,7 +43,7 @@ const Auth = () => {
           title: "Welcome Admin",
           description: "Successfully authenticated. Redirecting to dashboard...",
         });
-        navigate("/admin-dashboard");
+        navigate("/admin-dashboard", { replace: true });
       }
     } catch (error) {
       console.error("Unexpected error:", error);
@@ -47,7 +53,7 @@ const Auth = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setAuthenticating(false);
     }
   };
 
@@ -117,9 +123,9 @@ const Auth = () => {
             <Button 
               type="submit" 
               className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium"
-              disabled={loading}
+              disabled={authenticating}
             >
-              {loading ? (
+              {authenticating ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Authenticating...
