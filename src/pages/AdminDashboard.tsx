@@ -476,30 +476,39 @@ const removeAmenity = (index: number) => {
       // Send email notification if status is approved or rejected
       if (status === 'approved' || status === 'rejected') {
         try {
-          const { data, error: emailError } = await supabase.functions.invoke('send-booking-notification-simple', {
-            body: {
-              booking_id: id,
-              status,
-              recipient_email: booking.email,
-              full_name: booking.full_name,
-              property_id: booking.property_id,
-              unit_type: booking.unit_type || 'Standard'
-            },
+          console.log('📧 Sending email notification...');
+          console.log('Booking data:', booking);
+          
+          const emailPayload = {
+            booking_id: id,
+            status,
+            recipient_email: booking.email,
+            full_name: booking.full_name,
+            property_id: booking.property_id,
+            unit_type: booking.unit_type || 'Standard'
+          };
+          
+          console.log('Email payload:', emailPayload);
+          
+          const { data, error: emailError } = await supabase.functions.invoke('test-email-debug', {
+            body: emailPayload,
             headers: {
               'Content-Type': 'application/json',
             }
           });
 
           if (emailError) {
-            console.error('Email notification error:', emailError);
+            console.error('❌ Email notification error:', emailError);
+            console.error('Error details:', JSON.stringify(emailError, null, 2));
             // Don't fail the status update if email fails
             toast({
               title: "Status Updated",
-              description: `Booking ${status} successfully, but email notification failed to send.`,
+              description: `Booking ${status} successfully, but email notification failed to send. Error: ${emailError.message || 'Unknown error'}`,
               variant: "default",
             });
           } else {
-            console.log('✅ Email notification sent successfully to:', booking.email);
+            console.log('✅ Email notification sent successfully!');
+            console.log('Response data:', data);
             toast({
               title: "Success", 
               description: `Booking ${status} successfully! 📧 Notification email sent to ${booking.email}`,
