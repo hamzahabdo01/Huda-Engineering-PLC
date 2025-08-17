@@ -45,6 +45,7 @@ interface ContactSubmission {
 interface PropertyBooking {
   id: string;
   property_id: string;
+  property_name?: string;
   full_name: string;
   email: string;
   phone: string;
@@ -53,6 +54,7 @@ interface PropertyBooking {
   move_in_date: string;
   notes: string;
   status: 'pending' | 'approved' | 'rejected';
+  rejection_reason?: string;
   created_at: string;
 }
 
@@ -167,6 +169,11 @@ const removeAmenity = (index: number) => {
   const [deletingContact, setDeletingContact] = useState<string | null>(null);
   const [deletingBooking, setDeletingBooking] = useState<string | null>(null);
   const [deletingAppointment, setDeletingAppointment] = useState<string | null>(null);
+  
+  // Rejection reason dialog state
+  const [isRejectionDialogOpen, setIsRejectionDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [pendingRejection, setPendingRejection] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     console.log('🔄 Starting data fetch...');
@@ -176,13 +183,23 @@ const removeAmenity = (index: number) => {
       console.log('🔐 Current user:', user?.email);
       console.log('👤 Current profile:', profile);
       
-      const [contactsRes, bookingsRes, projectsRes, announcementsRes, appointmentsRes] = await Promise.all([
+      const [contactsRes, projectsRes, announcementsRes, appointmentsRes] = await Promise.all([
         supabase.from('contact_submissions').select('*').order('created_at', { ascending: false }),
-        supabase.from('property_bookings').select('*').order('created_at', { ascending: false }),
         supabase.from('projects').select('*').order('created_at', { ascending: false }),
         supabase.from('announcements').select('*').order('created_at', { ascending: false }),
         supabase.from('appointments').select('*').order('created_at', { ascending: false }),
       ]);
+
+      // Fetch bookings with property names
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from('property_bookings')
+        .select(`
+          *,
+          projects!inner(title)
+        `)
+        .order('created_at', { ascending: false });
+
+      const bookingsRes = { data: bookingsData, error: bookingsError };
 
       console.log('📞 Contacts response:', contactsRes);
       console.log('🏠 Bookings response:', bookingsRes);
@@ -211,7 +228,12 @@ const removeAmenity = (index: number) => {
         });
       } else {
         console.log(`✅ Setting ${bookingsRes.data?.length || 0} bookings`);
-        setBookings(bookingsRes.data as PropertyBooking[] || []);
+        // Process bookings to extract property names from the joined data
+        const processedBookings = bookingsRes.data?.map((booking: any) => ({
+          ...booking,
+          property_name: booking.projects?.title || 'Unknown Property'
+        })) || [];
+        setBookings(processedBookings);
       }
 
       if (projectsRes.error) {
@@ -299,19 +321,13 @@ const removeAmenity = (index: number) => {
         { event: '*', schema: 'public', table: 'property_bookings' },
         (payload) => {
           console.log('🏠 Property booking change:', payload);
+          // Refetch bookings to get updated data with property names
+          fetchData();
           if (payload.eventType === 'INSERT') {
-            const newBooking = payload.new as PropertyBooking;
-            setBookings(prev => [newBooking, ...prev]);
             toast({
               title: "New Property Booking",
-              description: `New booking from ${newBooking.full_name}`,
+              description: `New booking received`,
             });
-          } else if (payload.eventType === 'UPDATE') {
-            setBookings(prev => prev.map(booking => 
-              booking.id === payload.new.id ? payload.new as PropertyBooking : booking
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setBookings(prev => prev.filter(booking => booking.id !== payload.old.id));
           }
         }
       )
@@ -330,6 +346,8 @@ const removeAmenity = (index: number) => {
             setProjects(prev => prev.map(project => 
               project.id === payload.new.id ? payload.new as Project : project
             ));
+            // Refetch bookings when project titles change to update property names
+            fetchData();
           } else if (payload.eventType === 'DELETE') {
             setProjects(prev => prev.filter(project => project.id !== payload.old.id));
           }
@@ -454,7 +472,7 @@ const removeAmenity = (index: number) => {
     }
   };
 
-  const updateBookingStatus = async (id: string, status: string) => {
+  const updateBookingStatus = async (id: string, status: string, rejectionReason?: string) => {
     try {
       // First, get the booking details for email notification
       const { data: booking, error: fetchError } = await supabase
@@ -465,10 +483,29 @@ const removeAmenity = (index: number) => {
 
       if (fetchError) throw fetchError;
 
+      // Get the property name from the projects table
+      const { data: property, error: propertyError } = await supabase
+        .from('projects')
+        .select('title')
+        .eq('id', booking.property_id)
+        .single();
+
+      if (propertyError) {
+        console.warn('Could not fetch property name:', propertyError);
+      }
+
+      const propertyName = property?.title || 'Unknown Property';
+
+      // Prepare update data
+      const updateData: any = { status };
+      if (status === 'rejected' && rejectionReason) {
+        updateData.rejection_reason = rejectionReason;
+      }
+
       // Update the booking status
       const { error } = await supabase
         .from('property_bookings')
-        .update({ status })
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
@@ -485,7 +522,9 @@ const removeAmenity = (index: number) => {
             recipient_email: booking.email,
             full_name: booking.full_name,
             property_id: booking.property_id,
-            unit_type: booking.unit_type || 'Standard'
+            property_name: propertyName,
+            unit_type: booking.unit_type || 'Standard',
+            rejection_reason: rejectionReason || ''
           };
           
           console.log('Email payload:', emailPayload);
@@ -534,6 +573,29 @@ const removeAmenity = (index: number) => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleRejectWithReason = (bookingId: string) => {
+    setPendingRejection(bookingId);
+    setIsRejectionDialogOpen(true);
+  };
+
+  const confirmRejection = async () => {
+    if (!pendingRejection || !rejectionReason.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a rejection reason",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await updateBookingStatus(pendingRejection, 'rejected', rejectionReason.trim());
+    
+    // Reset dialog state
+    setIsRejectionDialogOpen(false);
+    setRejectionReason('');
+    setPendingRejection(null);
   };
 
   const updateAppointmentStatus = async (id: string, status: string) => {
@@ -1312,11 +1374,19 @@ const handleEdit = (update) => {
                         <CardContent className="pt-0">
                           <div className="space-y-3 sm:space-y-4">
                             <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
-                              <div><strong>Property ID:</strong> {booking.property_id}</div>
+                              <div><strong>Property:</strong> {booking.property_name || 'Unknown Property'}</div>
                               <div><strong>National ID:</strong> {booking.national_id}</div>
                               <div><strong>Move-in Date:</strong> {booking.move_in_date || 'Not specified'}</div>
                             </div>
                             {booking.notes && <p className="text-sm sm:text-base">{booking.notes}</p>}
+                            {booking.rejection_reason && (
+                              <div className="text-sm">
+                                <div className="font-semibold text-red-600 mb-1">Rejection Reason:</div>
+                                <div className="bg-red-50 border-l-4 border-red-400 p-3 text-red-700">
+                                  {booking.rejection_reason}
+                                </div>
+                              </div>
+                            )}
                             <p className="text-xs text-muted-foreground">
                               Submitted: {new Date(booking.created_at).toLocaleDateString()}
                             </p>
@@ -1333,7 +1403,7 @@ const handleEdit = (update) => {
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => updateBookingStatus(booking.id, 'rejected')}
+                                onClick={() => handleRejectWithReason(booking.id)}
                                 disabled={booking.status !== 'pending'}
                                 className="flex-1 sm:flex-none text-xs sm:text-sm"
                               >
@@ -2104,6 +2174,48 @@ const handleEdit = (update) => {
           </TabsContent>          
         </Tabs>
       </div>
+
+      {/* Rejection Reason Dialog */}
+      <Dialog open={isRejectionDialogOpen} onOpenChange={setIsRejectionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Provide Rejection Reason</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this booking. This will be included in the email notification to the applicant.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="rejection-reason">Rejection Reason</Label>
+              <Textarea
+                id="rejection-reason"
+                placeholder="Enter the reason for rejection..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsRejectionDialogOpen(false);
+                  setRejectionReason('');
+                  setPendingRejection(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmRejection}
+                disabled={!rejectionReason.trim()}
+              >
+                Confirm Rejection
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
