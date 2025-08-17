@@ -857,6 +857,9 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
         title: "Success",
         description: "Project added successfully",
       });
+      
+      // Refresh data after successful operation
+      fetchData();
     } catch (error) {
       console.error('Error adding project:', error);
       toast({
@@ -880,6 +883,9 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
         title: "Success",
         description: "Project deleted successfully",
       });
+      
+      // Refresh data after successful operation
+      fetchData();
     } catch (error) {
       console.error('Error deleting project:', error);
       toast({
@@ -948,6 +954,9 @@ const handleSaveProject = async () => {
       toast({ title: "Project Updated", description: "Changes saved." });
       setIsAddProjectOpen(false);
       setEditingProjectId(null);
+      
+      // Refresh data after successful operation
+      fetchData();
     } else {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }

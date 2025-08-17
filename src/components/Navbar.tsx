@@ -26,7 +26,7 @@ const Navbar = () => {
     { key: "nav.services", path: "/services" },
     { key: "nav.about", path: "/about" },
     { key: "nav.announcements", path: "/announcements" },
-    { key: "nav.booking", path: "/booking" },
+    { key: "nav.book", path: "/booking" },
     { key: "nav.contact", path: "/contact" },
     { key: "nav.virtualTour", path: "/virtual-tour" },
   ];
@@ -67,19 +67,25 @@ const Navbar = () => {
   );
 
   return (
-    <nav className="bg-background shadow-sm border-b border-border sticky top-0 z-50">
+    <nav className="bg-background/95 backdrop-blur-sm shadow-lg border-b border-border sticky top-0 z-50 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center">
-            <Logo size="lg" variant="teal" className="text-primary" />
-            <span className="text-xl font-bold text-foreground hidden sm:block">Huda Engineering PLC</span>
-            <span className="text-lg font-bold text-foreground sm:hidden">Huda</span>
+          <Link to="/" className="flex items-center group">
+            <Logo size="lg" variant="teal" className="text-primary transition-transform group-hover:scale-105" />
+            <span className="text-xl font-bold text-foreground hidden sm:block ml-2 group-hover:text-primary transition-colors">Huda Engineering PLC</span>
+            <span className="text-lg font-bold text-foreground sm:hidden ml-2 group-hover:text-primary transition-colors">Huda</span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => (
               <Link key={item.key} to={item.path}
-                className={`transition-colors text-sm font-medium px-3 py-2 rounded-lg ${location.pathname === item.path ? "text-primary font-semibold bg-primary/10" : "text-foreground hover:text-primary hover:bg-primary/5"}`}>{t(item.key)}</Link>
+                className={`transition-all duration-200 text-sm font-medium px-4 py-2 rounded-xl relative overflow-hidden group ${location.pathname === item.path ? "text-primary font-semibold bg-primary/10" : "text-foreground hover:text-primary hover:bg-primary/5"}`}>
+                <span className="relative z-10">{t(item.key)}</span>
+                {location.pathname === item.path && (
+                  <div className="absolute inset-0 bg-primary/10 rounded-xl" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
+              </Link>
             ))}
           </div>
 
@@ -116,14 +122,45 @@ const Navbar = () => {
         </div>
 
         {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-background border-t border-border">
+          <div className="md:hidden animate-in slide-in-from-top-2 duration-300">
+            <div className="px-4 pt-4 pb-6 space-y-2 bg-background/95 backdrop-blur-sm border-t border-border shadow-lg">
               {navItems.map((item) => (
-                <Link key={item.key} to={item.path} onClick={() => setIsMenuOpen(false)} className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === item.path ? "text-primary bg-primary/10" : "text-foreground hover:text-primary hover:bg-muted"}`}>{t(item.key)}</Link>
+                <Link 
+                  key={item.key} 
+                  to={item.path} 
+                  onClick={() => setIsMenuOpen(false)} 
+                  className={`block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 ${
+                    location.pathname === item.path 
+                      ? "text-primary bg-primary/10 border border-primary/20" 
+                      : "text-foreground hover:text-primary hover:bg-primary/5"
+                  }`}
+                >
+                  {t(item.key)}
+                </Link>
               ))}
-              <div className="flex gap-2 mt-3">
-                <button title="English" onClick={() => changeLanguage("en")} className={`p-1 rounded border transform transition-transform hover:scale-110 ${i18n.language === "en" ? "bg-primary text-white" : "bg-white"}`}><UKFlag /></button>
-                <button title="Amharic" onClick={() => changeLanguage("am")} className={`p-1 rounded border transform transition-transform hover:scale-110 ${i18n.language === "am" ? "bg-primary text-white" : "bg-white"}`}><EthiopiaFlag /></button>
+              <div className="flex gap-3 mt-4 pt-4 border-t border-border">
+                <button 
+                  title="English" 
+                  onClick={() => changeLanguage("en")} 
+                  className={`p-2 rounded-lg border-2 transform transition-all duration-200 hover:scale-105 ${
+                    i18n.language === "en" 
+                      ? "bg-primary text-white border-primary" 
+                      : "bg-white border-gray-300 hover:border-primary/50"
+                  }`}
+                >
+                  <UKFlag />
+                </button>
+                <button 
+                  title="Amharic" 
+                  onClick={() => changeLanguage("am")} 
+                  className={`p-2 rounded-lg border-2 transform transition-all duration-200 hover:scale-105 ${
+                    i18n.language === "am" 
+                      ? "bg-primary text-white border-primary" 
+                      : "bg-white border-gray-300 hover:border-primary/50"
+                  }`}
+                >
+                  <EthiopiaFlag />
+                </button>
               </div>
             </div>
           </div>

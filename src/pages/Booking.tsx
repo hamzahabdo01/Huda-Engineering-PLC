@@ -23,6 +23,7 @@ export default function Booking() {
   const [loading, setLoading] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [bookingType, setBookingType] = useState<"appointment" | "property">("property");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -40,8 +41,21 @@ export default function Booking() {
   });
 
   useEffect(() => {
+    // Get project ID from URL query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('project');
+    
     supabase.from("projects").select("*").in("status", ["active", "completed"]).then(({ data }) => {
       setProjects(data || []);
+      
+      // Auto-populate property if project ID is provided
+      if (projectId && data) {
+        const project = data.find(p => p.id === projectId);
+        if (project) {
+          setFormData(prev => ({ ...prev, property: projectId }));
+        }
+      }
+      
       setLoading(false);
     });
   }, []);
@@ -50,7 +64,22 @@ export default function Booking() {
     if (!formData.property) return;
     const project = projects.find((p) => p.id === formData.property);
     if (project) {
-      setUnits(project.units || {});
+      // Handle both old units structure and new floor plans structure
+      if (project.floor_plans && project.floor_plans.length > 0) {
+        // New floor plan structure
+        const unitTypes: Record<string, string> = {};
+        project.floor_plans.forEach(floor => {
+          floor.apartment_types.forEach(apt => {
+            if (apt.type && apt.size) {
+              unitTypes[apt.type] = apt.size;
+            }
+          });
+        });
+        setUnits(unitTypes);
+      } else {
+        // Legacy units structure
+        setUnits(project.units || {});
+      }
       fetchStock(formData.property);
     } else {
       setUnits({});
@@ -124,10 +153,14 @@ console.log("unit stock fetched:", data);
 
   const handleSubmit = async (e: any, type: "property" | "appointment") => {
     e.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (isSubmitting) return;
+    
     if (type === "property" && (!formData.property || !formData.unitType)) {
       return toast({ title: "Missing Data", description: "Select property and unit type", variant: "destructive" });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       return toast({ title: "Invalid Email", description: "Enter a valid email", variant: "destructive" });
     }
     if (formData.phone.length !== 10) {
@@ -142,6 +175,8 @@ console.log("unit stock fetched:", data);
     if (type === "property" && !formData.acceptTnC) {
       return toast({ title: "T&C Required", description: "Accept Terms & Conditions", variant: "destructive" });
     }
+
+    setIsSubmitting(true);
 
     let error = null;
     if (type === "property") {
@@ -185,7 +220,10 @@ console.log("unit stock fetched:", data);
       error = insertError;
     }
 
-    if (error) return toast({ title: "Error", description: error.message, variant: "destructive" });
+    if (error) {
+      setIsSubmitting(false);
+      return toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
 
     toast({ title: "Success", description: type === "property" ? "Property booked successfully" : "Appointment scheduled" });
     setFormData({
@@ -204,9 +242,30 @@ console.log("unit stock fetched:", data);
       acceptTnC: false,
     });
     setCaptchaToken(null);
+    setIsSubmitting(false);
   };
 
-  if (loading) return <div className="min-h-screen bg-background">Loading...</div>;
+  if (loading) return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-12 text-center animate-fade-in">
+        <div className="max-w-4xl mx-auto px-4">
+          <h1 className="text-3xl md:text-5xl font-bold">Book Your Appointment or Property</h1>
+          <p className="text-lg md:text-xl text-primary-foreground/90 mt-2">Secure a viewing or reserve your preferred unit in minutes.</p>
+        </div>
+      </section>
+      <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
+        <div className="flex justify-center items-center py-20">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="text-lg text-muted-foreground">Loading booking form...</p>
+            <p className="text-sm text-muted-foreground">Please wait while we prepare everything for you</p>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -257,7 +316,20 @@ console.log("unit stock fetched:", data);
               <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
             </div>
             <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
-            <Button type="submit" className="w-full bg-primary" disabled={!formData.consent || !formData.acceptTnC}>Submit</Button>
+            <Button 
+              type="submit" 
+              className="w-full bg-primary" 
+              disabled={!formData.consent || !formData.acceptTnC || isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Processing...
+                </>
+              ) : (
+                'Submit'
+              )}
+            </Button>
           </form>
         ) : (
           <form onSubmit={(e) => handleSubmit(e, "appointment")} className="space-y-6 max-w-2xl mx-auto">
@@ -274,7 +346,20 @@ console.log("unit stock fetched:", data);
               <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
             </div>
             <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
-            <Button type="submit" className="w-full bg-primary">Book Appointment</Button>
+            <Button 
+              type="submit" 
+              className="w-full bg-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Processing...
+                </>
+              ) : (
+                'Book Appointment'
+              )}
+            </Button>
           </form>
         )}
       </main>
