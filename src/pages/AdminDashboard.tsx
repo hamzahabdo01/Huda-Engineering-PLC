@@ -1278,10 +1278,10 @@ const handleEdit = (update) => {
         </div>
       </div>
 
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         {/* Stats Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-                      <Card className="hover:shadow-md transition-shadow">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+          <Card className="hover:shadow-md transition-shadow">
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <MessageSquare className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1293,7 +1293,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-                      <Card className="hover:shadow-md transition-shadow">
+          <Card className="hover:shadow-md transition-shadow">
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1305,7 +1305,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-                      <Card className="hover:shadow-md transition-shadow">
+          <Card className="hover:shadow-md transition-shadow">
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Building className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1317,7 +1317,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-                      <Card className="hover:shadow-md transition-shadow">
+          <Card className="hover:shadow-md transition-shadow">
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Users className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1329,7 +1329,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-                      <Card className="hover:shadow-md transition-shadow">
+          <Card className="hover:shadow-md transition-shadow">
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-red-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1370,9 +1370,9 @@ const handleEdit = (update) => {
 
           {/* Contacts Section */}
           <section className="space-y-4 sm:space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg sm:text-xl font-semibold">Contact Submissions</h2>
-              </div>
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg sm:text-xl font-semibold">Contact Submissions</h2>
+            </div>
             {dataLoading ? (
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -2146,9 +2146,10 @@ const handleEdit = (update) => {
                   )}
                 </div>
             )}
-            <Tabs value="progress-updates" className="space-y-3 sm:space-y-4">
-  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
-    <h2 className="text-lg sm:text-xl font-semibold">Progress Updates</h2>
+            {/* Progress Updates Section */}
+            <section className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+                <h2 className="text-lg sm:text-xl font-semibold">Progress Updates</h2>
 
     <Dialog open={isAddUpdateOpen} onOpenChange={setIsAddUpdateOpen}>
       <DialogTrigger asChild>
@@ -2457,7 +2458,6 @@ const handleEdit = (update) => {
             )}
           </section>
         </div>
-      </div>
 
       {/* Rejection Reason Dialog */}
       <Dialog open={isRejectionDialogOpen} onOpenChange={setIsRejectionDialogOpen}>
