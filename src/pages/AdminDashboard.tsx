@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,8 +59,8 @@ interface PropertyBooking {
 
 interface ApartmentType {
   id: string;
-  type: string; // e.g., "2B", "3B"
-  size: string; // e.g., "120 m2"
+  type: string;
+  size: string;
   availability: 'available' | 'sold' | 'reserved';
   price?: string;
 }
@@ -104,153 +103,90 @@ interface Appointment {
   full_name: string;
   email: string;
   phone: string;
-  preferred_contact: string;
-  secondary_phone: string;
+  secondary_phone?: string;
   appointment_date: string;
-  notes: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  preferred_contact: string;
+  notes?: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  created_at: string;
+}
+
+interface ProjectUpdate {
+  id: string;
+  project_id: string;
+  project_title: string;
+  description: string;
+  media_url?: string;
+  update_type?: 'image' | 'video';
   created_at: string;
 }
 
 const AdminDashboard = () => {
-  const { user, profile, signOut, loading } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-
+  
+  // State variables
   const [contacts, setContacts] = useState<ContactSubmission[]>([]);
   const [bookings, setBookings] = useState<PropertyBooking[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
-
-  // Dialog states
-  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
-  const [isAddAnnouncementOpen, setIsAddAnnouncementOpen] = useState(false);
-
-  const [isAddUpdateOpen, setIsAddUpdateOpen] = useState(false);
-const [update, setUpdate] = useState({
-  project_id: "",
-  description: "",
-  file: null,
-});
-const [loadingg, setLoading] = useState(false);
-const [ongoingProjects, setOngoingProjects] = useState([]);
-const [updates, setUpdates] = useState([]);
-
-
+  
   // Form states
-  const [newProject, setNewProject] = useState({
+  const [newContact, setNewContact] = useState<Partial<ContactSubmission>>({});
+  const [newProject, setNewProject] = useState<Partial<Project>>({
     title: "",
-    description: "",
-    short_description: "",
     location: "",
     project_type: "",
-    status: "active" as const,
+    short_description: "",
+    description: "",
     start_date: "",
     end_date: "",
     image_url: "",
-    floor_plans: [] as FloorPlan[],
-    Amenities: [] as string[],
+    status: "active",
+    Amenities: [],
+    floor_plans: [],
   });
-
-  const [newAnnouncement, setNewAnnouncement] = useState({
+  const [newAnnouncement, setNewAnnouncement] = useState<Partial<Announcement>>({
     title: "",
     content: "",
     short_description: "",
-    category: "general",
+    category: "",
     image_url: "",
-    scheduled_for:"",
     is_published: false,
+    scheduled_for: "",
   });
-  // Floor plan management state
+  const [update, setUpdate] = useState<Partial<ProjectUpdate>>({
+    project_id: "",
+    description: "",
+    file: null,
+  });
+  
+  // UI states
+  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [isAddAnnouncementOpen, setIsAddAnnouncementOpen] = useState(false);
+  const [isAddUpdateOpen, setIsAddUpdateOpen] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [isRejectionDialogOpen, setIsRejectionDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [pendingRejection, setPendingRejection] = useState<string | null>(null);
+  
+  // Floor plan states
   const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
   const [currentFloorNumber, setCurrentFloorNumber] = useState(1);
+  const [amenityInput, setAmenityInput] = useState("");
   
-  const [AmenityInput, setAmenityInput] = useState("");
-const addAmenity = () => {
-  if (!AmenityInput.trim()) return;
-  setNewProject(prev => ({ ...prev, Amenities: [...prev.Amenities, AmenityInput.trim()] }));
-  setAmenityInput("");
-};
-const removeAmenity = (index: number) => {
-  setNewProject(prev => ({
-    ...prev,
-    Amenities: prev.Amenities.filter((_, i) => i !== index),
-  }));
-};
-
-// Floor plan management functions
-const addFloorPlan = () => {
-  const newFloorPlan: FloorPlan = {
-    id: `floor-${Date.now()}`,
-    floor_number: currentFloorNumber,
-    apartment_types: []
-  };
-  setFloorPlans(prev => [...prev, newFloorPlan]);
-  setCurrentFloorNumber(prev => prev + 1);
-};
-
-const removeFloorPlan = (floorId: string) => {
-  setFloorPlans(prev => prev.filter(floor => floor.id !== floorId));
-  // Reorder floor numbers
-  setFloorPlans(prev => prev.map((floor, index) => ({
-    ...floor,
-    floor_number: index + 1
-  })));
-  setCurrentFloorNumber(floorPlans.length);
-};
-
-const addApartmentType = (floorId: string) => {
-  const newApartmentType: ApartmentType = {
-    id: `apt-${Date.now()}`,
-    type: '',
-    size: '',
-    availability: 'available',
-    price: ''
-  };
-  
-  setFloorPlans(prev => prev.map(floor => 
-    floor.id === floorId 
-      ? { ...floor, apartment_types: [...floor.apartment_types, newApartmentType] }
-      : floor
-  ));
-};
-
-const removeApartmentType = (floorId: string, apartmentId: string) => {
-  setFloorPlans(prev => prev.map(floor => 
-    floor.id === floorId 
-      ? { ...floor, apartment_types: floor.apartment_types.filter(apt => apt.id !== apartmentId) }
-      : floor
-  ));
-};
-
-const updateApartmentType = (floorId: string, apartmentId: string, field: keyof ApartmentType, value: string) => {
-  setFloorPlans(prev => prev.map(floor => 
-    floor.id === floorId 
-      ? {
-          ...floor,
-          apartment_types: floor.apartment_types.map(apt => 
-            apt.id === apartmentId 
-              ? { ...apt, [field]: value }
-              : apt
-          )
-        }
-      : floor
-  ));
-};
-
-
-  const [AmenitiesInput, setAmenitiesInput] = useState("");
-
+  // Loading states
   const [deletingContact, setDeletingContact] = useState<string | null>(null);
   const [deletingBooking, setDeletingBooking] = useState<string | null>(null);
+  const [deletingProject, setDeletingProject] = useState<string | null>(null);
+  const [deletingAnnouncement, setDeletingAnnouncement] = useState<string | null>(null);
   const [deletingAppointment, setDeletingAppointment] = useState<string | null>(null);
-  
-  // Rejection reason dialog state
-  const [isRejectionDialogOpen, setIsRejectionDialogOpen] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [pendingRejection, setPendingRejection] = useState<string | null>(null);
+  const [deletingUpdate, setDeletingUpdate] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     console.log('🔄 Starting data fetch...');
@@ -1203,12 +1139,12 @@ const handleEdit = (update) => {
   
 
   const addAmenities = () => {
-    if (AmenitiesInput.trim()) {
+    if (AmenityInput.trim()) {
       setNewProject(prev => ({
         ...prev,
         Amenities: [...prev.Amenities, AmenitiesInput.trim()]
       }));
-      setAmenitiesInput("");
+      setAmenityInput("");
     }
   };
 
@@ -1231,16 +1167,16 @@ const handleEdit = (update) => {
     );
   }
 
-  // Don't render anything if not authenticated
   if (!user) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
       <div className="border-b bg-card">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-3 sm:py-4 gap-3 sm:gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-4 gap-4">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Dashboard</h1>
               <p className="text-sm sm:text-base text-muted-foreground">Welcome back, Administrator</p>
@@ -1250,20 +1186,6 @@ const handleEdit = (update) => {
               <Button variant="outline" onClick={fetchData} size="sm" className="flex-1 sm:flex-none">
                 <RefreshCw className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Refresh</span>
-              </Button>
-              <Button variant="outline" onClick={() => {
-                console.log('🧪 Manual test - Current state:');
-                console.log('User:', user);
-                console.log('Profile:', profile);
-                console.log('Loading:', loading);
-                console.log('Data Loading:', dataLoading);
-                console.log('Contacts:', contacts);
-                console.log('Bookings:', bookings);
-                console.log('Projects:', projects);
-                console.log('Announcements:', announcements);
-                console.log('Appointments:', appointments);
-              }} size="sm" className="flex-1 sm:flex-none">
-                <span>Debug</span>
               </Button>
               <Button variant="outline" onClick={() => navigate('/')} size="sm" className="flex-1 sm:flex-none">
                 <Eye className="w-4 h-4 sm:mr-2" />
@@ -1278,63 +1200,68 @@ const handleEdit = (update) => {
         </div>
       </div>
 
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
-              <MessageSquare className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600 flex-shrink-0" />
-              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Contact Forms</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{contacts.length}</p>
+            <CardContent className="flex items-center p-4">
+              <MessageSquare className="h-6 w-6 text-blue-600 flex-shrink-0" />
+              <div className="ml-3 min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground truncate">Contact Forms</p>
+                <p className="text-xl font-bold text-foreground">{contacts.length}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {contacts.filter(c => c.status === 'pending').length} pending
                 </p>
               </div>
             </CardContent>
           </Card>
+
           <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
-              <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-600 flex-shrink-0" />
-              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Property Bookings</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{bookings.length}</p>
+            <CardContent className="flex items-center p-4">
+              <Calendar className="h-6 w-6 text-green-600 flex-shrink-0" />
+              <div className="ml-3 min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground truncate">Property Bookings</p>
+                <p className="text-xl font-bold text-foreground">{bookings.length}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {bookings.filter(b => b.status === 'pending').length} pending
                 </p>
               </div>
             </CardContent>
           </Card>
+
           <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
-              <Building className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-600 flex-shrink-0" />
-              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Projects</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{projects.length}</p>
+            <CardContent className="flex items-center p-4">
+              <Building className="h-6 w-6 text-orange-600 flex-shrink-0" />
+              <div className="ml-3 min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground truncate">Projects</p>
+                <p className="text-xl font-bold text-foreground">{projects.length}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {projects.filter(p => p.status === 'active').length} active
                 </p>
               </div>
             </CardContent>
           </Card>
+
           <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
-              <Users className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-600 flex-shrink-0" />
-              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Announcements</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{announcements.length}</p>
+            <CardContent className="flex items-center p-4">
+              <Users className="h-6 w-6 text-purple-600 flex-shrink-0" />
+              <div className="ml-3 min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground truncate">Announcements</p>
+                <p className="text-xl font-bold text-foreground">{announcements.length}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {announcements.filter(a => a.is_published).length} published
                 </p>
               </div>
             </CardContent>
           </Card>
+
           <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
-              <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-red-600 flex-shrink-0" />
-              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Appointments</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{appointments.length}</p>
+            <CardContent className="flex items-center p-4">
+              <Calendar className="h-6 w-6 text-red-600 flex-shrink-0" />
+              <div className="ml-3 min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground truncate">Appointments</p>
+                <p className="text-xl font-bold text-foreground">{appointments.length}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {appointments.filter(a => a.status === 'pending').length} pending
                 </p>
