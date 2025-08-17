@@ -1343,37 +1343,10 @@ const handleEdit = (update) => {
           </Card>
         </div>
 
-        {/* Debug Info */}
-        {process.env.NODE_ENV === 'development' && (
-          <Card className="mb-8 border-yellow-200 bg-yellow-50">
-            <CardHeader>
-              <CardTitle className="text-yellow-800 text-sm sm:text-base">Debug Information</CardTitle>
-            </CardHeader>
-            <CardContent className="text-yellow-700 text-xs sm:text-sm">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <p>User: {user?.email}</p>
-                <p>Profile: {profile?.full_name} ({profile?.role})</p>
-                <p>Loading: {loading.toString()}</p>
-                <p>Data Loading: {dataLoading.toString()}</p>
-                <p>Contacts: {contacts.length}</p>
-                <p>Bookings: {bookings.length}</p>
-                <p>Projects: {projects.length}</p>
-                <p>Announcements: {announcements.length}</p>
-                <p>Appointments: {appointments.length}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="contacts">Contacts</TabsTrigger>
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
-            <TabsTrigger value="appointments">Appointments</TabsTrigger>
-            <TabsTrigger value="projects">Projects</TabsTrigger>
-            <TabsTrigger value="announcements">Announcements</TabsTrigger>
-          </TabsList>
+
 
                       <TabsContent value="contacts" className="space-y-3 sm:space-y-4">
               <div className="flex justify-between items-center">
@@ -1421,7 +1394,7 @@ const handleEdit = (update) => {
                             <p className="text-xs text-muted-foreground">
                               Submitted: {new Date(contact.created_at).toLocaleDateString()}
                             </p>
-                                                    <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="flex sm:flex-row gap-2">
                               <Button 
                                 size="sm" 
                                 onClick={() => updateContactStatus(contact.id, 'contacted')}
@@ -1515,7 +1488,7 @@ const handleEdit = (update) => {
                             <p className="text-xs text-muted-foreground">
                               Submitted: {new Date(booking.created_at).toLocaleDateString()}
                             </p>
-                                                    <div className="flex flex-col sm:flex-row gap-2">
+                              <div className="flex sm:flex-row gap-2">
                               <Button 
                                 size="sm" 
                                 onClick={() => updateBookingStatus(booking.id, 'approved')}
@@ -1606,7 +1579,7 @@ const handleEdit = (update) => {
                           <p className="text-xs text-muted-foreground">
                             Submitted: {new Date(appointment.created_at).toLocaleDateString()}
                           </p>
-                          <div className="flex flex-col sm:flex-row gap-2">
+                          <div className="flex sm:flex-row gap-2">
                             <Button 
                               size="sm" 
                               onClick={() => updateAppointmentStatus(appointment.id, 'confirmed')}
@@ -1648,7 +1621,6 @@ const handleEdit = (update) => {
                               ) : (
                                 <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                               )}
-                              {deletingAppointment === appointment.id ? 'Deleting...' : 'Delete'}
                             </Button>
                           </div>
                         </div>
@@ -2132,7 +2104,7 @@ const handleEdit = (update) => {
                               {project.short_description}
                             </p>
                             
-                            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                            <div className="flex sm:flex-row gap-2 pt-2">
                               <Button size="sm" variant="outline" onClick={() => handleEditClick(project)} className="flex-1 sm:flex-none text-xs sm:text-sm">
                                 <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                                 Edit
@@ -2437,7 +2409,7 @@ const handleEdit = (update) => {
                             <p className="text-xs text-muted-foreground">
                               Created: {new Date(announcement.created_at).toLocaleDateString()}
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="flex sm:flex-row gap-2">
                               <Button 
                                 size="sm" 
                                 variant="outline"
