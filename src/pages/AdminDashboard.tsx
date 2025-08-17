@@ -489,12 +489,9 @@ const removeAmenity = (index: number) => {
           };
           
           console.log('Email payload:', emailPayload);
-          
-          const { data, error: emailError } = await supabase.functions.invoke('test-email-debug', {
+
+          const { data, error: emailError } = await supabase.functions.invoke('send-booking-notification', {
             body: emailPayload,
-            headers: {
-              'Content-Type': 'application/json',
-            }
           });
 
           if (emailError) {
