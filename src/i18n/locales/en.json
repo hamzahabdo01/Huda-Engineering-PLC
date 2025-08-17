@@ -81,19 +81,23 @@
       "description": "Meet the experts who bring your construction dreams to life with skill, dedication, and unwavering commitment to excellence",
       "engineers": {
         "title": "Licensed Engineers",
-        "description": "Structural and civil engineers with extensive experience in Ethiopian construction standards and international best practices."
+        "description": "Structural and civil engineers with extensive experience in Ethiopian construction standards and international best practices.",
+        "count": "15+"
       },
       "architects": {
         "title": "Certified Architects",
-        "description": "Creative designers who blend functionality with aesthetic appeal to create buildings that inspire and endure."
+        "description": "Creative designers who blend functionality with aesthetic appeal to create buildings that inspire and endure.",
+        "count": "8+"
       },
       "foremen": {
         "title": "Skilled Foremen", 
-        "description": "Experienced supervisors who ensure quality control and safety compliance throughout every phase of construction."
+        "description": "Experienced supervisors who ensure quality control and safety compliance throughout every phase of construction.",
+        "count": "25+"
       },
       "safety": {
         "title": "Safety Specialists",
-        "description": "Dedicated professionals who maintain the highest safety standards and ensure zero-accident work environments."
+        "description": "Dedicated professionals who maintain the highest safety standards and ensure zero-accident work environments.",
+        "count": "12+"
       }
     },
     "equipment": {
@@ -127,7 +131,8 @@
       "value": {
         "title": "Value Engineering",
         "description": "Cost-effective solutions that maximize value without compromising quality or safety."
-      }
+      },
+      "satisfaction": "Client Satisfaction Rate"
     }
   },
   "servicesPage": {

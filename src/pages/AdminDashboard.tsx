@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -242,7 +242,7 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
 
 
   const [AmenitiesInput, setAmenitiesInput] = useState("");
-  const [activeTab, setActiveTab] = useState<'contacts' | 'bookings' | 'projects' | 'announcements' | 'appointments'>("contacts");
+
   const [deletingContact, setDeletingContact] = useState<string | null>(null);
   const [deletingBooking, setDeletingBooking] = useState<string | null>(null);
   const [deletingAppointment, setDeletingAppointment] = useState<string | null>(null);
@@ -1278,10 +1278,10 @@ const handleEdit = (update) => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('contacts')}>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+                      <Card className="hover:shadow-md transition-shadow">
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <MessageSquare className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1293,7 +1293,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('bookings')}>
+                      <Card className="hover:shadow-md transition-shadow">
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1305,7 +1305,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('projects')}>
+                      <Card className="hover:shadow-md transition-shadow">
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Building className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-orange-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1317,7 +1317,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('announcements')}>
+                      <Card className="hover:shadow-md transition-shadow">
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Users className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1329,7 +1329,7 @@ const handleEdit = (update) => {
               </div>
             </CardContent>
           </Card>
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('appointments')}>
+                      <Card className="hover:shadow-md transition-shadow">
             <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
               <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-red-600 flex-shrink-0" />
               <div className="ml-3 sm:ml-4 min-w-0 flex-1">
@@ -1366,16 +1366,10 @@ const handleEdit = (update) => {
         )}
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="contacts">Contacts</TabsTrigger>
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
-            <TabsTrigger value="appointments">Appointments</TabsTrigger>
-            <TabsTrigger value="projects">Projects</TabsTrigger>
-            <TabsTrigger value="announcements">Announcements</TabsTrigger>
-          </TabsList>
+        <div className="space-y-10 sm:space-y-12">
 
-                      <TabsContent value="contacts" className="space-y-3 sm:space-y-4">
+          {/* Contacts Section */}
+          <section className="space-y-4 sm:space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-lg sm:text-xl font-semibold">Contact Submissions</h2>
               </div>
@@ -1458,9 +1452,10 @@ const handleEdit = (update) => {
                 )}
               </div>
             )}
-          </TabsContent>
+          </section>
 
-                      <TabsContent value="bookings" className="space-y-3 sm:space-y-4">
+          {/* Bookings Section */}
+          <section className="space-y-4 sm:space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-lg sm:text-xl font-semibold">Property Bookings</h2>
               </div>
@@ -1557,9 +1552,10 @@ const handleEdit = (update) => {
                 )}
               </div>
             )}
-          </TabsContent>
+          </section>
 
-          <TabsContent value="appointments" className="space-y-3 sm:space-y-4">
+          {/* Appointments Section */}
+          <section className="space-y-4 sm:space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-lg sm:text-xl font-semibold">Appointments</h2>
             </div>
@@ -1658,9 +1654,10 @@ const handleEdit = (update) => {
               )}
             </div>
           )}
-        </TabsContent>
+        </section>
 
-                      <TabsContent value="projects" className="space-y-3 sm:space-y-4">
+          {/* Projects Section */}
+          <section className="space-y-4 sm:space-y-6">
    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
     <h2 className="text-lg sm:text-xl font-semibold">Projects</h2>
     <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
@@ -1702,7 +1699,7 @@ const handleEdit = (update) => {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="title">Project Title</Label>
               <Input
@@ -1749,7 +1746,7 @@ const handleEdit = (update) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="start_date">Start Date</Label>
               <Input
@@ -2033,7 +2030,7 @@ const handleEdit = (update) => {
                         )}
                         <CardContent className="pt-0">
                           <div className="space-y-3 sm:space-y-4">
-                            <div className="grid grid-cols-2 gap-4 text-xs sm:text-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2">
                                   <Building2 className="w-3 h-3 text-primary" />
@@ -2236,7 +2233,8 @@ const handleEdit = (update) => {
     </Dialog>
   </div>
 
-  <TabsContent value="progress-updates" className="space-y-4">
+          {/* Progress Updates Section */}
+          <section className="space-y-4">
     {updates.length === 0 ? (
       <Card>
         <CardContent className="py-6 text-center text-muted-foreground">
@@ -2290,15 +2288,10 @@ const handleEdit = (update) => {
         </Card>
       ))
     )}
-  </TabsContent>
-</Tabs>
+        </section>
 
-
-          
-     </TabsContent>
-
-
-                      <TabsContent value="announcements" className="space-y-3 sm:space-y-4">
+          {/* Announcements Section */}
+          <section className="space-y-4 sm:space-y-6">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
                 <h2 className="text-lg sm:text-xl font-semibold">Announcements</h2>
                               <Dialog open={isAddAnnouncementOpen} onOpenChange={setIsAddAnnouncementOpen}>
@@ -2355,7 +2348,7 @@ const handleEdit = (update) => {
     }
   />
 </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="ann_category">Category</Label>
                         <Input
@@ -2462,8 +2455,8 @@ const handleEdit = (update) => {
                   )}
                 </div>
             )}
-          </TabsContent>          
-        </Tabs>
+          </section>
+        </div>
       </div>
 
       {/* Rejection Reason Dialog */}
