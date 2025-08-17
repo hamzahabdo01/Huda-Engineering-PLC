@@ -160,7 +160,7 @@ console.log("unit stock fetched:", data);
     if (type === "property" && (!formData.property || !formData.unitType)) {
       return toast({ title: "Missing Data", description: "Select property and unit type", variant: "destructive" });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       return toast({ title: "Invalid Email", description: "Enter a valid email", variant: "destructive" });
     }
     if (formData.phone.length !== 10) {
