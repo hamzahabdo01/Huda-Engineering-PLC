@@ -58,6 +58,20 @@ interface PropertyBooking {
   created_at: string;
 }
 
+interface ApartmentType {
+  id: string;
+  type: string; // e.g., "2B", "3B"
+  size: string; // e.g., "120 m2"
+  availability: 'available' | 'sold' | 'reserved';
+  price?: string;
+}
+
+interface FloorPlan {
+  id: string;
+  floor_number: number;
+  apartment_types: ApartmentType[];
+}
+
 interface Project {
   id: string;
   title: string;
@@ -70,7 +84,7 @@ interface Project {
   end_date: string;
   image_url: string;
   Amenities: string[];
-  units: string[] ;
+  floor_plans: FloorPlan[];
   created_at: string;
 }
 
@@ -136,7 +150,7 @@ const [updates, setUpdates] = useState([]);
     start_date: "",
     end_date: "",
     image_url: "",
-    units: "",
+    floor_plans: [] as FloorPlan[],
     Amenities: [] as string[],
   });
 
@@ -149,8 +163,11 @@ const [updates, setUpdates] = useState([]);
     scheduled_for:"",
     is_published: false,
   });
-  const [units, setUnits] = useState<{ [key: string]: string }>({});
-const [AmenityInput, setAmenityInput] = useState("");
+  // Floor plan management state
+  const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
+  const [currentFloorNumber, setCurrentFloorNumber] = useState(1);
+  
+  const [AmenityInput, setAmenityInput] = useState("");
 const addAmenity = () => {
   if (!AmenityInput.trim()) return;
   setNewProject(prev => ({ ...prev, Amenities: [...prev.Amenities, AmenityInput.trim()] }));
@@ -161,6 +178,66 @@ const removeAmenity = (index: number) => {
     ...prev,
     Amenities: prev.Amenities.filter((_, i) => i !== index),
   }));
+};
+
+// Floor plan management functions
+const addFloorPlan = () => {
+  const newFloorPlan: FloorPlan = {
+    id: `floor-${Date.now()}`,
+    floor_number: currentFloorNumber,
+    apartment_types: []
+  };
+  setFloorPlans(prev => [...prev, newFloorPlan]);
+  setCurrentFloorNumber(prev => prev + 1);
+};
+
+const removeFloorPlan = (floorId: string) => {
+  setFloorPlans(prev => prev.filter(floor => floor.id !== floorId));
+  // Reorder floor numbers
+  setFloorPlans(prev => prev.map((floor, index) => ({
+    ...floor,
+    floor_number: index + 1
+  })));
+  setCurrentFloorNumber(floorPlans.length);
+};
+
+const addApartmentType = (floorId: string) => {
+  const newApartmentType: ApartmentType = {
+    id: `apt-${Date.now()}`,
+    type: '',
+    size: '',
+    availability: 'available',
+    price: ''
+  };
+  
+  setFloorPlans(prev => prev.map(floor => 
+    floor.id === floorId 
+      ? { ...floor, apartment_types: [...floor.apartment_types, newApartmentType] }
+      : floor
+  ));
+};
+
+const removeApartmentType = (floorId: string, apartmentId: string) => {
+  setFloorPlans(prev => prev.map(floor => 
+    floor.id === floorId 
+      ? { ...floor, apartment_types: floor.apartment_types.filter(apt => apt.id !== apartmentId) }
+      : floor
+  ));
+};
+
+const updateApartmentType = (floorId: string, apartmentId: string, field: keyof ApartmentType, value: string) => {
+  setFloorPlans(prev => prev.map(floor => 
+    floor.id === floorId 
+      ? {
+          ...floor,
+          apartment_types: floor.apartment_types.map(apt => 
+            apt.id === apartmentId 
+              ? { ...apt, [field]: value }
+              : apt
+          )
+        }
+      : floor
+  ));
 };
 
 
@@ -740,32 +817,40 @@ const removeAmenity = (index: number) => {
 
   const handleAddProject = async () => {
     try {
+      // Validate floor plans before saving
+      if (floorPlans.length === 0) {
+        toast({
+          title: "Validation Error",
+          description: "Please add at least one floor plan before saving the project",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if each floor has at least one apartment type
+      const invalidFloors = floorPlans.filter(floor => floor.apartment_types.length === 0);
+      if (invalidFloors.length > 0) {
+        toast({
+          title: "Validation Error",
+          description: `Floor ${invalidFloors[0].floor_number} has no apartment types. Please add at least one apartment type to each floor.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('projects')
         .insert([{
           ...newProject,
-           units: units,
-           Amenities: newProject.Amenities,
+          floor_plans: floorPlans,
+          Amenities: newProject.Amenities,
           created_by: user?.id,
         }]);
 
       if (error) throw error;
 
-      // setNewProject({
-      //   title: "",
-      //   description: "",
-      //   short_description: "",
-      //   location: "",
-      //   project_type: "",
-      //   status: "active",
-        
-      //   start_date: "",
-      //   end_date: "",
-      //   image_url: "",
-      //   units: [],
-      //   Amenities: [],
-      // });
-      setUnits({});
+      setFloorPlans([]);
+      setCurrentFloorNumber(1);
       setIsAddProjectOpen(false);
 
       toast({
@@ -820,28 +905,59 @@ const handleEditClick = (project: any) => {
     image_url: project.image_url,
     status: project.status,
     Amenities: project.Amenities || [],
-    units: project.units || "",
+    floor_plans: project.floor_plans || [],
   });
-  setUnits(project.units || {});
+  setFloorPlans(project.floor_plans || []);
+  setCurrentFloorNumber((project.floor_plans?.length || 0) + 1);
   setIsAddProjectOpen(true);
 };
 
 // Save changes
 const handleSaveProject = async () => {
-  const { error } = await supabase
-    .from("projects")
-    .update({
-      ...newProject,
-      units,
-    })
-    .eq("id", editingProjectId);
+  try {
+    // Validate floor plans before saving
+    if (floorPlans.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please add at least one floor plan before saving the project",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  if (!error) {
-    toast({ title: "Project Updated", description: "Changes saved." });
-    setIsAddProjectOpen(false);
-    setEditingProjectId(null);
-  } else {
-    toast({ title: "Error", description: error.message, variant: "destructive" });
+    // Check if each floor has at least one apartment type
+    const invalidFloors = floorPlans.filter(floor => floor.apartment_types.length === 0);
+    if (invalidFloors.length > 0) {
+      toast({
+        title: "Validation Error",
+        description: `Floor ${invalidFloors.length > 1 ? 's' : ''} ${invalidFloors.map(f => f.floor_number).join(', ')} have no apartment types. Please add at least one apartment type to each floor.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("projects")
+      .update({
+        ...newProject,
+        floor_plans: floorPlans,
+      })
+      .eq("id", editingProjectId);
+
+    if (!error) {
+      toast({ title: "Project Updated", description: "Changes saved." });
+      setIsAddProjectOpen(false);
+      setEditingProjectId(null);
+    } else {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  } catch (error) {
+    console.error('Error updating project:', error);
+    toast({
+      title: "Error",
+      description: "Failed to update project",
+      variant: "destructive",
+    });
   }
 };
 
@@ -1556,9 +1672,10 @@ const handleEdit = (update) => {
         image_url: "",
         status: "active",
         Amenities: [],
-        units: "",
+        floor_plans: [],
       });
-      setUnits({});       // reset units
+      setFloorPlans([]);  // reset floor plans
+      setCurrentFloorNumber(1); // reset floor number
       setAmenityInput(""); // clear input field
     }}
    >
@@ -1669,18 +1786,151 @@ const handleEdit = (update) => {
             </div>
           </div>
 
-          {/* Unit Types Pricing */}
-          <div>
-            <Label>Unit Types & Pricing</Label>
-            {["1B", "2B", "3B", "4B"].map((unit) => (
-              <div key={unit} className="flex gap-2 my-1">
-                <Input
-                  value={units[unit] || ""}
-                  onChange={(e) => setUnits({ ...units, [unit]: e.target.value })}
-                  placeholder={`${unit} Price`}
-                />
+          {/* Floor Plan Management */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-lg font-semibold">Floor Plans</Label>
+                {floorPlans.length > 0 && (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {floorPlans.length} floor{floorPlans.length !== 1 ? 's' : ''} • {
+                      floorPlans.reduce((total, floor) => total + floor.apartment_types.length, 0)
+                    } apartment type{floorPlans.reduce((total, floor) => total + floor.apartment_types.length, 0) !== 1 ? 's' : ''}
+                  </div>
+                )}
               </div>
-            ))}
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={addFloorPlan}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Floor Plan
+              </Button>
+            </div>
+            
+            {floorPlans.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground border-2 border-dashed border-gray-300 rounded-lg">
+                <Building2 className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                <p>No floor plans added yet</p>
+                <p className="text-sm">Click "Add Floor Plan" to get started</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {floorPlans.map((floor, floorIndex) => (
+                  <div key={floor.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-lg">Floor {floor.floor_number}</h4>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addApartmentType(floor.id)}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Apartment Type
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removeFloorPlan(floor.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {floor.apartment_types.length === 0 ? (
+                      <div className="text-center py-4 text-muted-foreground">
+                        <p>No apartment types added yet</p>
+                        <p className="text-sm">Click "Add Apartment Type" to add units</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {floor.apartment_types.map((apartment, aptIndex) => (
+                          <div key={apartment.id} className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-3 bg-white rounded border">
+                            <div>
+                              <Label className="text-xs font-medium">Type</Label>
+                              <Input
+                                value={apartment.type}
+                                onChange={(e) => updateApartmentType(floor.id, apartment.id, 'type', e.target.value)}
+                                placeholder="e.g., 2B"
+                                className="text-sm"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs font-medium">Size</Label>
+                              <Input
+                                value={apartment.size}
+                                onChange={(e) => updateApartmentType(floor.id, apartment.id, 'size', e.target.value)}
+                                placeholder="e.g., 120 m²"
+                                className="text-sm"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs font-medium">Availability</Label>
+                              <Select 
+                                value={apartment.availability} 
+                                onValueChange={(value) => updateApartmentType(floor.id, apartment.id, 'availability', value)}
+                              >
+                                <SelectTrigger className="text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="available">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                      Available
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="sold">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                      Sold
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="reserved">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                      Reserved
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex items-end gap-2">
+                              <div className="flex-1">
+                                <Label className="text-xs font-medium">Price (Optional)</Label>
+                                <Input
+                                  value={apartment.price || ''}
+                                  onChange={(e) => updateApartmentType(floor.id, apartment.id, 'price', e.target.value)}
+                                  placeholder="e.g., $250,000"
+                                  className="text-sm"
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removeApartmentType(floor.id, apartment.id)}
+                                title="Remove apartment type"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Amenities */}
@@ -1800,18 +2050,50 @@ const handleEdit = (update) => {
                               </div>
                             </div>
                             
-                            {Object.keys(project.units || {}).length > 0 && (
+                            {project.floor_plans && project.floor_plans.length > 0 && (
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-xs sm:text-sm">
-                                  <Users className="w-3 h-3 text-primary" />
-                                  <span className="text-muted-foreground font-medium">Units & Pricing:</span>
+                                  <Building2 className="w-3 h-3 text-primary" />
+                                  <span className="text-muted-foreground font-medium">Floor Plans:</span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  {Object.entries(project.units || {}).map(([unit, price]) => (
-                                    <div key={unit} className="bg-secondary/50 p-2 rounded-md text-xs">
-                                      <span className="font-medium">{unit}:</span> {price}
+                                <div className="space-y-2">
+                                  {project.floor_plans.slice(0, 2).map((floor, floorIndex) => (
+                                    <div key={floor.id} className="bg-secondary/50 p-2 rounded-md text-xs">
+                                      <div className="font-medium mb-1 flex items-center justify-between">
+                                        <span>Floor {floor.floor_number}</span>
+                                        <span className="text-muted-foreground text-xs">
+                                          {floor.apartment_types.length} unit{floor.apartment_types.length !== 1 ? 's' : ''}
+                                        </span>
+                                      </div>
+                                      <div className="space-y-1">
+                                        {floor.apartment_types.slice(0, 2).map((apt, aptIndex) => (
+                                          <div key={apt.id} className="flex items-center justify-between text-xs">
+                                            <span className="font-medium">{apt.type}</span>
+                                            <span className="text-muted-foreground">{apt.size}</span>
+                                            <Badge 
+                                              variant={
+                                                apt.availability === 'available' ? 'default' : 
+                                                apt.availability === 'sold' ? 'destructive' : 'secondary'
+                                              } 
+                                              className="text-xs px-1 py-0 h-4"
+                                            >
+                                              {apt.availability}
+                                            </Badge>
+                                          </div>
+                                        ))}
+                                        {floor.apartment_types.length > 2 && (
+                                          <div className="text-center text-xs text-muted-foreground pt-1 border-t border-gray-200">
+                                            +{floor.apartment_types.length - 2} more units
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   ))}
+                                  {project.floor_plans.length > 2 && (
+                                    <div className="text-center text-xs text-muted-foreground">
+                                      +{project.floor_plans.length - 2} more floors
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )}
