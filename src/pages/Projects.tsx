@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -45,6 +46,7 @@ interface Project {
 
 const Projects = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("active");
@@ -96,8 +98,13 @@ const Projects = () => {
   created_at: string;
 }
 
-const [selectedProjectUpdates, setSelectedProjectUpdates] = useState<ProjectUpdate[]>([]);
-const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [selectedProjectUpdates, setSelectedProjectUpdates] = useState<ProjectUpdate[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+
+  const handleBookNow = (project: Project) => {
+    // Navigate to booking page with project ID as query parameter
+    navigate(`/booking?project=${project.id}`);
+  };
 
 const fetchProjectUpdates = async (projectId: string) => {
   const { data, error } = await supabase
@@ -334,7 +341,7 @@ const fetchProjectUpdates = async (projectId: string) => {
                       <Button
                         size="sm"
                         className="flex-1 text-xs"
-                        onClick={() => {/* Add booking logic */}}
+                        onClick={() => handleBookNow(project)}
                       >
                         <Target className="w-3 h-3 mr-1" />
                         Book Now

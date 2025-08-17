@@ -90,7 +90,16 @@ export default function Contact() {
               <div className="pt-2">
                 <ReCAPTCHA sitekey={SITE_KEY} onChange={token => setCaptchaToken(token)} />
               </div>
-              <Button type="submit" disabled={loading} className="w-full">{t("contact.form.submit")}</Button>
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  t("contact.form.submit")
+                )}
+              </Button>
             </form>
           </CardContent>
         </Card>
