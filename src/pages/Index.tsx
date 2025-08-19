@@ -147,7 +147,7 @@ const Index = () => {
 
 
 {/* Why Choose Us Section */}
-<section className="py-20 lg:py-32 bg-background">
+<section className="py-20 lg:py-32 bg-background overflow-x-hidden">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="text-center mb-16">
       <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("whyChoose.title")}</h2>
@@ -159,7 +159,7 @@ const Index = () => {
     <div className="relative">
       <div
         className="
-          flex gap-6 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide pb-2 -mx-4 px-4
+          flex gap-6 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide pb-2
           snap-x snap-mandatory md:snap-none
         "
         style={{ scrollPaddingLeft: 16, scrollPaddingRight: 16 }}
@@ -272,7 +272,7 @@ const Index = () => {
       </section>
 
       {/* Featured Projects */}
-      <section className="py-20 lg:py-32 bg-background">
+      <section className="py-20 lg:py-32 bg-background overflow-x-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("projects.title")}</h2>
@@ -343,7 +343,7 @@ const Index = () => {
       
 
       {/* Testimonials */}
-      <section className="py-20 lg:py-32 bg-background">
+      <section className="py-20 lg:py-32 bg-background overflow-x-hidden">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="text-center mb-16">
       <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("testimonials.title")}</h2>
