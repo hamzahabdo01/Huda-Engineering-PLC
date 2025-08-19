@@ -38,6 +38,7 @@ export default function Booking() {
     unitType: "",
     preferredContact: "WhatsApp",
     moveInDate: "",
+    floorNumber: "",
     appointmentDate: "",
     notes: "",
     consent: false,
@@ -243,6 +244,7 @@ export default function Booking() {
         {
           property_id: formData.property,
           unit_type: formData.unitType,
+          floor_number: formData.floorNumber ? Number(formData.floorNumber) : null,
           preferred_contact: formData.preferredContact,
           full_name: formData.fullName,
           email: formData.email,
@@ -295,6 +297,7 @@ export default function Booking() {
       unitType: "",
       preferredContact: "WhatsApp",
       moveInDate: "",
+      floorNumber: "",
       appointmentDate: "",
       notes: "",
       consent: false,
@@ -360,8 +363,9 @@ export default function Booking() {
               {hasFloorPlans ? (
                 <Select value={selectedUnitComposite} onValueChange={(v) => {
                   setSelectedUnitComposite(v);
-                  const typeOnly = v.split("::")[0] || "";
-                  setFormData({ ...formData, unitType: typeOnly });
+                  const [typeOnly, floorPart] = v.split("::");
+                  const floorNum = (floorPart || '').replace('floor-', '');
+                  setFormData({ ...formData, unitType: typeOnly || '', floorNumber: floorNum || '' });
                 }}>
                   <SelectTrigger><SelectValue placeholder="Select floor & type" /></SelectTrigger>
                   <SelectContent>

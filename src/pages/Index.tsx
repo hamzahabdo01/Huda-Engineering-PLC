@@ -178,8 +178,8 @@ const Index = () => {
       <div
         id="why-choose-scroll"
         className="
-          flex gap-6 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide pb-2 -mx-4 px-4
-          snap-x snap-mandatory md:snap-none
+          flex gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide pb-2 px-4
+          snap-x snap-mandatory md:snap-none items-stretch
           scroll-smooth
         "
         style={{
@@ -200,8 +200,8 @@ const Index = () => {
             key={index}
             className="
               group relative text-center cursor-default rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2
-              min-w-[80vw] max-w-[80vw] mx-auto md:min-w-0 md:max-w-none flex-shrink-0
-              snap-center md:snap-none
+              min-w-[85%] md:min-w-0 flex-shrink-0
+              snap-start md:snap-none
             "
             role="presentation"
             aria-disabled="true"
@@ -326,11 +326,10 @@ const Index = () => {
             </button>
             <div
               id="projects-scroll"
-              className="flex gap-6 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide -mx-4 px-4
-                         snap-x snap-mandatory md:snap-none scroll-smooth pb-2"
+              className="flex gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide px-4 snap-x snap-mandatory md:snap-none scroll-smooth pb-2 items-stretch"
               style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth', overscrollBehaviorX: 'contain' }}
             >
-              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[80vw] max-w-[80vw] md:min-w-0 md:max-w-none snap-center md:snap-none">
+              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[85%] md:min-w-0 snap-start md:snap-none">
                 <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
                   <Building2 className="w-16 h-16 text-primary" />
                 </div>
@@ -344,7 +343,7 @@ const Index = () => {
                   </CardDescription>
                 </CardContent>
               </Card>
-              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[80vw] max-w-[80vw] md:min-w-0 md:max-w-none snap-center md:snap-none">
+              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[85%] md:min-w-0 snap-start md:snap-none">
                 <div className="h-48 bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center">
                   <Building2 className="w-16 h-16 text-primary" />
                 </div>
@@ -358,7 +357,7 @@ const Index = () => {
                   </CardDescription>
                 </CardContent>
               </Card>
-              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[80vw] max-w-[80vw] md:min-w-0 md:max-w-none snap-center md:snap-none">
+              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[85%] md:min-w-0 snap-start md:snap-none">
                 <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
                   <Globe className="w-16 h-16 text-primary" />
                 </div>
@@ -419,7 +418,7 @@ const Index = () => {
       </button>
       <div
         id="testimonials-scroll"
-        className="flex gap-6 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory md:snap-none scroll-smooth pb-2"
+        className="flex gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide px-4 snap-x snap-mandatory md:snap-none scroll-smooth pb-2 items-stretch"
         style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth', overscrollBehaviorX: 'contain' }}
       >
       {[
@@ -445,7 +444,7 @@ const Index = () => {
           video: "/videos/testimonial1.mp4" // Example local video file path
         }
       ].map((testimonial, index) => (
-        <Card key={index} className="hover:shadow-lg transition-shadow min-w-[80vw] max-w-[80vw] md:min-w-0 md:max-w-none snap-center md:snap-none">
+        <Card key={index} className="hover:shadow-lg transition-shadow min-w-[85%] md:min-w-0 snap-start md:snap-none">
           <CardHeader>
             <div className="flex mb-4">
               {[...Array(testimonial.rating)].map((_, i) => (
