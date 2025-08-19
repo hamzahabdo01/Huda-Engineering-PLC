@@ -50,6 +50,8 @@ interface PropertyBooking {
   email: string;
   phone: string;
   unit_type: string;
+  preferred_contact?: string;
+  secondary_phone?: string;
   national_id: string;
   move_in_date: string;
   notes: string;
@@ -1475,6 +1477,11 @@ const handleEdit = (update) => {
                           <div className="space-y-3 sm:space-y-4">
                             <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
                               <div><strong>Property:</strong> {booking.property_name || 'Unknown Property'}</div>
+                              <div><strong>Unit Type:</strong> {booking.unit_type || '—'}</div>
+                              <div><strong>Preferred Contact:</strong> {booking.preferred_contact || '—'}</div>
+                              {booking.secondary_phone && (
+                                <div><strong>Secondary Phone:</strong> {booking.secondary_phone}</div>
+                              )}
                               <div><strong>National ID:</strong> {booking.national_id}</div>
                               <div><strong>Move-in Date:</strong> {booking.move_in_date || 'Not specified'}</div>
                             </div>
