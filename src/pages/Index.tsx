@@ -12,7 +12,7 @@ const Index = () => {
   const { t } = useTranslation();
   
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
 
       {/* Hero Section */}
@@ -155,13 +155,13 @@ const Index = () => {
       <p className="text-sm text-muted-foreground mt-2">These highlight cards are informational and not clickable.</p>
     </div>
     <div className="relative">
-      {/* Gradient edge fades */}
-      <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-background via-background/80 to-transparent z-10 hidden md:block" />
-      <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-background via-background/80 to-transparent z-10 hidden md:block" />
-      {/* Scroll buttons */}
+      {/* Gradient edge fades (mobile only) */}
+      <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-background via-background/80 to-transparent z-10 md:hidden" />
+      <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-background via-background/80 to-transparent z-10 md:hidden" />
+      {/* Scroll buttons (mobile only) */}
       <button
         type="button"
-        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 rounded-full p-1 shadow hidden md:block"
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 rounded-full p-1 shadow md:hidden"
         onClick={() => document.getElementById('why-choose-scroll')?.scrollBy({ left: -320, behavior: 'smooth' })}
         aria-label="Scroll left"
       >
@@ -169,7 +169,7 @@ const Index = () => {
       </button>
       <button
         type="button"
-        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 rounded-full p-1 shadow hidden md:block"
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 rounded-full p-1 shadow md:hidden"
         onClick={() => document.getElementById('why-choose-scroll')?.scrollBy({ left: 320, behavior: 'smooth' })}
         aria-label="Scroll right"
       >
@@ -304,51 +304,75 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-            <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-primary" />
-              </div>
-              <CardHeader>
-                <CardTitle>{t("projects.hudaApartment.title")}</CardTitle>
-                <Badge className="w-fit">{t("projects.hudaApartment.floors")}</Badge>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  {t("projects.hudaApartment.description")}
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <div className="h-48 bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center">
-                <Building2 className="w-16 h-16 text-primary" />
-              </div>
-              <CardHeader>
-                <CardTitle>{t("projects.sysLuxury.title")}</CardTitle>
-                <Badge className="w-fit">{t("projects.sysLuxury.floors")}</Badge>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  {t("projects.sysLuxury.description")}
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <Globe className="w-16 h-16 text-primary" />
-              </div>
-              <CardHeader>
-                <CardTitle>{t("projects.tokomaOffice.title")}</CardTitle>
-                <Badge className="w-fit">{t("projects.tokomaOffice.floors")}</Badge>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  {t("projects.tokomaOffice.description")}
-                </CardDescription>
-              </CardContent>
-            </Card>
+          <div className="relative mb-16">
+            {/* Gradient edge fades and buttons for mobile */}
+            <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-background via-background/80 to-transparent z-10 md:hidden" />
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-background via-background/80 to-transparent z-10 md:hidden" />
+            <button
+              type="button"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 rounded-full p-1 shadow md:hidden"
+              onClick={() => document.getElementById('projects-scroll')?.scrollBy({ left: -320, behavior: 'smooth' })}
+              aria-label="Scroll left"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 rounded-full p-1 shadow md:hidden"
+              onClick={() => document.getElementById('projects-scroll')?.scrollBy({ left: 320, behavior: 'smooth' })}
+              aria-label="Scroll right"
+            >
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <div
+              id="projects-scroll"
+              className="flex gap-6 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide -mx-4 px-4
+                         snap-x snap-mandatory md:snap-none scroll-smooth pb-2"
+              style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth', overscrollBehaviorX: 'contain' }}
+            >
+              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[80vw] max-w-[80vw] md:min-w-0 md:max-w-none snap-center md:snap-none">
+                <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                  <Building2 className="w-16 h-16 text-primary" />
+                </div>
+                <CardHeader>
+                  <CardTitle>{t("projects.hudaApartment.title")}</CardTitle>
+                  <Badge className="w-fit">{t("projects.hudaApartment.floors")}</Badge>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    {t("projects.hudaApartment.description")}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[80vw] max-w-[80vw] md:min-w-0 md:max-w-none snap-center md:snap-none">
+                <div className="h-48 bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center">
+                  <Building2 className="w-16 h-16 text-primary" />
+                </div>
+                <CardHeader>
+                  <CardTitle>{t("projects.sysLuxury.title")}</CardTitle>
+                  <Badge className="w-fit">{t("projects.sysLuxury.floors")}</Badge>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    {t("projects.sysLuxury.description")}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[80vw] max-w-[80vw] md:min-w-0 md:max-w-none snap-center md:snap-none">
+                <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                  <Globe className="w-16 h-16 text-primary" />
+                </div>
+                <CardHeader>
+                  <CardTitle>{t("projects.tokomaOffice.title")}</CardTitle>
+                  <Badge className="w-fit">{t("projects.tokomaOffice.floors")}</Badge>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    {t("projects.tokomaOffice.description")}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           <div className="text-center">
@@ -373,7 +397,31 @@ const Index = () => {
       <p className="text-xl text-muted-foreground max-w-3xl mx-auto">{t("testimonials.description")}</p>
     </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="relative">
+      {/* Gradient edges and buttons on mobile */}
+      <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-background via-background/80 to-transparent z-10 md:hidden" />
+      <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-background via-background/80 to-transparent z-10 md:hidden" />
+      <button
+        type="button"
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 rounded-full p-1 shadow md:hidden"
+        onClick={() => document.getElementById('testimonials-scroll')?.scrollBy({ left: -320, behavior: 'smooth' })}
+        aria-label="Scroll left"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </button>
+      <button
+        type="button"
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 rounded-full p-1 shadow md:hidden"
+        onClick={() => document.getElementById('testimonials-scroll')?.scrollBy({ left: 320, behavior: 'smooth' })}
+        aria-label="Scroll right"
+      >
+        <ArrowRight className="w-5 h-5" />
+      </button>
+      <div
+        id="testimonials-scroll"
+        className="flex gap-6 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory md:snap-none scroll-smooth pb-2"
+        style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth', overscrollBehaviorX: 'contain' }}
+      >
       {[
         {
           name: "Ahmed Hassan",
@@ -397,7 +445,7 @@ const Index = () => {
           video: "/videos/testimonial1.mp4" // Example local video file path
         }
       ].map((testimonial, index) => (
-        <Card key={index} className="hover:shadow-lg transition-shadow">
+        <Card key={index} className="hover:shadow-lg transition-shadow min-w-[80vw] max-w-[80vw] md:min-w-0 md:max-w-none snap-center md:snap-none">
           <CardHeader>
             <div className="flex mb-4">
               {[...Array(testimonial.rating)].map((_, i) => (
@@ -429,6 +477,7 @@ const Index = () => {
           </CardContent>
         </Card>
       ))}
+      </div>
     </div>
   </div>
 </section>
