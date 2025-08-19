@@ -97,6 +97,15 @@ export default function Booking() {
     }
   }, [formData.property, projects]);
 
+  // Ensure selected unitType remains valid based on availability
+  useEffect(() => {
+    if (stockLoading) return;
+    const availableKeys = Object.keys(units).filter((u) => (stock[u] ?? 0) > 0);
+    if (formData.unitType && !availableKeys.includes(formData.unitType)) {
+      setFormData((prev) => ({ ...prev, unitType: "" }));
+    }
+  }, [stockLoading, stock, units]);
+
   const fetchStock = async (propertyId: string) => {
     try {
       setStockLoading(true);
@@ -314,17 +323,33 @@ export default function Booking() {
               <Select value={formData.unitType} onValueChange={(v) => setFormData({ ...formData, unitType: v })}>
                 <SelectTrigger><SelectValue placeholder="Select unit type" /></SelectTrigger>
                 <SelectContent>
-                  {Object.keys(units).map((unit) => {
-                    const meta = units[unit] || {};
-                    const availability = stockLoading ? '…' : (stock[unit] === undefined ? '—' : String(stock[unit]));
-                    const detailParts = [meta.size, meta.price].filter(Boolean);
-                    const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
-                    return (
-                      <SelectItem key={unit} value={unit}>
-                        {unit}{detail} - Available: {availability}
-                      </SelectItem>
-                    );
-                  })}
+                  {stockLoading ? (
+                    <SelectItem value="__loading__" disabled>
+                      Loading availability...
+                    </SelectItem>
+                  ) : (
+                    (() => {
+                      const availableKeys = Object.keys(units).filter((unit) => (stock[unit] ?? 0) > 0);
+                      if (availableKeys.length === 0) {
+                        return (
+                          <SelectItem value="__none__" disabled>
+                            No units available
+                          </SelectItem>
+                        );
+                      }
+                      return availableKeys.map((unit) => {
+                        const meta = units[unit] || {} as { size?: string; price?: string };
+                        const detailParts = [meta.size, meta.price].filter(Boolean) as string[];
+                        const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
+                        const count = stock[unit] ?? 0;
+                        return (
+                          <SelectItem key={unit} value={unit}>
+                            {unit}{detail} — {count} available
+                          </SelectItem>
+                        );
+                      });
+                    })()
+                  )}
                 </SelectContent>
               </Select>
             </div>
