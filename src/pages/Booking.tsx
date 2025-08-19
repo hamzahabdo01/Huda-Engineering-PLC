@@ -22,6 +22,8 @@ export default function Booking() {
   const [stockLoading, setStockLoading] = useState(false);
   const [units, setUnits] = useState<Record<string, { size?: string; price?: string }>>({});
   const [planAvailable, setPlanAvailable] = useState<Record<string, number>>({});
+  const [availableFloorUnits, setAvailableFloorUnits] = useState<Array<{ key: string; type: string; floor: number; size?: string; price?: string }>>([]);
+  const [selectedUnitComposite, setSelectedUnitComposite] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [bookingType, setBookingType] = useState<"appointment" | "property">("property");
@@ -71,6 +73,7 @@ export default function Booking() {
         // New floor plan structure
         const unitTypes: Record<string, { size?: string; price?: string }> = {};
         const counts: Record<string, number> = {};
+        const floorItems: Array<{ key: string; type: string; floor: number; size?: string; price?: string }> = [];
         project.floor_plans.forEach((floor: any) => {
           floor.apartment_types.forEach((apt: any) => {
             if (!apt || !apt.type) return;
@@ -79,13 +82,18 @@ export default function Booking() {
               unitTypes[typeKey] = { size: apt.size || undefined, price: apt.price || undefined };
             }
             // Count available entries from floor plans as a fallback
-            if (apt.availability === 'available' || !apt.availability) {
+            const isAvailable = (apt.availability === 'available' || !apt.availability);
+            if (isAvailable) {
               counts[typeKey] = (counts[typeKey] || 0) + 1;
+              const composite = `${typeKey}::floor-${floor.floor_number}`;
+              floorItems.push({ key: composite, type: typeKey, floor: floor.floor_number, size: apt.size || undefined, price: apt.price || undefined });
             }
           });
         });
         setUnits(unitTypes);
         setPlanAvailable(counts);
+        setAvailableFloorUnits(floorItems);
+        setSelectedUnitComposite("");
       } else {
         // Legacy units structure: map to { size }
         const legacyUnits: Record<string, { size?: string; price?: string }> = {};
@@ -96,28 +104,40 @@ export default function Booking() {
         });
         setUnits(legacyUnits);
         setPlanAvailable({});
+        setAvailableFloorUnits([]);
+        setSelectedUnitComposite("");
       }
       fetchStock(formData.property);
     } else {
       setUnits({});
       setStock({});
       setPlanAvailable({});
+      setAvailableFloorUnits([]);
+      setSelectedUnitComposite("");
     }
   }, [formData.property, projects]);
 
-  // Ensure selected unitType remains valid based on availability
+  // Ensure selected unit remains valid based on availability
   useEffect(() => {
     if (stockLoading) return;
-    const availableKeys = Object.keys(units).filter((u) => {
-      const s = stock[u];
-      if (typeof s === 'number') return s > 0;
-      const c = planAvailable[u] ?? 0;
-      return c > 0;
-    });
+    const project = projects.find((p) => p.id === formData.property);
+    if (project && project.floor_plans && project.floor_plans.length > 0) {
+      // For floor plans, ensure there's still at least one available entry for the selected type
+      if (formData.unitType) {
+        const stillAvailable = availableFloorUnits.some(item => item.type === formData.unitType);
+        if (!stillAvailable) {
+          setFormData((prev) => ({ ...prev, unitType: "" }));
+          setSelectedUnitComposite("");
+        }
+      }
+      return;
+    }
+    // Legacy / stock-based
+    const availableKeys = Object.keys(units).filter((u) => (stock[u] ?? 0) > 0);
     if (formData.unitType && !availableKeys.includes(formData.unitType)) {
       setFormData((prev) => ({ ...prev, unitType: "" }));
     }
-  }, [stockLoading, stock, units, planAvailable]);
+  }, [stockLoading, stock, units, availableFloorUnits, projects, formData.property]);
 
   const fetchStock = async (propertyId: string) => {
     try {
@@ -282,6 +302,7 @@ export default function Booking() {
     });
     setCaptchaToken(null);
     setIsSubmitting(false);
+    setSelectedUnitComposite("");
   };
 
   if (loading) return (
@@ -305,6 +326,9 @@ export default function Booking() {
       <Footer />
     </div>
   );
+
+  const currentProject = projects.find((p) => p.id === formData.property);
+  const hasFloorPlans = !!(currentProject && currentProject.floor_plans && currentProject.floor_plans.length > 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -333,43 +357,66 @@ export default function Booking() {
 
             <div className="space-y-2">
               <Label>Select Unit Type *</Label>
-              <Select value={formData.unitType} onValueChange={(v) => setFormData({ ...formData, unitType: v })}>
-                <SelectTrigger><SelectValue placeholder="Select unit type" /></SelectTrigger>
-                <SelectContent>
-                  {stockLoading ? (
-                    <SelectItem value="__loading__" disabled>
-                      Loading availability...
-                    </SelectItem>
-                  ) : (
-                    (() => {
-                      const availableKeys = Object.keys(units).filter((unit) => {
-                        const s = stock[unit];
-                        if (typeof s === 'number') return s > 0;
-                        const c = planAvailable[unit] ?? 0;
-                        return c > 0;
-                      });
-                      if (availableKeys.length === 0) {
-                        return (
-                          <SelectItem value="__none__" disabled>
-                            No units available
-                          </SelectItem>
-                        );
-                      }
-                      return availableKeys.map((unit) => {
-                        const meta = units[unit] || {} as { size?: string; price?: string };
+              {hasFloorPlans ? (
+                <Select value={selectedUnitComposite} onValueChange={(v) => {
+                  setSelectedUnitComposite(v);
+                  const typeOnly = v.split("::")[0] || "";
+                  setFormData({ ...formData, unitType: typeOnly });
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Select floor & type" /></SelectTrigger>
+                  <SelectContent>
+                    {availableFloorUnits.length === 0 ? (
+                      <SelectItem value="__none__" disabled>
+                        No units available
+                      </SelectItem>
+                    ) : (
+                      availableFloorUnits.map((item) => {
+                        const meta = units[item.type] || {} as { size?: string; price?: string };
                         const detailParts = [meta.size, meta.price].filter(Boolean) as string[];
                         const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
-                        const count = (stock[unit] !== undefined) ? stock[unit] : (planAvailable[unit] ?? 0);
                         return (
-                          <SelectItem key={unit} value={unit}>
-                            {unit}{detail} — {count} available
+                          <SelectItem key={item.key} value={item.key}>
+                            {`Floor ${item.floor} — ${item.type}${detail}`}
                           </SelectItem>
                         );
-                      });
-                    })()
-                  )}
-                </SelectContent>
-              </Select>
+                      })
+                    )}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select value={formData.unitType} onValueChange={(v) => setFormData({ ...formData, unitType: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select unit type" /></SelectTrigger>
+                  <SelectContent>
+                    {stockLoading ? (
+                      <SelectItem value="__loading__" disabled>
+                        Loading availability...
+                      </SelectItem>
+                    ) : (
+                      (() => {
+                        const availableKeys = Object.keys(units).filter((unit) => (stock[unit] ?? 0) > 0);
+                        if (availableKeys.length === 0) {
+                          return (
+                            <SelectItem value="__none__" disabled>
+                              No units available
+                            </SelectItem>
+                          );
+                        }
+                        return availableKeys.map((unit) => {
+                          const meta = units[unit] || {} as { size?: string; price?: string };
+                          const detailParts = [meta.size, meta.price].filter(Boolean) as string[];
+                          const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
+                          const count = stock[unit] ?? 0;
+                          return (
+                            <SelectItem key={unit} value={unit}>
+                              {unit}{detail} — {count} available
+                            </SelectItem>
+                          );
+                        });
+                      })()
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <InputGroup label="Move In Date" name="moveInDate" type="date" value={formData.moveInDate} onChange={handleChange} />
