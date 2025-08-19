@@ -42,6 +42,7 @@ interface Project {
   units: Record<string, string>; // 1B, 2B, 3B, 4B
   created_at: string;
   progress_updates?: string[];
+  floor_plans?: { floor_number: number; apartment_types: { id?: string; type: string; size?: string; availability?: 'available' | 'sold' | 'reserved'; price?: string }[] }[];
 }
 
 const Projects = () => {
@@ -81,6 +82,7 @@ const Projects = () => {
           units: p.units || {},
           created_at: p.created_at,
           progress_updates: p.progress_updates || [],
+          floor_plans: p.floor_plans || [],
         }))
       );
     } catch (error) {
@@ -292,6 +294,38 @@ const fetchProjectUpdates = async (projectId: string) => {
                       </div>
                     )}
 
+                    {project.floor_plans && project.floor_plans.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                          <Building2 className="w-4 h-4 text-primary" />
+                          <span>Floors & Types</span>
+                        </div>
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <div>Floors: {project.floor_plans.length}</div>
+                          <div className="grid grid-cols-2 gap-1">
+                            {project.floor_plans.slice(0, 2).map((floor) => (
+                              <div key={floor.floor_number} className="bg-secondary/30 rounded p-2">
+                                <div className="font-medium text-foreground mb-1">Floor {floor.floor_number}</div>
+                                <div className="space-y-1">
+                                  {floor.apartment_types.slice(0, 2).map((apt, idx) => (
+                                    <div key={idx} className="flex justify-between">
+                                      <span>{apt.type}{apt.size ? ` (${apt.size})` : ''}</span>
+                                      <span className={apt.availability === 'available' ? 'text-green-600' : 'text-muted-foreground'}>
+                                        {apt.availability || 'n/a'}
+                                      </span>
+                                    </div>
+                                  ))}
+                                  {floor.apartment_types.length > 2 && (
+                                    <div className="text-center">+{floor.apartment_types.length - 2} more</div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {project.Amenities && project.Amenities.length > 0 && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -345,6 +379,14 @@ const fetchProjectUpdates = async (projectId: string) => {
                       >
                         <Target className="w-3 h-3 mr-1" />
                         Book Now
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-xs"
+                        onClick={() => navigate(`/projects/${project.id}`)}
+                      >
+                        View Details
                       </Button>
                     </div>
                   </CardContent>
