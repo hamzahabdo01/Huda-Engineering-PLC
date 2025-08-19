@@ -21,6 +21,7 @@ export default function Booking() {
   const [stock, setStock] = useState<Record<string, number>>({});
   const [stockLoading, setStockLoading] = useState(false);
   const [units, setUnits] = useState<Record<string, { size?: string; price?: string }>>({});
+  const [planAvailable, setPlanAvailable] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [bookingType, setBookingType] = useState<"appointment" | "property">("property");
@@ -69,42 +70,54 @@ export default function Booking() {
       if (project.floor_plans && project.floor_plans.length > 0) {
         // New floor plan structure
         const unitTypes: Record<string, { size?: string; price?: string }> = {};
+        const counts: Record<string, number> = {};
         project.floor_plans.forEach((floor: any) => {
           floor.apartment_types.forEach((apt: any) => {
-            // Only include units marked available
-            if (apt && apt.type && (apt.availability === 'available' || !apt.availability)) {
-              // If the type repeats across floors, keep the first defined size/price
-              if (!unitTypes[apt.type]) {
-                unitTypes[apt.type] = { size: apt.size || undefined, price: apt.price || undefined };
-              }
+            if (!apt || !apt.type) return;
+            const typeKey = String(apt.type).trim();
+            if (!unitTypes[typeKey]) {
+              unitTypes[typeKey] = { size: apt.size || undefined, price: apt.price || undefined };
+            }
+            // Count available entries from floor plans as a fallback
+            if (apt.availability === 'available' || !apt.availability) {
+              counts[typeKey] = (counts[typeKey] || 0) + 1;
             }
           });
         });
         setUnits(unitTypes);
+        setPlanAvailable(counts);
       } else {
         // Legacy units structure: map to { size }
         const legacyUnits: Record<string, { size?: string; price?: string }> = {};
         const src = (project as any).units || {};
         Object.keys(src).forEach((k) => {
-          legacyUnits[k] = { size: src[k] };
+          const key = String(k).trim();
+          legacyUnits[key] = { size: src[k] };
         });
         setUnits(legacyUnits);
+        setPlanAvailable({});
       }
       fetchStock(formData.property);
     } else {
       setUnits({});
       setStock({});
+      setPlanAvailable({});
     }
   }, [formData.property, projects]);
 
   // Ensure selected unitType remains valid based on availability
   useEffect(() => {
     if (stockLoading) return;
-    const availableKeys = Object.keys(units).filter((u) => (stock[u] ?? 0) > 0);
+    const availableKeys = Object.keys(units).filter((u) => {
+      const s = stock[u];
+      if (typeof s === 'number') return s > 0;
+      const c = planAvailable[u] ?? 0;
+      return c > 0;
+    });
     if (formData.unitType && !availableKeys.includes(formData.unitType)) {
       setFormData((prev) => ({ ...prev, unitType: "" }));
     }
-  }, [stockLoading, stock, units]);
+  }, [stockLoading, stock, units, planAvailable]);
 
   const fetchStock = async (propertyId: string) => {
     try {
@@ -121,7 +134,9 @@ export default function Booking() {
         const stockMap: Record<string, number> = {};
         data.forEach((s: any) => {
           const available = (s.total_units ?? 0) - (s.booked_units ?? 0);
-          stockMap[s.unit_type] = available;
+          const key = String(s.unit_type || '').trim();
+          if (!key) return;
+          stockMap[key] = available;
         });
         setStock(stockMap);
       }
@@ -129,7 +144,6 @@ export default function Booking() {
       setStockLoading(false);
     }
   };
-
 
   useEffect(() => {
     const channel = supabase
@@ -144,14 +158,15 @@ export default function Booking() {
             if (payload.eventType === 'DELETE') {
               setStock((prev) => {
                 const next = { ...prev } as Record<string, number>;
-                delete next[record.unit_type];
+                const key = String(record.unit_type || '').trim();
+                if (key) delete next[key];
                 return next;
               });
             } else {
               const available = (record.total_units ?? 0) - (record.booked_units ?? 0);
               setStock((prev) => ({
                 ...prev,
-                [record.unit_type]: available,
+                [String(record.unit_type || '').trim()]: available,
               }));
             }
           }
@@ -163,8 +178,6 @@ export default function Booking() {
       supabase.removeChannel(channel);
     };
   }, [formData.property]);
-
-  
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
@@ -248,7 +261,7 @@ export default function Booking() {
 
     if (error) {
       setIsSubmitting(false);
-      return toast({ title: "Error", description: error.message, variant: "destructive" });
+      return toast({ title: "Error", description: (error as any).message, variant: "destructive" });
     }
 
     toast({ title: "Success", description: type === "property" ? "Property booked successfully" : "Appointment scheduled" });
@@ -329,7 +342,12 @@ export default function Booking() {
                     </SelectItem>
                   ) : (
                     (() => {
-                      const availableKeys = Object.keys(units).filter((unit) => (stock[unit] ?? 0) > 0);
+                      const availableKeys = Object.keys(units).filter((unit) => {
+                        const s = stock[unit];
+                        if (typeof s === 'number') return s > 0;
+                        const c = planAvailable[unit] ?? 0;
+                        return c > 0;
+                      });
                       if (availableKeys.length === 0) {
                         return (
                           <SelectItem value="__none__" disabled>
@@ -341,7 +359,7 @@ export default function Booking() {
                         const meta = units[unit] || {} as { size?: string; price?: string };
                         const detailParts = [meta.size, meta.price].filter(Boolean) as string[];
                         const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
-                        const count = stock[unit] ?? 0;
+                        const count = (stock[unit] !== undefined) ? stock[unit] : (planAvailable[unit] ?? 0);
                         return (
                           <SelectItem key={unit} value={unit}>
                             {unit}{detail} — {count} available
@@ -453,10 +471,11 @@ const SelectPreferredContact = ({ value, onChange }: any) => (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger><SelectValue placeholder="Select platform" /></SelectTrigger>
       <SelectContent>
-        {['WhatsApp','Telegram','Viber','WeChat','Phone','Email'].map((v)=> (
+        {["WhatsApp","Telegram","Viber","WeChat","Phone","Email"].map((v)=> (
           <SelectItem key={v} value={v}>{v}</SelectItem>
         ))}
       </SelectContent>
     </Select>
   </div>
 );
+
