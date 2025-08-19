@@ -16,7 +16,7 @@ const Index = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16 md:pt-0">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden md:pt-0">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0">
           <img 
@@ -145,8 +145,9 @@ const Index = () => {
         <div className="absolute top-1/2 right-10 w-24 h-24 bg-white/5 rounded-full blur-xl animate-pulse"></div>
       </section>
 
-      {/* Why Choose Us Section */}
-      <section className="py-20 lg:py-32 bg-background">
+
+{/* Why Choose Us Section */}
+<section className="py-20 lg:py-32 bg-background">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="text-center mb-16">
       <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("whyChoose.title")}</h2>
@@ -154,29 +155,58 @@ const Index = () => {
       <p className="text-sm text-muted-foreground mt-2">These highlight cards are informational and not clickable.</p>
     </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {[ 
-        { icon: Shield, title: t("whyChoose.quality.title"), desc: t("whyChoose.quality.description") },
-        { icon: Users, title: t("whyChoose.expert.title"), desc: t("whyChoose.expert.description") },
-        { icon: Clock, title: t("whyChoose.timely.title"), desc: t("whyChoose.timely.description") },
-        { icon: Target, title: t("whyChoose.local.title"), desc: t("whyChoose.local.description") },
-        { icon: Zap, title: t("whyChoose.modern.title"), desc: t("whyChoose.modern.description") },
-        { icon: CheckCircle, title: t("whyChoose.fullService.title"), desc: t("whyChoose.fullService.description") }
-      ].map((item, index) => (
-        <Card key={index} className="group relative text-center cursor-default rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2" role="presentation" aria-disabled="true">
-          {/* Decorative background pattern */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 opacity-60 pointer-events-none"></div>
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
+    {/* Horizontal scroll on mobile, grid on md+ */}
+    <div className="relative">
+      <div
+        className="
+          flex gap-6 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide pb-2 -mx-4 px-4
+          snap-x snap-mandatory md:snap-none
+        "
+        style={{ scrollPaddingLeft: 16, scrollPaddingRight: 16 }}
+        id="why-choose-scroll"
+      >
+        {[
+          { icon: Shield, title: t("whyChoose.quality.title"), desc: t("whyChoose.quality.description") },
+          { icon: Users, title: t("whyChoose.expert.title"), desc: t("whyChoose.expert.description") },
+          { icon: Clock, title: t("whyChoose.timely.title"), desc: t("whyChoose.timely.description") },
+          { icon: Target, title: t("whyChoose.local.title"), desc: t("whyChoose.local.description") },
+          { icon: Zap, title: t("whyChoose.modern.title"), desc: t("whyChoose.modern.description") },
+          { icon: CheckCircle, title: t("whyChoose.fullService.title"), desc: t("whyChoose.fullService.description") }
+        ].map((item, index) => (
+          <Card
+            key={index}
+            className="
+              group relative text-center cursor-default rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2
+              min-w-[80vw] max-w-[80vw] mx-auto md:min-w-0 md:max-w-none flex-shrink-0
+              snap-center md:snap-none
+            "
+            role="presentation"
+            aria-disabled="true"
+          >
+            {/* Decorative background pattern */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 opacity-60 pointer-events-none"></div>
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
 
-          <CardHeader className="relative z-10">
-            <item.icon className="w-16 h-16 text-primary mx-auto mb-4 transition-transform duration-300 group-hover:scale-110 drop-shadow-md" />
-            <CardTitle className="text-xl font-semibold">{item.title}</CardTitle>
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <CardDescription className="text-base">{item.desc}</CardDescription>
-          </CardContent>
-        </Card>
-      ))}
+            <CardHeader className="relative z-10">
+              <item.icon className="w-16 h-16 text-primary mx-auto mb-4 transition-transform duration-300 group-hover:scale-110 drop-shadow-md" />
+              <CardTitle className="text-xl font-semibold">{item.title}</CardTitle>
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <CardDescription className="text-base">{item.desc}</CardDescription>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      {/* Scroll indicator for mobile */}
+      <div className="flex md:hidden justify-center mt-4 gap-2">
+        {[...Array(6)].map((_, i) => (
+          <span
+            key={i}
+            className="inline-block w-2 h-2 rounded-full bg-muted-foreground/40"
+            id={`why-choose-dot-${i}`}
+          />
+        ))}
+      </div>
     </div>
   </div>
 </section>
