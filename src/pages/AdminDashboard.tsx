@@ -113,6 +113,8 @@ interface Appointment {
 }
 
 const AdminDashboard = () => {
+  const [updatingBookingId, setUpdatingBookingId] = useState<string | null>(null);
+  const [isConfirmingRejection, setIsConfirmingRejection] = useState(false);
   const { user, profile, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -1489,25 +1491,41 @@ const handleEdit = (update) => {
                               Submitted: {new Date(booking.created_at).toLocaleDateString()}
                             </p>
                               <div className="flex sm:flex-row gap-2">
-                              <Button 
-                                size="sm" 
-                                onClick={() => updateBookingStatus(booking.id, 'approved')}
-                                disabled={booking.status !== 'pending'}
-                                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                              >
-                                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleRejectWithReason(booking.id)}
-                                disabled={booking.status !== 'pending'}
-                                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                              >
-                                <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                                Reject
-                              </Button>
+<Button
+  size="sm"
+  onClick={async () => {
+    setUpdatingBookingId(booking.id);
+    try {
+      await updateBookingStatus(booking.id, 'approved');
+    } finally {
+      setUpdatingBookingId(null);
+    }
+  }}
+  disabled={booking.status !== 'pending' || updatingBookingId === booking.id}
+  className="flex-1 sm:flex-none text-xs sm:text-sm"
+>
+  {updatingBookingId === booking.id ? (
+    <>
+      <span className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1"></span>
+      Approving...
+    </>
+  ) : (
+    <>
+      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+      Approve
+    </>
+  )}
+</Button>
+<Button
+  size="sm"
+  variant="outline"
+  onClick={() => handleRejectWithReason(booking.id)}
+  disabled={booking.status !== 'pending' || updatingBookingId === booking.id}
+  className="flex-1 sm:flex-none text-xs sm:text-sm"
+>
+  <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+  Reject
+</Button>
                               <Button 
                                 size="sm" 
                                 variant="destructive"
@@ -2469,12 +2487,26 @@ const handleEdit = (update) => {
               >
                 Cancel
               </Button>
-              <Button
-                onClick={confirmRejection}
-                disabled={!rejectionReason.trim()}
-              >
-                Confirm Rejection
-              </Button>
+<Button
+  onClick={async () => {
+    setIsConfirmingRejection(true);
+    try {
+      await confirmRejection();
+    } finally {
+      setIsConfirmingRejection(false);
+    }
+  }}
+  disabled={isConfirmingRejection}
+>
+  {isConfirmingRejection ? (
+    <>
+      <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></span>
+      Confirming...
+    </>
+  ) : (
+    "Confirm Rejection"
+  )}
+</Button>
             </div>
           </div>
         </DialogContent>

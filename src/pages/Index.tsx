@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Calendar, Phone, Mail, MapPin, Award, Shield, Clock, Zap, Target, CheckCircle, ArrowRight, Star, TrendingUp, Globe, Wrench, Play, ArrowUpRight } from "lucide-react";
+import { Building2, Users, Calendar, Phone, Mail, MapPin, Award, Shield, Clock, Zap, Target, CheckCircle, ArrowRight, Star, TrendingUp, Globe, Wrench, Play, ArrowUpRight, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Logo from "@/components/Logo";
@@ -147,23 +147,46 @@ const Index = () => {
 
 
 {/* Why Choose Us Section */}
-<section className="py-20 lg:py-32 bg-background overflow-x-hidden">
+<section className="py-20 lg:py-32 bg-background">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="text-center mb-16">
       <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("whyChoose.title")}</h2>
       <p className="text-xl text-muted-foreground max-w-3xl mx-auto">{t("whyChoose.description")}</p>
       <p className="text-sm text-muted-foreground mt-2">These highlight cards are informational and not clickable.</p>
     </div>
-
-    {/* Horizontal scroll on mobile, grid on md+ */}
     <div className="relative">
+      {/* Gradient edge fades */}
+      <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-background via-background/80 to-transparent z-10 hidden md:block" />
+      <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-background via-background/80 to-transparent z-10 hidden md:block" />
+      {/* Scroll buttons */}
+      <button
+        type="button"
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 rounded-full p-1 shadow hidden md:block"
+        onClick={() => document.getElementById('why-choose-scroll')?.scrollBy({ left: -320, behavior: 'smooth' })}
+        aria-label="Scroll left"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </button>
+      <button
+        type="button"
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-background/80 rounded-full p-1 shadow hidden md:block"
+        onClick={() => document.getElementById('why-choose-scroll')?.scrollBy({ left: 320, behavior: 'smooth' })}
+        aria-label="Scroll right"
+      >
+        <ArrowRight className="w-5 h-5" />
+      </button>
       <div
-        className="
-          flex gap-6 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide pb-2
-          snap-x snap-mandatory md:snap-none
-        "
-        style={{ scrollPaddingLeft: 16, scrollPaddingRight: 16 }}
         id="why-choose-scroll"
+        className="
+          flex gap-6 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide pb-2 -mx-4 px-4
+          snap-x snap-mandatory md:snap-none
+          scroll-smooth
+        "
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          scrollBehavior: 'smooth',
+          overscrollBehaviorX: 'contain',
+        }}
       >
         {[
           { icon: Shield, title: t("whyChoose.quality.title"), desc: t("whyChoose.quality.description") },
