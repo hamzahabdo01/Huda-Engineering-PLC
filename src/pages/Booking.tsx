@@ -19,7 +19,8 @@ export default function Booking() {
   const { toast } = useToast();
   const [projects, setProjects] = useState<any[]>([]);
   const [stock, setStock] = useState<Record<string, number>>({});
-  const [units, setUnits] = useState<Record<string, string>>({});
+  const [stockLoading, setStockLoading] = useState(false);
+  const [units, setUnits] = useState<Record<string, { size?: string; price?: string }>>({});
   const [loading, setLoading] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [bookingType, setBookingType] = useState<"appointment" | "property">("property");
@@ -67,18 +68,27 @@ export default function Booking() {
       // Handle both old units structure and new floor plans structure
       if (project.floor_plans && project.floor_plans.length > 0) {
         // New floor plan structure
-        const unitTypes: Record<string, string> = {};
-        project.floor_plans.forEach(floor => {
-          floor.apartment_types.forEach(apt => {
-            if (apt.type && apt.size) {
-              unitTypes[apt.type] = apt.size;
+        const unitTypes: Record<string, { size?: string; price?: string }> = {};
+        project.floor_plans.forEach((floor: any) => {
+          floor.apartment_types.forEach((apt: any) => {
+            // Only include units marked available
+            if (apt && apt.type && (apt.availability === 'available' || !apt.availability)) {
+              // If the type repeats across floors, keep the first defined size/price
+              if (!unitTypes[apt.type]) {
+                unitTypes[apt.type] = { size: apt.size || undefined, price: apt.price || undefined };
+              }
             }
           });
         });
         setUnits(unitTypes);
       } else {
-        // Legacy units structure
-        setUnits(project.units || {});
+        // Legacy units structure: map to { size }
+        const legacyUnits: Record<string, { size?: string; price?: string }> = {};
+        const src = (project as any).units || {};
+        Object.keys(src).forEach((k) => {
+          legacyUnits[k] = { size: src[k] };
+        });
+        setUnits(legacyUnits);
       }
       fetchStock(formData.property);
     } else {
@@ -88,55 +98,62 @@ export default function Booking() {
   }, [formData.property, projects]);
 
   const fetchStock = async (propertyId: string) => {
-  console.log("Fetching stock for propertyId:", propertyId);
-  const { data, error } = await supabase
-    .from("unit_stock")
-    .select("unit_type, total_units, booked_units, property_id")
-    .eq("property_id", propertyId);
-
-  if (error) {
-    console.error("Stock fetch error:", error);
-    return;
-  }
-
-  console.log("Unit stock rows:", data);
-
-  if (data) {
-    const stockMap: Record<string, number> = {};
-    data.forEach((s) => {
-      const available = (s.total_units ?? 0) - (s.booked_units ?? 0);
-      stockMap[s.unit_type] = available;
-    });
-    setStock(stockMap);
-  }
-  console.log("propertyId used:", propertyId);
-console.log("unit stock fetched:", data);
-
-};
+    try {
+      setStockLoading(true);
+      const { data, error } = await supabase
+        .from("unit_stock")
+        .select("unit_type, total_units, booked_units, property_id")
+        .eq("property_id", propertyId);
+      if (error) {
+        console.error("Stock fetch error:", error);
+        return;
+      }
+      if (data) {
+        const stockMap: Record<string, number> = {};
+        data.forEach((s: any) => {
+          const available = (s.total_units ?? 0) - (s.booked_units ?? 0);
+          stockMap[s.unit_type] = available;
+        });
+        setStock(stockMap);
+      }
+    } finally {
+      setStockLoading(false);
+    }
+  };
 
 
   useEffect(() => {
-  const channel = supabase
-    .channel('unit_stock_changes')
-    .on(
-      'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'unit_stock' },
-      (payload) => {
-        if (payload.new.property_id === formData.property) {
-          const available = (payload.new.total_units ?? 0) - (payload.new.booked_units ?? 0);
-          setStock((prev) => ({
-            ...prev,
-            [payload.new.unit_type]: available,
-          }));
+    const channel = supabase
+      .channel('unit_stock_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'unit_stock' },
+        (payload: any) => {
+          const record = payload.new || payload.old;
+          if (!record) return;
+          if (record.property_id === formData.property) {
+            if (payload.eventType === 'DELETE') {
+              setStock((prev) => {
+                const next = { ...prev } as Record<string, number>;
+                delete next[record.unit_type];
+                return next;
+              });
+            } else {
+              const available = (record.total_units ?? 0) - (record.booked_units ?? 0);
+              setStock((prev) => ({
+                ...prev,
+                [record.unit_type]: available,
+              }));
+            }
+          }
         }
-      }
-    )
-    .subscribe();
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [formData.property]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [formData.property]);
 
   
 
@@ -297,14 +314,18 @@ console.log("unit stock fetched:", data);
               <Select value={formData.unitType} onValueChange={(v) => setFormData({ ...formData, unitType: v })}>
                 <SelectTrigger><SelectValue placeholder="Select unit type" /></SelectTrigger>
                 <SelectContent>
-  {Object.keys(units).map((unit) => (
-  <SelectItem key={unit} value={unit}>
-    {unit} - Available: {stock[unit] ?? 0}
-  </SelectItem>
-))}
-
-</SelectContent>
-
+                  {Object.keys(units).map((unit) => {
+                    const meta = units[unit] || {};
+                    const availability = stockLoading ? '…' : (stock[unit] === undefined ? '—' : String(stock[unit]));
+                    const detailParts = [meta.size, meta.price].filter(Boolean);
+                    const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
+                    return (
+                      <SelectItem key={unit} value={unit}>
+                        {unit}{detail} - Available: {availability}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
               </Select>
             </div>
 
