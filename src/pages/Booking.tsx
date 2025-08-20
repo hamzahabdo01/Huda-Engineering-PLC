@@ -22,8 +22,9 @@ export default function Booking() {
   const [stockLoading, setStockLoading] = useState(false);
   const [units, setUnits] = useState<Record<string, { size?: string; price?: string }>>({});
   const [planAvailable, setPlanAvailable] = useState<Record<string, number>>({});
-  const [availableFloorUnits, setAvailableFloorUnits] = useState<Array<{ key: string; type: string; floor: number; size?: string; price?: string }>>([]);
+  const [availableFloorUnits, setAvailableFloorUnits] = useState<Array<{ key: string; type: string; floor: number; size?: string; price?: string; availability?: 'available' | 'sold' | 'reserved' }>>([]);
   const [selectedUnitComposite, setSelectedUnitComposite] = useState<string>("");
+  const [selectedAvailability, setSelectedAvailability] = useState<'' | 'available' | 'sold' | 'reserved'>('');
   const [loading, setLoading] = useState(true);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [bookingType, setBookingType] = useState<"appointment" | "property">("property");
@@ -74,7 +75,7 @@ export default function Booking() {
         // New floor plan structure
         const unitTypes: Record<string, { size?: string; price?: string }> = {};
         const counts: Record<string, number> = {};
-        const floorItems: Array<{ key: string; type: string; floor: number; size?: string; price?: string }> = [];
+        const floorItems: Array<{ key: string; type: string; floor: number; size?: string; price?: string; availability?: 'available' | 'sold' | 'reserved' }> = [];
         project.floor_plans.forEach((floor: any) => {
           floor.apartment_types.forEach((apt: any) => {
             if (!apt || !apt.type) return;
@@ -82,19 +83,19 @@ export default function Booking() {
             if (!unitTypes[typeKey]) {
               unitTypes[typeKey] = { size: apt.size || undefined, price: apt.price || undefined };
             }
-            // Count available entries from floor plans as a fallback
             const isAvailable = (apt.availability === 'available' || !apt.availability);
             if (isAvailable) {
               counts[typeKey] = (counts[typeKey] || 0) + 1;
-              const composite = `${typeKey}::floor-${floor.floor_number}`;
-              floorItems.push({ key: composite, type: typeKey, floor: floor.floor_number, size: apt.size || undefined, price: apt.price || undefined });
             }
+            const composite = `${typeKey}::floor-${floor.floor_number}`;
+            floorItems.push({ key: composite, type: typeKey, floor: floor.floor_number, size: apt.size || undefined, price: apt.price || undefined, availability: apt.availability });
           });
         });
         setUnits(unitTypes);
         setPlanAvailable(counts);
         setAvailableFloorUnits(floorItems);
         setSelectedUnitComposite("");
+        setSelectedAvailability('');
       } else {
         // Legacy units structure: map to { size }
         const legacyUnits: Record<string, { size?: string; price?: string }> = {};
@@ -107,6 +108,7 @@ export default function Booking() {
         setPlanAvailable({});
         setAvailableFloorUnits([]);
         setSelectedUnitComposite("");
+        setSelectedAvailability('');
       }
       fetchStock(formData.property);
     } else {
@@ -219,6 +221,9 @@ export default function Booking() {
     
     if (type === "property" && (!formData.property || !formData.unitType)) {
       return toast({ title: "Missing Data", description: "Select property and unit type", variant: "destructive" });
+    }
+    if (type === "property" && (selectedAvailability && selectedAvailability !== 'available')) {
+      return toast({ title: "Not Available", description: `This unit is already ${selectedAvailability}.`, variant: "destructive" });
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       return toast({ title: "Invalid Email", description: "Enter a valid email", variant: "destructive" });
@@ -365,6 +370,12 @@ export default function Booking() {
                   setSelectedUnitComposite(v);
                   const [typeOnly, floorPart] = v.split("::");
                   const floorNum = (floorPart || '').replace('floor-', '');
+                  const opt = availableFloorUnits.find(item => item.key === v);
+                  const avail = (opt?.availability || 'available') as 'available' | 'sold' | 'reserved';
+                  setSelectedAvailability(avail);
+                  if (avail === 'sold' || avail === 'reserved') {
+                    toast({ title: 'Not Available', description: `This unit is already ${avail}.`, variant: 'destructive' });
+                  }
                   setFormData({ ...formData, unitType: typeOnly || '', floorNumber: floorNum || '' });
                 }}>
                   <SelectTrigger><SelectValue placeholder="Select floor & type" /></SelectTrigger>
@@ -378,9 +389,10 @@ export default function Booking() {
                         const meta = units[item.type] || {} as { size?: string; price?: string };
                         const detailParts = [meta.size, meta.price].filter(Boolean) as string[];
                         const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
+                        const statusLabel = item.availability ? ` — ${item.availability.charAt(0).toUpperCase()}${item.availability.slice(1)}` : '';
                         return (
                           <SelectItem key={item.key} value={item.key}>
-                            {`Floor ${item.floor} — ${item.type}${detail}`}
+                            {`Floor ${item.floor} — ${item.type}${detail}${statusLabel}`}
                           </SelectItem>
                         );
                       })
@@ -388,7 +400,15 @@ export default function Booking() {
                   </SelectContent>
                 </Select>
               ) : (
-                <Select value={formData.unitType} onValueChange={(v) => setFormData({ ...formData, unitType: v })}>
+                <Select value={formData.unitType} onValueChange={(v) => {
+                  const count = stock[v] ?? 0;
+                  const avail = count > 0 ? 'available' : 'sold';
+                  setSelectedAvailability(avail);
+                  if (avail !== 'available') {
+                    toast({ title: 'Not Available', description: `This unit is already ${avail}.`, variant: 'destructive' });
+                  }
+                  setFormData({ ...formData, unitType: v });
+                }}>
                   <SelectTrigger><SelectValue placeholder="Select unit type" /></SelectTrigger>
                   <SelectContent>
                     {stockLoading ? (
@@ -397,22 +417,24 @@ export default function Booking() {
                       </SelectItem>
                     ) : (
                       (() => {
-                        const availableKeys = Object.keys(units).filter((unit) => (stock[unit] ?? 0) > 0);
-                        if (availableKeys.length === 0) {
+                        const allKeys = Object.keys(units);
+                        if (allKeys.length === 0) {
                           return (
                             <SelectItem value="__none__" disabled>
-                              No units available
+                              No unit types configured
                             </SelectItem>
                           );
                         }
-                        return availableKeys.map((unit) => {
+                        return allKeys.map((unit) => {
                           const meta = units[unit] || {} as { size?: string; price?: string };
                           const detailParts = [meta.size, meta.price].filter(Boolean) as string[];
                           const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
                           const count = stock[unit] ?? 0;
+                          const status = count > 0 ? 'Available' : 'Sold';
+                          const availabilityText = count > 0 ? `${count} available` : status;
                           return (
                             <SelectItem key={unit} value={unit}>
-                              {unit}{detail} — {count} available
+                              {unit}{detail} — {availabilityText}
                             </SelectItem>
                           );
                         });
