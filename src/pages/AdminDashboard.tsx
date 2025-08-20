@@ -1778,28 +1778,13 @@ const handleEdit = (update) => {
           </div>
 
           <div>
-            <Label htmlFor="image_url">Project Image</Label>
-            <div className="flex gap-2 items-center">
-                <Input
-                  id="image_url"
-                  placeholder="Or paste image URL"
-                  value={newProject.image_url}
-                  onChange={(e) => setNewProject({ ...newProject, image_url: e.target.value })}
-                />
-                <Input type="file" accept="image/*" onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const filePath = `projects/${Date.now()}-${file.name}`;
-                  const { error } = await supabase.storage.from('project-media').upload(filePath, file);
-                  if (error) {
-                    toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-                  } else {
-                    const url = supabase.storage.from('project-media').getPublicUrl(filePath).data.publicUrl;
-                    setNewProject({ ...newProject, image_url: url });
-                    toast({ title: 'Uploaded', description: 'Image uploaded successfully' });
-                  }
-                }} />
-            </div>
+            <Label htmlFor="image_url">Project Image URL</Label>
+            <Input
+              id="image_url"
+              placeholder="Paste Supabase public URL"
+              value={newProject.image_url}
+              onChange={(e) => setNewProject({ ...newProject, image_url: e.target.value })}
+            />
           </div>
 
           {/* Floor Plan Management */}
@@ -1929,23 +1914,12 @@ const handleEdit = (update) => {
                               />
                             </div>
                             <div>
-                              <Label className="text-xs font-medium">Apartment Image</Label>
+                              <Label className="text-xs font-medium">Apartment Image URL</Label>
                               <Input
-                                type="file"
-                                accept="image/*"
-                                onChange={async (e) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  const filePath = `apartments/${Date.now()}-${file.name}`;
-                                  const { error } = await supabase.storage.from('project-media').upload(filePath, file);
-                                  if (error) {
-                                    toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-                                  } else {
-                                    const url = supabase.storage.from('project-media').getPublicUrl(filePath).data.publicUrl;
-                                    updateApartmentType(floor.id, apartment.id, 'image_url', url);
-                                    toast({ title: 'Uploaded', description: 'Apartment image uploaded' });
-                                  }
-                                }}
+                                value={apartment.image_url || ''}
+                                onChange={(e) => updateApartmentType(floor.id, apartment.id, 'image_url', e.target.value)}
+                                placeholder="Paste Supabase public URL"
+                                className="text-sm"
                               />
                               {apartment.image_url && (
                                 <img src={apartment.image_url} alt="apartment" className="mt-2 h-20 w-full object-cover rounded" />
