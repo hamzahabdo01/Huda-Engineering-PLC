@@ -67,6 +67,9 @@ interface ApartmentType {
   size: string; // e.g., "120 m2"
   availability: 'available' | 'sold' | 'reserved';
   price?: string;
+  image_url?: string;
+  description?: string;
+  features?: string[];
 }
 
 interface FloorPlan {
@@ -212,7 +215,10 @@ const addApartmentType = (floorId: string) => {
     type: '',
     size: '',
     availability: 'available',
-    price: ''
+    price: '',
+    image_url: '',
+    description: '',
+    features: []
   };
   
   setFloorPlans(prev => prev.map(floor => 
@@ -230,7 +236,7 @@ const removeApartmentType = (floorId: string, apartmentId: string) => {
   ));
 };
 
-const updateApartmentType = (floorId: string, apartmentId: string, field: keyof ApartmentType, value: string) => {
+const updateApartmentType = (floorId: string, apartmentId: string, field: keyof ApartmentType, value: any) => {
   setFloorPlans(prev => prev.map(floor => 
     floor.id === floorId 
       ? {
@@ -1861,7 +1867,7 @@ const handleEdit = (update) => {
                     ) : (
                       <div className="space-y-3">
                         {floor.apartment_types.map((apartment, aptIndex) => (
-                          <div key={apartment.id} className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-3 bg-white rounded border">
+                          <div key={apartment.id} className="grid grid-cols-2 lg:grid-cols-6 gap-3 p-3 bg-white rounded border">
                             <div>
                               <Label className="text-xs font-medium">Type</Label>
                               <Input
@@ -1913,25 +1919,92 @@ const handleEdit = (update) => {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="flex items-end gap-2">
-                              <div className="flex-1">
-                                <Label className="text-xs font-medium">Price (Optional)</Label>
-                                <Input
-                                  value={apartment.price || ''}
-                                  onChange={(e) => updateApartmentType(floor.id, apartment.id, 'price', e.target.value)}
-                                  placeholder="e.g., $250,000"
-                                  className="text-sm"
-                                />
+                            <div>
+                              <Label className="text-xs font-medium">Price (Optional)</Label>
+                              <Input
+                                value={apartment.price || ''}
+                                onChange={(e) => updateApartmentType(floor.id, apartment.id, 'price', e.target.value)}
+                                placeholder="e.g., 8.5M ETB"
+                                className="text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs font-medium">Apartment Image</Label>
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const filePath = `apartments/${Date.now()}-${file.name}`;
+                                  const { error } = await supabase.storage.from('project-media').upload(filePath, file);
+                                  if (error) {
+                                    toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+                                  } else {
+                                    const url = supabase.storage.from('project-media').getPublicUrl(filePath).data.publicUrl;
+                                    updateApartmentType(floor.id, apartment.id, 'image_url', url);
+                                    toast({ title: 'Uploaded', description: 'Apartment image uploaded' });
+                                  }
+                                }}
+                              />
+                              {apartment.image_url && (
+                                <img src={apartment.image_url} alt="apartment" className="mt-2 h-20 w-full object-cover rounded" />
+                              )}
+                            </div>
+                            <div className="col-span-2 lg:col-span-6">
+                              <Label className="text-xs font-medium">Description</Label>
+                              <Textarea
+                                value={apartment.description || ''}
+                                onChange={(e) => updateApartmentType(floor.id, apartment.id, 'description', e.target.value)}
+                                rows={3}
+                                className="text-sm"
+                                placeholder="Layout, features, pricing details..."
+                              />
+                            </div>
+                            <div className="col-span-2 lg:col-span-6">
+                              <Label className="text-xs font-medium">Features</Label>
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                {(apartment.features || []).map((feat, idx) => (
+                                  <Badge key={idx} variant="secondary" className="cursor-pointer" onClick={() => {
+                                    const next = (apartment.features || []).filter((_, i) => i !== idx);
+                                    updateApartmentType(floor.id, apartment.id, 'features', next);
+                                  }}>{feat} ×</Badge>
+                                ))}
                               </div>
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => removeApartmentType(floor.id, apartment.id)}
-                                title="Remove apartment type"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="Add a feature and press Add"
+                                  className="text-sm"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      const val = (e.target as HTMLInputElement).value.trim();
+                                      if (!val) return;
+                                      const next = [...(apartment.features || []), val];
+                                      updateApartmentType(floor.id, apartment.id, 'features', next);
+                                      (e.target as HTMLInputElement).value = '';
+                                    }
+                                  }}
+                                />
+                                <Button type="button" size="sm" onClick={(e) => {
+                                  const input = (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement);
+                                  if (!input) return;
+                                  const val = input.value.trim();
+                                  if (!val) return;
+                                  const next = [...(apartment.features || []), val];
+                                  updateApartmentType(floor.id, apartment.id, 'features', next);
+                                  input.value = '';
+                                }}>Add</Button>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removeApartmentType(floor.id, apartment.id)}
+                                  title="Remove apartment type"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         ))}
