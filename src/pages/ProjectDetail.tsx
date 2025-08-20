@@ -203,7 +203,14 @@ export default function ProjectDetail() {
                     <TableBody>
                       {floor.apartment_types.map((apt, idx) => (
                         <TableRow key={apt.id || idx}>
-                          <TableCell className="font-medium">{apt.type}</TableCell>
+                          <TableCell className="font-medium">
+                            <button
+                              className="text-primary underline underline-offset-2 hover:opacity-80"
+                              onClick={() => navigate(`/projects/${project.id}/apartment/${encodeURIComponent(apt.type)}`)}
+                            >
+                              {apt.type}
+                            </button>
+                          </TableCell>
                           <TableCell>{apt.size || '—'}</TableCell>
                           <TableCell>{apt.price || '—'}</TableCell>
                           <TableCell>
