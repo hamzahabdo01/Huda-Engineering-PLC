@@ -128,7 +128,7 @@ const fetchProjectUpdates = async (projectId: string) => {
         );
       case "active":
         return (
-          <Badge variant="outline">
+          <Badge variant="default" className="bg-green-600 text-white">
             {t("projectsPage.details.activeBadge")}
           </Badge>
         );

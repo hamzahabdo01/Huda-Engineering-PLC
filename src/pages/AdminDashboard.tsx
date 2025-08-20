@@ -140,7 +140,8 @@ const AdminDashboard = () => {
 const [update, setUpdate] = useState({
   project_id: "",
   description: "",
-  file: null,
+  media_url: "",
+  percentage: "",
 });
 const [loadingg, setLoading] = useState(false);
 const [ongoingProjects, setOngoingProjects] = useState([]);
@@ -1114,28 +1115,9 @@ const handleOpenAddAnnouncement = () => {
   const handleAddUpdate = async () => {
   setLoading(true);
 
-  let media_url = null;
   let update_type = "text";
-
-  if (update.file) {
-    const ext = update.file.name.split(".").pop();
-    update_type = update.file.type.startsWith("video") ? "video" : "image";
-    const filePath = `${Date.now()}-${update.file.name}`;
-    const { data, error } = await supabase.storage
-      .from("project-updates")
-      .upload(filePath, update.file);
-
-    if (error) {
-  console.error("Supabase upload error:", error);
-  alert("Upload failed: " + error.message);
-  setLoading(false);
-  return;
-}
-
-
-    media_url = supabase.storage
-      .from("project-updates")
-      .getPublicUrl(filePath).data.publicUrl;
+  if (update.media_url) {
+    update_type = update.media_url.includes("video") ? "video" : "image";
   }
 
   const { error: insertError } = await supabase
@@ -1143,19 +1125,18 @@ const handleOpenAddAnnouncement = () => {
   .insert({
     project_id: update.project_id,
     description: update.description,
-    media_url: media_url,
+    media_url: update.media_url || null,
     update_type,
+    percentage: update.percentage ? parseInt(update.percentage) : null,
   });
 
-
 if (insertError) {
-  console.error("Insert Error:", insertError); // 👈 this is crucial
-  alert("Error inserting update: " + insertError.message); // 👈 shows real reason
+  console.error("Insert Error:", insertError);
+  alert("Error inserting update: " + insertError.message);
 } else {
   alert("Update added!");
-  // fetchUpdates();
   setIsAddUpdateOpen(false);
-  setUpdate({ project_id: "", description: "", file: null });
+  setUpdate({ project_id: "", description: "", media_url: "", percentage: "" });
 }
 
 setLoading(false);
@@ -1205,7 +1186,8 @@ const handleEdit = (update) => {
   setUpdate({
     project_id: update.project_id,
     description: update.description,
-    file: null,
+    media_url: update.media_url || "",
+    percentage: update.percentage || "",
   });
   setIsAddUpdateOpen(true);
 };
@@ -1709,7 +1691,7 @@ const handleEdit = (update) => {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="title">Project Title</Label>
               <Input
@@ -1726,37 +1708,17 @@ const handleEdit = (update) => {
                 onChange={(e) => setNewProject({ ...newProject, location: e.target.value })}
               />
             </div>
+            <div>
+              <Label htmlFor="project_type">Project Type</Label>
+              <Input
+                id="project_type"
+                value={newProject.project_type}
+                onChange={(e) => setNewProject({ ...newProject, project_type: e.target.value })}
+              />
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="project_type">Project Type</Label>
-            <Input
-              id="project_type"
-              value={newProject.project_type}
-              onChange={(e) => setNewProject({ ...newProject, project_type: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="short_description">Short Description</Label>
-            <Input
-              id="short_description"
-              value={newProject.short_description}
-              onChange={(e) => setNewProject({ ...newProject, short_description: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="description">Full Description</Label>
-            <Textarea
-              id="description"
-              value={newProject.description}
-              onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-              rows={4}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="start_date">Start Date</Label>
               <Input
@@ -1775,6 +1737,26 @@ const handleEdit = (update) => {
                 onChange={(e) => setNewProject({ ...newProject, end_date: e.target.value })}
               />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="short_description">Short Description</Label>
+            <Input
+              id="short_description"
+              value={newProject.short_description}
+              onChange={(e) => setNewProject({ ...newProject, short_description: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="description">Full Description</Label>
+            <Textarea
+              id="description"
+              value={newProject.description}
+              onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+              rows={4}
+              placeholder="Enter project details with line breaks as needed..."
+            />
           </div>
 
           <div>
@@ -2242,42 +2224,30 @@ const handleEdit = (update) => {
             />
           </div>
 
-          <div>
-            <Label>Upload Image/Video</Label>
-            <div
-              className="mt-2 border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                const file = e.dataTransfer.files?.[0];
-                if (file) setUpdate({ ...update, file });
-              }}
-            >
-              <p className="text-sm text-muted-foreground mb-3">Drag & drop a file here, or click to select</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Media URL</Label>
               <Input
-                type="file"
-                accept="image/*,video/*"
-                onChange={(e) => setUpdate({ ...update, file: e.target.files?.[0] })}
+                placeholder="Paste Supabase public URL"
+                value={update.media_url}
+                onChange={(e) => setUpdate({ ...update, media_url: e.target.value })}
               />
-              {update.file && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium">Selected: {update.file.name}</p>
-                  {update.file.type.startsWith("image") && (
-                    <img src={URL.createObjectURL(update.file)} alt="preview" className="mt-2 max-h-48 rounded" />
-                  )}
-                  {update.file.type.startsWith("video") && (
-                    <video src={URL.createObjectURL(update.file)} controls className="mt-2 w-full rounded max-h-64" />
-                  )}
-                </div>
-              )}
+            </div>
+            <div>
+              <Label>Progress Percentage</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                placeholder="0-100"
+                value={update.percentage}
+                onChange={(e) => setUpdate({ ...update, percentage: e.target.value })}
+              />
             </div>
           </div>
 
           <Button onClick={handleAddUpdate} disabled={loading} className="w-full">
-            {loading ? "Uploading..." : "Submit Update"}
+            {loading ? "Submitting..." : "Submit Update"}
           </Button>
         </div>
       </DialogContent>
@@ -2305,6 +2275,12 @@ const handleEdit = (update) => {
               <video src={update.media_url} controls className="w-full rounded" />
             )}
             <p>{update.description}</p>
+            {update.percentage && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Progress:</span>
+                <span className="text-sm text-muted-foreground">{update.percentage}%</span>
+              </div>
+            )}
             <p className="text-muted-foreground text-xs">
               {new Date(update.created_at).toLocaleString()}
             </p>
@@ -2316,10 +2292,10 @@ const handleEdit = (update) => {
                 variant="outline"
                 onClick={() => {
                   setUpdate({
-                    // id: update.id,
                     project_id: update.project_id,
                     description: update.description,
-                    file: null, // no existing file re-selection
+                    media_url: update.media_url || "",
+                    percentage: update.percentage || "",
                   });
                   setIsAddUpdateOpen(true);
                 }}
@@ -2413,28 +2389,13 @@ const handleEdit = (update) => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="ann_image_url">Announcement Image</Label>
-                        <div className="flex gap-2 items-center">
-                          <Input
-                            id="ann_image_url"
-                            placeholder="Or paste image URL"
-                            value={newAnnouncement.image_url}
-                            onChange={(e) => setNewAnnouncement({ ...newAnnouncement, image_url: e.target.value })}
-                          />
-                          <Input type="file" accept="image/*" onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const filePath = `announcements/${Date.now()}-${file.name}`;
-                            const { error } = await supabase.storage.from('announcement-media').upload(filePath, file);
-                            if (error) {
-                              toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
-                            } else {
-                              const url = supabase.storage.from('announcement-media').getPublicUrl(filePath).data.publicUrl;
-                              setNewAnnouncement({ ...newAnnouncement, image_url: url });
-                              toast({ title: 'Uploaded', description: 'Image uploaded successfully' });
-                            }
-                          }} />
-                        </div>
+                        <Label htmlFor="ann_image_url">Announcement Image URL</Label>
+                        <Input
+                          id="ann_image_url"
+                          placeholder="Paste Supabase public URL"
+                          value={newAnnouncement.image_url}
+                          onChange={(e) => setNewAnnouncement({ ...newAnnouncement, image_url: e.target.value })}
+                        />
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">

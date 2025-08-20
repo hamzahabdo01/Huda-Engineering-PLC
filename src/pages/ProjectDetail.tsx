@@ -102,7 +102,7 @@ export default function ProjectDetail() {
   );
 
   const statusBadge = (
-    <Badge variant={project.status === 'completed' ? 'secondary' : project.status === 'active' ? 'outline' : 'default'}>
+    <Badge variant={project.status === 'completed' ? 'secondary' : project.status === 'active' ? 'default' : 'outline'} className={project.status === 'active' ? 'bg-green-600 text-white' : ''}>
       {project.status}
     </Badge>
   );
