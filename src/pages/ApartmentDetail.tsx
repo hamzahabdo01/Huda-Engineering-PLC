@@ -14,6 +14,9 @@ interface ApartmentType {
   size?: string;
   availability?: 'available' | 'sold' | 'reserved';
   price?: string;
+  image_url?: string;
+  description?: string;
+  features?: string[];
 }
 
 interface FloorPlan {
@@ -141,7 +144,7 @@ export default function ApartmentDetail() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             <div>
               <img
-                src={project.image_url}
+                src={aptMeta.image_url || project.image_url}
                 alt={`${aptMeta.type} representative`}
                 className="w-full max-h-[420px] object-cover rounded"
               />
@@ -154,10 +157,13 @@ export default function ApartmentDetail() {
               <div className="text-lg">
                 <span className="font-medium">Price:</span> {aptMeta.price || '—'}
               </div>
+              {aptMeta.description && (
+                <div className="text-muted-foreground whitespace-pre-wrap">{aptMeta.description}</div>
+              )}
               <div>
                 <div className="font-medium mb-2">Features</div>
                 <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                  {features.map((f, i) => (<li key={i}>{f}</li>))}
+                  {(aptMeta.features && aptMeta.features.length > 0 ? aptMeta.features : features).map((f, i) => (<li key={i}>{f}</li>))}
                 </ul>
               </div>
               <div className="pt-2">
