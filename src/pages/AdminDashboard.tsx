@@ -420,169 +420,21 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
     }
   }, [user, profile, toast]);
 
-  const setupRealtimeSubscriptions = useCallback(() => {
-    console.log('🔄 Setting up real-time subscriptions...');
-    
-    // Subscribe to contact submissions
-    const contactsSubscription = supabase
-      .channel('contact_submissions')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'contact_submissions' },
-        (payload) => {
-          console.log('📞 Contact submission change:', payload);
-          if (payload.eventType === 'INSERT') {
-            const newContact = payload.new as ContactSubmission;
-            setContacts(prev => [newContact, ...prev]);
-            toast({
-              title: "New Contact Submission",
-              description: `New contact from ${newContact.name}`,
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            setContacts(prev => prev.map(contact => 
-              contact.id === payload.new.id ? payload.new as ContactSubmission : contact
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setContacts(prev => prev.filter(contact => contact.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to property bookings
-    const bookingsSubscription = supabase
-      .channel('property_bookings')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'property_bookings' },
-        (payload) => {
-          console.log('🏠 Property booking change:', payload);
-          // Refetch bookings to get updated data with property names
-          fetchData();
-          if (payload.eventType === 'INSERT') {
-            toast({
-              title: "New Property Booking",
-              description: `New booking received`,
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to projects
-    const projectsSubscription = supabase
-      .channel('projects')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'projects' },
-        (payload) => {
-          console.log('🏗️ Project change:', payload);
-          if (payload.eventType === 'INSERT') {
-            setProjects(prev => [payload.new as Project, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setProjects(prev => prev.map(project => 
-              project.id === payload.new.id ? payload.new as Project : project
-            ));
-            // Refetch bookings when project titles change to update property names
-            fetchData();
-          } else if (payload.eventType === 'DELETE') {
-            setProjects(prev => prev.filter(project => project.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to announcements
-    const announcementsSubscription = supabase
-      .channel('announcements')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'announcements' },
-        (payload) => {
-          console.log('📢 Announcement change:', payload);
-          if (payload.eventType === 'INSERT') {
-            setAnnouncements(prev => [payload.new as Announcement, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setAnnouncements(prev => prev.map(announcement => 
-              announcement.id === payload.new.id ? payload.new as Announcement : announcement
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setAnnouncements(prev => prev.filter(announcement => announcement.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to appointments
-    const appointmentsSubscription = supabase
-      .channel('appointments')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'appointments' },
-        (payload) => {
-          console.log('📅 Appointment change:', payload);
-          if (payload.eventType === 'INSERT') {
-            const newAppointment = payload.new as Appointment;
-            setAppointments(prev => [newAppointment, ...prev]);
-            toast({
-              title: "New Appointment",
-              description: `New appointment from ${newAppointment.full_name}`,
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            setAppointments(prev => prev.map(appointment => 
-              appointment.id === payload.new.id ? payload.new as Appointment : appointment
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setAppointments(prev => prev.filter(appointment => appointment.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    // Subscribe to project updates
-    const updatesSubscription = supabase
-      .channel('project_updates')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'project_updates' },
-        (payload) => {
-          console.log('📊 Project update change:', payload);
-          // Refetch updates to get updated data with project titles
-          fetchUpdates();
-          if (payload.eventType === 'INSERT') {
-            toast({
-              title: "New Progress Update",
-              description: `New progress update added`,
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    console.log('✅ Real-time subscriptions set up');
-
-    // Cleanup subscriptions on component unmount
-    return () => {
-      console.log('🧹 Cleaning up subscriptions');
-      contactsSubscription.unsubscribe();
-      bookingsSubscription.unsubscribe();
-      projectsSubscription.unsubscribe();
-      announcementsSubscription.unsubscribe();
-      appointmentsSubscription.unsubscribe();
-      updatesSubscription.unsubscribe();
-    };
-  }, [fetchUpdates, fetchOngoingProjects, toast]);
-
-  // Function to fetch updates (used by real-time subscription)
+  // Optimized data fetching functions with proper dependencies
   const fetchUpdates = useCallback(async () => {
     const { data } = await supabase
       .from("project_updates")
       .select("*, projects(title)")
       .order("created_at", { ascending: false });
 
-    const formatted = data.map((u) => ({
+    const formatted = data?.map((u) => ({
       ...u,
       project_title: u.projects?.title || "Untitled",
-    }));
+    })) || [];
 
     setUpdates(formatted);
   }, []);
 
-  // Function to fetch ongoing projects (used by real-time subscription)
   const fetchOngoingProjects = useCallback(async () => {
     const { data } = await supabase
       .from("projects")
@@ -590,6 +442,149 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
       .eq("status", "active");
     setOngoingProjects(data || []);
   }, []);
+
+  // Memoized setupRealtimeSubscriptions to avoid recreation
+  const setupRealtimeSubscriptions = useCallback(() => {
+    console.log('🔄 Setting up real-time subscriptions...');
+    
+    const subscriptions = [
+      // Contact submissions subscription
+      supabase
+        .channel('contact_submissions')
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'contact_submissions' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              const newContact = payload.new as ContactSubmission;
+              setContacts(prev => [newContact, ...prev]);
+              toast({
+                title: "New Contact Submission",
+                description: `New contact from ${newContact.name}`,
+              });
+            } else if (payload.eventType === 'UPDATE') {
+              setContacts(prev => prev.map(contact => 
+                contact.id === payload.new.id ? payload.new as ContactSubmission : contact
+              ));
+            } else if (payload.eventType === 'DELETE') {
+              setContacts(prev => prev.filter(contact => contact.id !== payload.old.id));
+            }
+          }
+        )
+        .subscribe(),
+
+      // Property bookings subscription
+      supabase
+        .channel('property_bookings')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'property_bookings' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              toast({
+                title: "New Property Booking",
+                description: `New booking received`,
+              });
+            }
+            // Refetch to get updated property names
+            fetchData();
+          }
+        )
+        .subscribe(),
+
+      // Projects subscription
+      supabase
+        .channel('projects')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'projects' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              setProjects(prev => [payload.new as Project, ...prev]);
+            } else if (payload.eventType === 'UPDATE') {
+              setProjects(prev => prev.map(project => 
+                project.id === payload.new.id ? payload.new as Project : project
+              ));
+              // Refetch bookings when project titles change
+              fetchData();
+            } else if (payload.eventType === 'DELETE') {
+              setProjects(prev => prev.filter(project => project.id !== payload.old.id));
+            }
+          }
+        )
+        .subscribe(),
+
+      // Announcements subscription
+      supabase
+        .channel('announcements')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'announcements' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              setAnnouncements(prev => [payload.new as Announcement, ...prev]);
+            } else if (payload.eventType === 'UPDATE') {
+              setAnnouncements(prev => prev.map(announcement => 
+                announcement.id === payload.new.id ? payload.new as Announcement : announcement
+              ));
+            } else if (payload.eventType === 'DELETE') {
+              setAnnouncements(prev => prev.filter(announcement => announcement.id !== payload.old.id));
+            }
+          }
+        )
+        .subscribe(),
+
+      // Appointments subscription
+      supabase
+        .channel('appointments')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'appointments' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              const newAppointment = payload.new as Appointment;
+              setAppointments(prev => [newAppointment, ...prev]);
+              toast({
+                title: "New Appointment",
+                description: `New appointment from ${newAppointment.name}`,
+              });
+            } else if (payload.eventType === 'UPDATE') {
+              setAppointments(prev => prev.map(appointment => 
+                appointment.id === payload.new.id ? payload.new as Appointment : appointment
+              ));
+            } else if (payload.eventType === 'DELETE') {
+              setAppointments(prev => prev.filter(appointment => appointment.id !== payload.old.id));
+            }
+          }
+        )
+        .subscribe(),
+
+      // Project updates subscription
+      supabase
+        .channel('project_updates')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'project_updates' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              const newUpdate = payload.new as ProjectUpdate;
+              setUpdates(prev => [newUpdate, ...prev]);
+              toast({
+                title: "New Project Update",
+                description: `New update for project`,
+              });
+            } else if (payload.eventType === 'UPDATE') {
+              setUpdates(prev => prev.map(update => 
+                update.id === payload.new.id ? payload.new as ProjectUpdate : update
+              ));
+            } else if (payload.eventType === 'DELETE') {
+              setUpdates(prev => prev.filter(update => update.id !== payload.old.id));
+            }
+          }
+        )
+        .subscribe()
+    ];
+
+    // Return cleanup function
+    return () => {
+      console.log('🧹 Cleaning up subscriptions');
+      subscriptions.forEach(sub => sub.unsubscribe());
+    };
+  }, [fetchData, toast]);
 
   // Check authentication and admin access
   useEffect(() => {

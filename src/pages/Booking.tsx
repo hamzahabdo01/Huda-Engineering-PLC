@@ -140,7 +140,7 @@ export default function Booking() {
     if (formData.unitType && !availableKeys.includes(formData.unitType)) {
       setFormData((prev) => ({ ...prev, unitType: "" }));
     }
-  }, [stockLoading, stock, units, availableFloorUnits, projects, formData.property]);
+  }, [stockLoading, stock, units, availableFloorUnits, projects, formData.property, formData.unitType]);
 
   const fetchStock = async (propertyId: string) => {
     try {

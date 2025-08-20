@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -81,7 +81,7 @@ const Projects = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeProjectId]);
+  }, [activeProjectId, fetchProjectUpdates]);
 
   const fetchProjects = async () => {
     try {
@@ -135,14 +135,14 @@ const Projects = () => {
     navigate(`/booking?project=${project.id}`);
   };
 
-const fetchProjectUpdates = async (projectId: string) => {
+const fetchProjectUpdates = useCallback(async (projectId: string) => {
   const { data, error } = await supabase
     .from("project_updates")
     .select("*")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
   if (!error) setSelectedProjectUpdates(data as ProjectUpdate[]);
-};
+}, []);
 
 const getLatestPercentage = (projectId: string) => {
   const latest = selectedProjectUpdates.find(u => u.project_id === projectId);

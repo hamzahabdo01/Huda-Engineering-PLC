@@ -1,16 +1,10 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
+import { User, Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { Profile } from "@/integrations/supabase/types";
 
-interface Profile {
-  id: string;
-  user_id: string;
-  email: string;
-  full_name: string | null;
-  role: 'admin' | 'user';
-  created_at: string;
-  updated_at: string;
-}
+// Move constants to separate file to fix react-refresh warning
+import { AUTH_CONSTANTS } from "./authConstants";
 
 interface AuthContextType {
   user: User | null;
@@ -42,7 +36,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -59,64 +53,54 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
-  };
+  }, []);
+
+  const handleAuthChange = useCallback(async (session: Session | null) => {
+    setSession(session);
+    setUser(session?.user ?? null);
+    
+    if (session?.user) {
+      // Use requestIdleCallback for better performance instead of setTimeout
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => fetchProfile(session.user.id));
+      } else {
+        setTimeout(() => fetchProfile(session.user.id), 0);
+      }
+    } else {
+      setProfile(null);
+    }
+    
+    setLoading(false);
+  }, [fetchProfile]);
 
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer profile fetch to avoid RLS issues
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
-        setLoading(false);
+        await handleAuthChange(session);
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(() => {
-          fetchProfile(session.user.id);
-        }, 0);
-      }
-      
-      setLoading(false);
+      handleAuthChange(session);
     });
 
     return () => subscription.unsubscribe();
+  }, [handleAuthChange]);
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error };
   }, []);
 
-  // Signup removed - admin-only access
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    return { error };
-  };
-
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     return { error };
-  };
+  }, []);
 
-  const isAdmin = profile?.role === 'admin';
+  const isAdmin = useMemo(() => profile?.role === 'admin', [profile?.role]);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     session,
     profile,
@@ -124,7 +108,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signOut,
     loading,
     isAdmin,
-  };
+  }), [user, session, profile, signIn, signOut, loading, isAdmin]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
