@@ -373,9 +373,6 @@ export default function Booking() {
                   const opt = availableFloorUnits.find(item => item.key === v);
                   const avail = (opt?.availability || 'available') as 'available' | 'sold' | 'reserved';
                   setSelectedAvailability(avail);
-                  if (avail === 'sold' || avail === 'reserved') {
-                    toast({ title: 'Not Available', description: `This unit is already ${avail}.`, variant: 'destructive' });
-                  }
                   setFormData({ ...formData, unitType: typeOnly || '', floorNumber: floorNum || '' });
                 }}>
                   <SelectTrigger><SelectValue placeholder="Select floor & type" /></SelectTrigger>
@@ -389,10 +386,9 @@ export default function Booking() {
                         const meta = units[item.type] || {} as { size?: string; price?: string };
                         const detailParts = [meta.size, meta.price].filter(Boolean) as string[];
                         const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
-                        const statusLabel = item.availability ? ` — ${item.availability.charAt(0).toUpperCase()}${item.availability.slice(1)}` : '';
                         return (
                           <SelectItem key={item.key} value={item.key}>
-                            {`Floor ${item.floor} — ${item.type}${detail}${statusLabel}`}
+                            {`Floor ${item.floor} — ${item.type}${detail}`}
                           </SelectItem>
                         );
                       })

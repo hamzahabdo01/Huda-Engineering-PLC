@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, MapPin, Calendar, CheckCircle, ArrowLeft } from "lucide-react";
+import { Building2, MapPin, Calendar, CheckCircle, ArrowLeft, ArrowRight } from "lucide-react";
 
 interface ApartmentType {
   id?: string;
@@ -107,6 +107,11 @@ export default function ProjectDetail() {
     </Badge>
   );
 
+  // add this handler near the top of the component (just after hooks)
+  const handleNavigateApartment = (type: string) => {
+    navigate(`/projects/${project?.id}/apartment/${encodeURIComponent(type)}`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -196,29 +201,32 @@ export default function ProjectDetail() {
                         <TableHead>Apartment Type</TableHead>
                         <TableHead>Size</TableHead>
                         <TableHead>Price</TableHead>
-                        <TableHead>Availability</TableHead>
-                        <TableHead>Units Available</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {floor.apartment_types.map((apt, idx) => (
-                        <TableRow key={apt.id || idx}>
+                        <TableRow
+                          key={apt.id || idx}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleNavigateApartment(apt.type)}
+                          onKeyDown={(e: any) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              handleNavigateApartment(apt.type);
+                            }
+                          }}
+                          aria-label={`View ${apt.type} details`}
+                          className="cursor-pointer select-none transition-colors hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded"
+                        >
                           <TableCell className="font-medium">
-                            <button
-                              className="text-primary underline underline-offset-2 hover:opacity-80"
-                              onClick={() => navigate(`/projects/${project.id}/apartment/${encodeURIComponent(apt.type)}`)}
-                            >
-                              {apt.type}
-                            </button>
+                              <span className="text-sm sm:text-base font-semibold">{apt.type}</span>
                           </TableCell>
                           <TableCell>{apt.size || '—'}</TableCell>
-                          <TableCell>{apt.price || '—'}</TableCell>
-                          <TableCell>
-                            <span className={apt.availability === 'available' ? 'text-green-600' : 'text-muted-foreground'}>
-                              {apt.availability || '—'}
-                            </span>
+                          <TableCell className="flex items-center justify-between">
+                            <span>{apt.price || '—'}</span>
+                            <ArrowRight className="w-4 h-4 text-muted-foreground ml-3" />
                           </TableCell>
-                          <TableCell>{stock[apt.type] ?? '—'}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -228,14 +236,9 @@ export default function ProjectDetail() {
             </CardContent>
           </Card>
         )}
-
-        <div className="flex justify-end">
-          <Button onClick={() => navigate(`/booking?project=${project.id}`)}>Book This Property</Button>
-        </div>
       </main>
 
       <Footer />
     </div>
   );
 }
-

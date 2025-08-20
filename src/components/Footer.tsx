@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin, Calendar, Award, Users, Facebook, Twitter, Linkedin, Instagram, Navigation } from "lucide-react";
+import { Phone, Mail, MapPin, Calendar, Award, Users, Facebook, Instagram, Youtube, TrendingUp, Navigation } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Logo from "./Logo";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
@@ -25,7 +25,6 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
 
-          
           {/* Company Info */}
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-3 mb-6">
@@ -41,7 +40,7 @@ const Footer = () => {
 </p>
 
   </div>
-              
+
             </div>
             <p className="text-primary-foreground/90 mb-6 max-w-md">{t("footer.companyDesc")}</p>
             <div className="flex flex-col space-y-3 mb-6">
@@ -60,10 +59,45 @@ const Footer = () => {
             </div>
             {/* Social Media Icons */}
             <div className="flex space-x-5">
-              <a href="#" className="hover:scale-110 transition-transform"><Facebook className="w-5 h-5" /></a>
-              <a href="#" className="hover:scale-110 transition-transform"><Twitter className="w-5 h-5" /></a>
-              <a href="#" className="hover:scale-110 transition-transform"><Linkedin className="w-5 h-5" /></a>
-              <a href="#" className="hover:scale-110 transition-transform"><Instagram className="w-5 h-5" /></a>
+              <a
+                href="https://www.facebook.com/profile.php?id=100085425223137&mibextid=wwXIfr&mibextid=wwXIfr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:scale-110 transition-transform"
+                aria-label="Facebook"
+              >
+                <Facebook className="w-5 h-5" />
+              </a>
+
+              <a
+                href="https://instagram.com/huda_engineering_plc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:scale-110 transition-transform"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+
+              <a
+                href="https://tiktok.com/@huda.engineering"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:scale-110 transition-transform"
+                aria-label="TikTok"
+              >
+                <TrendingUp className="w-5 h-5" />
+              </a>
+
+              <a
+                href="https://www.youtube.com/@HudaEngineeringplc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:scale-110 transition-transform"
+                aria-label="YouTube"
+              >
+                <Youtube className="w-5 h-5" />
+              </a>
             </div>
           </div>
 
@@ -81,7 +115,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-accent" />
-                <a href="tel:+251911234567" className="text-sm hover:underline">+251 91 123 4567</a>
+                <a href="tel:+251940666661" className="text-sm hover:underline">+251 94 066 6661</a>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-accent" />
