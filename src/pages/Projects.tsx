@@ -57,6 +57,32 @@ const Projects = () => {
     fetchProjects();
   }, []);
 
+  // Set up real-time subscription for project updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('projects_progress_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_updates'
+        },
+        () => {
+          // Refresh project updates when any change occurs
+          if (activeProjectId) {
+            fetchProjectUpdates(activeProjectId);
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeProjectId]);
+
   const fetchProjects = async () => {
     try {
       const { data, error } = await supabase
@@ -400,23 +426,64 @@ const getLatestPercentage = (projectId: string) => {
             </div>
           )}
           <Dialog open={!!activeProjectId} onOpenChange={() => setActiveProjectId(null)}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Project Progress Updates</DialogTitle>
-    </DialogHeader>
-    <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-      {selectedProjectUpdates.map((update) => (
-        <div key={update.id} className="border p-2 rounded-md">
-          {update.update_type === "image" && <img src={update.media_url} className="w-full" />}
-          {update.update_type === "video" && (
-            <video src={update.media_url} className="w-full" controls />
-          )}
-          {update.description && <p className="mt-2 text-sm">{update.description}</p>}
-        </div>
-      ))}
-    </div>
-  </DialogContent>
-</Dialog>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>Project Progress Updates</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                {selectedProjectUpdates.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Wrench className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No progress updates yet for this project.</p>
+                  </div>
+                ) : (
+                  selectedProjectUpdates.map((update) => (
+                    <Card key={update.id} className="overflow-hidden">
+                      <CardContent className="p-0">
+                        {update.media_url && update.update_type === "image" && (
+                          <div className="relative">
+                            <img 
+                              src={update.media_url} 
+                              alt="Progress update" 
+                              className="w-full h-48 object-cover"
+                            />
+                            {update.percentage && (
+                              <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded text-sm font-medium">
+                                {update.percentage}%
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {update.media_url && update.update_type === "video" && (
+                          <div className="relative">
+                            <video 
+                              src={update.media_url} 
+                              controls 
+                              className="w-full h-48 object-cover"
+                            />
+                            {update.percentage && (
+                              <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded text-sm font-medium">
+                                {update.percentage}%
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="p-4">
+                          {update.description && (
+                            <p className="text-sm text-muted-foreground mb-3">{update.description}</p>
+                          )}
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Update Type: {update.update_type}</span>
+                            <span>{new Date(update.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
 
           {selectedProject && (

@@ -146,6 +146,7 @@ const [update, setUpdate] = useState({
 const [loadingg, setLoading] = useState(false);
 const [ongoingProjects, setOngoingProjects] = useState([]);
 const [updates, setUpdates] = useState([]);
+const [editingUpdate, setEditingUpdate] = useState(null);
 
 
   // Form states
@@ -290,11 +291,32 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
 
       const bookingsRes = { data: bookingsData, error: bookingsError };
 
+      // Fetch project updates with project titles
+      const { data: updatesData, error: updatesError } = await supabase
+        .from('project_updates')
+        .select(`
+          *,
+          projects(title)
+        `)
+        .order('created_at', { ascending: false });
+
+      const updatesRes = { data: updatesData, error: updatesError };
+
+      // Fetch ongoing projects for progress updates
+      const { data: ongoingData, error: ongoingError } = await supabase
+        .from('projects')
+        .select('id, title')
+        .eq('status', 'active');
+
+      const ongoingRes = { data: ongoingData, error: ongoingError };
+
       console.log('📞 Contacts response:', contactsRes);
       console.log('🏠 Bookings response:', bookingsRes);
       console.log('🏗️ Projects response:', projectsRes);
       console.log('📢 Announcements response:', announcementsRes);
       console.log('📅 Appointments response:', appointmentsRes);
+      console.log('📊 Updates response:', updatesRes);
+      console.log('🔄 Ongoing projects response:', ongoingRes);
 
       if (contactsRes.error) {
         console.error('❌ Contacts error:', contactsRes.error);
@@ -361,6 +383,29 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
         setAppointments(appointmentsRes.data as Appointment[] || []);
       }
 
+      if (updatesRes.error) {
+        console.error('❌ Updates error:', updatesRes.error);
+        toast({
+          title: "Error fetching updates",
+          description: updatesRes.error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log(`✅ Setting ${updatesRes.data?.length || 0} updates`);
+        setUpdates(updatesRes.data as any[] || []);
+      }
+
+      if (ongoingRes.error) {
+        console.error('❌ Ongoing projects error:', ongoingRes.error);
+        toast({
+          title: "Error fetching ongoing projects",
+          description: ongoingRes.error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log(`✅ Setting ${ongoingRes.data?.length || 0} ongoing projects`);
+        setOngoingProjects(ongoingRes.data || []);
+      }
 
     } catch (error) {
       console.error('💥 Error fetching data:', error);
@@ -489,6 +534,25 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
       )
       .subscribe();
 
+    // Subscribe to project updates
+    const updatesSubscription = supabase
+      .channel('project_updates')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'project_updates' },
+        (payload) => {
+          console.log('📊 Project update change:', payload);
+          // Refetch updates to get updated data with project titles
+          fetchUpdates();
+          if (payload.eventType === 'INSERT') {
+            toast({
+              title: "New Progress Update",
+              description: `New progress update added`,
+            });
+          }
+        }
+      )
+      .subscribe();
+
     console.log('✅ Real-time subscriptions set up');
 
     // Cleanup subscriptions on component unmount
@@ -499,8 +563,33 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
       projectsSubscription.unsubscribe();
       announcementsSubscription.unsubscribe();
       appointmentsSubscription.unsubscribe();
+      updatesSubscription.unsubscribe();
     };
-  }, [toast]);
+  }, [fetchUpdates, fetchOngoingProjects, toast]);
+
+  // Function to fetch updates (used by real-time subscription)
+  const fetchUpdates = useCallback(async () => {
+    const { data } = await supabase
+      .from("project_updates")
+      .select("*, projects(title)")
+      .order("created_at", { ascending: false });
+
+    const formatted = data.map((u) => ({
+      ...u,
+      project_title: u.projects?.title || "Untitled",
+    }));
+
+    setUpdates(formatted);
+  }, []);
+
+  // Function to fetch ongoing projects (used by real-time subscription)
+  const fetchOngoingProjects = useCallback(async () => {
+    const { data } = await supabase
+      .from("projects")
+      .select("id, title")
+      .eq("status", "active");
+    setOngoingProjects(data || []);
+  }, []);
 
   // Check authentication and admin access
   useEffect(() => {
@@ -531,6 +620,9 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
       setupRealtimeSubscriptions();
     }
   }, [user, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
+
+
+
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (!error) {
@@ -1120,26 +1212,88 @@ const handleOpenAddAnnouncement = () => {
     update_type = update.media_url.includes("video") ? "video" : "image";
   }
 
-  const { error: insertError } = await supabase
-  .from("project_updates")
-  .insert({
-    project_id: update.project_id,
-    description: update.description,
-    media_url: update.media_url || null,
-    update_type,
-    percentage: update.percentage ? parseInt(update.percentage) : null,
-  });
+  if (editingUpdate) {
+    // Update existing update
+    const { error: updateError } = await supabase
+      .from("project_updates")
+      .update({
+        description: update.description,
+        media_url: update.media_url || null,
+        update_type,
+        percentage: update.percentage ? parseInt(update.percentage) : null,
+      })
+      .eq("id", editingUpdate.id);
 
-if (insertError) {
-  console.error("Insert Error:", insertError);
-  alert("Error inserting update: " + insertError.message);
-} else {
-  alert("Update added!");
-  setIsAddUpdateOpen(false);
-  setUpdate({ project_id: "", description: "", media_url: "", percentage: "" });
-}
+    if (updateError) {
+      console.error("Update Error:", updateError);
+      toast({
+        title: "Error",
+        description: "Failed to update progress update: " + updateError.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Progress update updated successfully!",
+      });
+      setIsAddUpdateOpen(false);
+      setUpdate({ project_id: "", description: "", media_url: "", percentage: "" });
+      setEditingUpdate(null);
+      // Refresh the updates list
+      const { data } = await supabase
+        .from("project_updates")
+        .select("*, projects(title)")
+        .order("created_at", { ascending: false });
 
-setLoading(false);
+      const formatted = data.map((u) => ({
+        ...u,
+        project_title: u.projects?.title || "Untitled",
+      }));
+
+      setUpdates(formatted);
+    }
+  } else {
+    // Insert new update
+    const { error: insertError } = await supabase
+      .from("project_updates")
+      .insert({
+        project_id: update.project_id,
+        description: update.description,
+        media_url: update.media_url || null,
+        update_type,
+        percentage: update.percentage ? parseInt(update.percentage) : null,
+      });
+
+    if (insertError) {
+      console.error("Insert Error:", insertError);
+      toast({
+        title: "Error",
+        description: "Failed to add progress update: " + insertError.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Progress update added successfully!",
+      });
+      setIsAddUpdateOpen(false);
+      setUpdate({ project_id: "", description: "", media_url: "", percentage: "" });
+      // Refresh the updates list
+      const { data } = await supabase
+        .from("project_updates")
+        .select("*, projects(title)")
+        .order("created_at", { ascending: false });
+
+      const formatted = data.map((u) => ({
+        ...u,
+        project_title: u.projects?.title || "Untitled",
+      }));
+
+      setUpdates(formatted);
+    }
+  }
+
+  setLoading(false);
   }
 
 useEffect(() => {
@@ -1167,22 +1321,61 @@ useEffect(() => {
 
   fetchProjects();
   fetchUpdates();
+
+  // Set up real-time subscription for project_updates
+  const channel = supabase
+    .channel('project_updates_changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'project_updates'
+      },
+      () => {
+        // Refresh updates when any change occurs
+        fetchUpdates();
+      }
+    )
+    .subscribe();
+
+  // Cleanup subscription
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }, []);
 const handleDelete = async (id: string) => {
   if (!confirm("Are you sure you want to delete this update?")) return;
 
   const { error } = await supabase.from("project_updates").delete().eq("id", id);
   if (error) {
-    alert("Delete failed");
+    toast({
+      title: "Error",
+      description: "Failed to delete update",
+      variant: "destructive",
+    });
     console.error(error);
   } else {
-    alert("Deleted!");
-    // fetchUpdates(); // re-fetch your updates
+    toast({
+      title: "Success",
+      description: "Progress update deleted successfully!",
+    });
+    // Refresh the updates list
+    const { data } = await supabase
+      .from("project_updates")
+      .select("*, projects(title)")
+      .order("created_at", { ascending: false });
+
+    const formatted = data.map((u) => ({
+      ...u,
+      project_title: u.projects?.title || "Untitled",
+    }));
+
+    setUpdates(formatted);
   }
 };
 
-const handleEdit = (update) => {
-  // setEditingUpdate(update); // optional for update mode
+const handleEdit = async (update) => {
   setUpdate({
     project_id: update.project_id,
     description: update.description,
@@ -1190,6 +1383,8 @@ const handleEdit = (update) => {
     percentage: update.percentage || "",
   });
   setIsAddUpdateOpen(true);
+  // Set editing mode
+  setEditingUpdate(update);
 };
 
 
@@ -2193,7 +2388,7 @@ const handleEdit = (update) => {
 
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          {/* <DialogTitle>{update.id ? "Edit Update" : "Add Project Update"}</DialogTitle> */}
+          <DialogTitle>{editingUpdate ? "Edit Progress Update" : "Add Progress Update"}</DialogTitle>
           <DialogDescription>Attach a photo/video or description</DialogDescription>
         </DialogHeader>
 
@@ -2205,6 +2400,7 @@ const handleEdit = (update) => {
               className="w-full border rounded p-2"
               value={update.project_id}
               onChange={(e) => setUpdate({ ...update, project_id: e.target.value })}
+              disabled={!!editingUpdate}
             >
               <option value="">-- Select Project --</option>
               {ongoingProjects.map((project) => (
@@ -2246,9 +2442,24 @@ const handleEdit = (update) => {
             </div>
           </div>
 
-          <Button onClick={handleAddUpdate} disabled={loading} className="w-full">
-            {loading ? "Submitting..." : "Submit Update"}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleAddUpdate} disabled={loading} className="flex-1">
+              {loading ? "Submitting..." : (editingUpdate ? "Update Progress" : "Submit Update")}
+            </Button>
+            {editingUpdate && (
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setEditingUpdate(null);
+                  setUpdate({ project_id: "", description: "", media_url: "", percentage: "" });
+                  setIsAddUpdateOpen(false);
+                }}
+                className="flex-1"
+              >
+                Cancel Edit
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
