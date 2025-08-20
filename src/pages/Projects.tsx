@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -52,71 +52,79 @@ const Projects = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("active");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [projectPercentages, setProjectPercentages] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchProjects();
   }, []);
 
-  // Set up real-time subscription for project updates
-  useEffect(() => {
-    const channel = supabase
-      .channel('projects_progress_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'project_updates'
-        },
-        () => {
-          // Refresh project updates when any change occurs
-          if (activeProjectId) {
-            fetchProjectUpdates(activeProjectId);
-          }
-        }
-      )
-      .subscribe();
+  const fetchLatestPercentages = async (projectIds: string[]) => {
+  if (!projectIds?.length) return;
+  try {
+    // fetch all updates for these projects, newest first
+    const { data, error } = await supabase
+      .from("project_updates")
+      .select("project_id, percentage, created_at")
+      .in("project_id", projectIds)
+      .order("created_at", { ascending: false });
 
-    // Cleanup subscription
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [activeProjectId, fetchProjectUpdates]);
-
-  const fetchProjects = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-
-      setProjects(
-        (data || []).map((p) => ({
-          id: p.id,
-          title: p.title,
-          description: p.description,
-          short_description: p.short_description,
-          location: p.location,
-          project_type: p.project_type,
-          status: p.status,
-          start_date: p.start_date,
-          end_date: p.end_date,
-          image_url: p.image_url,
-          gallery_urls: p.gallery_urls || [],
-          Amenities: p.Amenities || [],
-          units: p.units || {},
-          created_at: p.created_at,
-          progress_updates: p.progress_updates || [],
-          floor_plans: p.floor_plans || [],
-        }))
-      );
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-    } finally {
-      setLoading(false);
+    if (error) {
+      console.error("Error fetching project updates for percentages:", error);
+      return;
     }
-  };
+
+    const map: Record<string, number> = {};
+    // data is ordered newest->oldest; take first percentage per project
+    for (const row of (data || [] as any[])) {
+      const pid = row.project_id;
+      if (pid && typeof row.percentage === "number" && map[pid] === undefined) {
+        map[pid] = Math.min(100, Math.max(0, row.percentage));
+      }
+    }
+    setProjectPercentages(map);
+  } catch (err) {
+    console.error("fetchLatestPercentages error:", err);
+  }
+};
+
+const fetchProjects = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+
+    const normalized = (data || []).map((p) => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      short_description: p.short_description,
+      location: p.location,
+      project_type: p.project_type,
+      status: p.status,
+      start_date: p.start_date,
+      end_date: p.end_date,
+      image_url: p.image_url,
+      gallery_urls: p.gallery_urls || [],
+      Amenities: p.Amenities || [],
+      units: p.units || {},
+      created_at: p.created_at,
+      progress_updates: p.progress_updates || [],
+      floor_plans: p.floor_plans || [],
+    }));
+
+    setProjects(normalized);
+
+    // PRELOAD latest percentages so progress bars don't jump when user clicks
+    const ids = normalized.map((p) => p.id);
+    await fetchLatestPercentages(ids);
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+  } finally {
+    setLoading(false);
+  }
+};
   interface ProjectUpdate {
   id: string;
   project_id: string;
@@ -135,16 +143,19 @@ const Projects = () => {
     navigate(`/booking?project=${project.id}`);
   };
 
-const fetchProjectUpdates = useCallback(async (projectId: string) => {
+const fetchProjectUpdates = async (projectId: string) => {
   const { data, error } = await supabase
     .from("project_updates")
     .select("*")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
   if (!error) setSelectedProjectUpdates(data as ProjectUpdate[]);
-}, []);
+};
 
 const getLatestPercentage = (projectId: string) => {
+  const pre = projectPercentages[projectId];
+  if (typeof pre === "number") return pre;
+  // fallback: check selectedProjectUpdates (dialog list) for any matching update
   const latest = selectedProjectUpdates.find(u => u.project_id === projectId);
   return typeof latest?.percentage === 'number' ? Math.min(100, Math.max(0, latest.percentage)) : 0;
 };
@@ -426,64 +437,23 @@ const getLatestPercentage = (projectId: string) => {
             </div>
           )}
           <Dialog open={!!activeProjectId} onOpenChange={() => setActiveProjectId(null)}>
-            <DialogContent className="max-w-4xl">
-              <DialogHeader>
-                <DialogTitle>Project Progress Updates</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-                {selectedProjectUpdates.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Wrench className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No progress updates yet for this project.</p>
-                  </div>
-                ) : (
-                  selectedProjectUpdates.map((update) => (
-                    <Card key={update.id} className="overflow-hidden">
-                      <CardContent className="p-0">
-                        {update.media_url && update.update_type === "image" && (
-                          <div className="relative">
-                            <img 
-                              src={update.media_url} 
-                              alt="Progress update" 
-                              className="w-full h-48 object-cover"
-                            />
-                            {update.percentage && (
-                              <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded text-sm font-medium">
-                                {update.percentage}%
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {update.media_url && update.update_type === "video" && (
-                          <div className="relative">
-                            <video 
-                              src={update.media_url} 
-                              controls 
-                              className="w-full h-48 object-cover"
-                            />
-                            {update.percentage && (
-                              <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded text-sm font-medium">
-                                {update.percentage}%
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        <div className="p-4">
-                          {update.description && (
-                            <p className="text-sm text-muted-foreground mb-3">{update.description}</p>
-                          )}
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>Update Type: {update.update_type}</span>
-                            <span>{new Date(update.created_at).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Project Progress Updates</DialogTitle>
+    </DialogHeader>
+    <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+      {selectedProjectUpdates.map((update) => (
+        <div key={update.id} className="border p-2 rounded-md">
+          {update.update_type === "image" && <img src={update.media_url} className="w-full" />}
+          {update.update_type === "video" && (
+            <video src={update.media_url} className="w-full" controls />
+          )}
+          {update.description && <p className="mt-2 text-sm">{update.description}</p>}
+        </div>
+      ))}
+    </div>
+  </DialogContent>
+</Dialog>
 
 
           {selectedProject && (

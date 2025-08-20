@@ -143,10 +143,9 @@ const [update, setUpdate] = useState({
   media_url: "",
   percentage: "",
 });
-const [loadingg, setLoading] = useState(false);
-const [ongoingProjects, setOngoingProjects] = useState([]);
+const [isAddingUpdate, setIsAddingUpdate] = useState(false);
+const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null);const [ongoingProjects, setOngoingProjects] = useState([]);
 const [updates, setUpdates] = useState([]);
-const [editingUpdate, setEditingUpdate] = useState(null);
 
 
   // Form states
@@ -291,32 +290,11 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
 
       const bookingsRes = { data: bookingsData, error: bookingsError };
 
-      // Fetch project updates with project titles
-      const { data: updatesData, error: updatesError } = await supabase
-        .from('project_updates')
-        .select(`
-          *,
-          projects(title)
-        `)
-        .order('created_at', { ascending: false });
-
-      const updatesRes = { data: updatesData, error: updatesError };
-
-      // Fetch ongoing projects for progress updates
-      const { data: ongoingData, error: ongoingError } = await supabase
-        .from('projects')
-        .select('id, title')
-        .eq('status', 'active');
-
-      const ongoingRes = { data: ongoingData, error: ongoingError };
-
       console.log('📞 Contacts response:', contactsRes);
       console.log('🏠 Bookings response:', bookingsRes);
       console.log('🏗️ Projects response:', projectsRes);
       console.log('📢 Announcements response:', announcementsRes);
       console.log('📅 Appointments response:', appointmentsRes);
-      console.log('📊 Updates response:', updatesRes);
-      console.log('🔄 Ongoing projects response:', ongoingRes);
 
       if (contactsRes.error) {
         console.error('❌ Contacts error:', contactsRes.error);
@@ -383,29 +361,6 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
         setAppointments(appointmentsRes.data as Appointment[] || []);
       }
 
-      if (updatesRes.error) {
-        console.error('❌ Updates error:', updatesRes.error);
-        toast({
-          title: "Error fetching updates",
-          description: updatesRes.error.message,
-          variant: "destructive",
-        });
-      } else {
-        console.log(`✅ Setting ${updatesRes.data?.length || 0} updates`);
-        setUpdates(updatesRes.data as any[] || []);
-      }
-
-      if (ongoingRes.error) {
-        console.error('❌ Ongoing projects error:', ongoingRes.error);
-        toast({
-          title: "Error fetching ongoing projects",
-          description: ongoingRes.error.message,
-          variant: "destructive",
-        });
-      } else {
-        console.log(`✅ Setting ${ongoingRes.data?.length || 0} ongoing projects`);
-        setOngoingProjects(ongoingRes.data || []);
-      }
 
     } catch (error) {
       console.error('💥 Error fetching data:', error);
@@ -420,171 +375,132 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
     }
   }, [user, profile, toast]);
 
-  // Optimized data fetching functions with proper dependencies
-  const fetchUpdates = useCallback(async () => {
-    const { data } = await supabase
-      .from("project_updates")
-      .select("*, projects(title)")
-      .order("created_at", { ascending: false });
-
-    const formatted = data?.map((u) => ({
-      ...u,
-      project_title: u.projects?.title || "Untitled",
-    })) || [];
-
-    setUpdates(formatted);
-  }, []);
-
-  const fetchOngoingProjects = useCallback(async () => {
-    const { data } = await supabase
-      .from("projects")
-      .select("id, title")
-      .eq("status", "active");
-    setOngoingProjects(data || []);
-  }, []);
-
-  // Memoized setupRealtimeSubscriptions to avoid recreation
   const setupRealtimeSubscriptions = useCallback(() => {
     console.log('🔄 Setting up real-time subscriptions...');
     
-    const subscriptions = [
-      // Contact submissions subscription
-      supabase
-        .channel('contact_submissions')
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'contact_submissions' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const newContact = payload.new as ContactSubmission;
-              setContacts(prev => [newContact, ...prev]);
-              toast({
-                title: "New Contact Submission",
-                description: `New contact from ${newContact.name}`,
-              });
-            } else if (payload.eventType === 'UPDATE') {
-              setContacts(prev => prev.map(contact => 
-                contact.id === payload.new.id ? payload.new as ContactSubmission : contact
-              ));
-            } else if (payload.eventType === 'DELETE') {
-              setContacts(prev => prev.filter(contact => contact.id !== payload.old.id));
-            }
+    // Subscribe to contact submissions
+    const contactsSubscription = supabase
+      .channel('contact_submissions')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'contact_submissions' },
+        (payload) => {
+          console.log('📞 Contact submission change:', payload);
+          if (payload.eventType === 'INSERT') {
+            const newContact = payload.new as ContactSubmission;
+            setContacts(prev => [newContact, ...prev]);
+            toast({
+              title: "New Contact Submission",
+              description: `New contact from ${newContact.name}`,
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setContacts(prev => prev.map(contact => 
+              contact.id === payload.new.id ? payload.new as ContactSubmission : contact
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setContacts(prev => prev.filter(contact => contact.id !== payload.old.id));
           }
-        )
-        .subscribe(),
+        }
+      )
+      .subscribe();
 
-      // Property bookings subscription
-      supabase
-        .channel('property_bookings')
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'property_bookings' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              toast({
-                title: "New Property Booking",
-                description: `New booking received`,
-              });
-            }
-            // Refetch to get updated property names
+    // Subscribe to property bookings
+    const bookingsSubscription = supabase
+      .channel('property_bookings')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'property_bookings' },
+        (payload) => {
+          console.log('🏠 Property booking change:', payload);
+          // Refetch bookings to get updated data with property names
+          fetchData();
+          if (payload.eventType === 'INSERT') {
+            toast({
+              title: "New Property Booking",
+              description: `New booking received`,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to projects
+    const projectsSubscription = supabase
+      .channel('projects')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'projects' },
+        (payload) => {
+          console.log('🏗️ Project change:', payload);
+          if (payload.eventType === 'INSERT') {
+            setProjects(prev => [payload.new as Project, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setProjects(prev => prev.map(project => 
+              project.id === payload.new.id ? payload.new as Project : project
+            ));
+            // Refetch bookings when project titles change to update property names
             fetchData();
+          } else if (payload.eventType === 'DELETE') {
+            setProjects(prev => prev.filter(project => project.id !== payload.old.id));
           }
-        )
-        .subscribe(),
+        }
+      )
+      .subscribe();
 
-      // Projects subscription
-      supabase
-        .channel('projects')
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'projects' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              setProjects(prev => [payload.new as Project, ...prev]);
-            } else if (payload.eventType === 'UPDATE') {
-              setProjects(prev => prev.map(project => 
-                project.id === payload.new.id ? payload.new as Project : project
-              ));
-              // Refetch bookings when project titles change
-              fetchData();
-            } else if (payload.eventType === 'DELETE') {
-              setProjects(prev => prev.filter(project => project.id !== payload.old.id));
-            }
+    // Subscribe to announcements
+    const announcementsSubscription = supabase
+      .channel('announcements')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'announcements' },
+        (payload) => {
+          console.log('📢 Announcement change:', payload);
+          if (payload.eventType === 'INSERT') {
+            setAnnouncements(prev => [payload.new as Announcement, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setAnnouncements(prev => prev.map(announcement => 
+              announcement.id === payload.new.id ? payload.new as Announcement : announcement
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setAnnouncements(prev => prev.filter(announcement => announcement.id !== payload.old.id));
           }
-        )
-        .subscribe(),
+        }
+      )
+      .subscribe();
 
-      // Announcements subscription
-      supabase
-        .channel('announcements')
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'announcements' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              setAnnouncements(prev => [payload.new as Announcement, ...prev]);
-            } else if (payload.eventType === 'UPDATE') {
-              setAnnouncements(prev => prev.map(announcement => 
-                announcement.id === payload.new.id ? payload.new as Announcement : announcement
-              ));
-            } else if (payload.eventType === 'DELETE') {
-              setAnnouncements(prev => prev.filter(announcement => announcement.id !== payload.old.id));
-            }
+    // Subscribe to appointments
+    const appointmentsSubscription = supabase
+      .channel('appointments')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        (payload) => {
+          console.log('📅 Appointment change:', payload);
+          if (payload.eventType === 'INSERT') {
+            const newAppointment = payload.new as Appointment;
+            setAppointments(prev => [newAppointment, ...prev]);
+            toast({
+              title: "New Appointment",
+              description: `New appointment from ${newAppointment.full_name}`,
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setAppointments(prev => prev.map(appointment => 
+              appointment.id === payload.new.id ? payload.new as Appointment : appointment
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setAppointments(prev => prev.filter(appointment => appointment.id !== payload.old.id));
           }
-        )
-        .subscribe(),
+        }
+      )
+      .subscribe();
 
-      // Appointments subscription
-      supabase
-        .channel('appointments')
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'appointments' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const newAppointment = payload.new as Appointment;
-              setAppointments(prev => [newAppointment, ...prev]);
-              toast({
-                title: "New Appointment",
-                description: `New appointment from ${newAppointment.name}`,
-              });
-            } else if (payload.eventType === 'UPDATE') {
-              setAppointments(prev => prev.map(appointment => 
-                appointment.id === payload.new.id ? payload.new as Appointment : appointment
-              ));
-            } else if (payload.eventType === 'DELETE') {
-              setAppointments(prev => prev.filter(appointment => appointment.id !== payload.old.id));
-            }
-          }
-        )
-        .subscribe(),
+    console.log('✅ Real-time subscriptions set up');
 
-      // Project updates subscription
-      supabase
-        .channel('project_updates')
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'project_updates' },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const newUpdate = payload.new as ProjectUpdate;
-              setUpdates(prev => [newUpdate, ...prev]);
-              toast({
-                title: "New Project Update",
-                description: `New update for project`,
-              });
-            } else if (payload.eventType === 'UPDATE') {
-              setUpdates(prev => prev.map(update => 
-                update.id === payload.new.id ? payload.new as ProjectUpdate : update
-              ));
-            } else if (payload.eventType === 'DELETE') {
-              setUpdates(prev => prev.filter(update => update.id !== payload.old.id));
-            }
-          }
-        )
-        .subscribe()
-    ];
-
-    // Return cleanup function
+    // Cleanup subscriptions on component unmount
     return () => {
       console.log('🧹 Cleaning up subscriptions');
-      subscriptions.forEach(sub => sub.unsubscribe());
+      contactsSubscription.unsubscribe();
+      bookingsSubscription.unsubscribe();
+      projectsSubscription.unsubscribe();
+      announcementsSubscription.unsubscribe();
+      appointmentsSubscription.unsubscribe();
     };
-  }, [fetchData, toast]);
+  }, [toast]);
 
   // Check authentication and admin access
   useEffect(() => {
@@ -615,9 +531,6 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
       setupRealtimeSubscriptions();
     }
   }, [user, loading, navigate, fetchData, setupRealtimeSubscriptions, toast]);
-
-
-
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (!error) {
@@ -1199,97 +1112,96 @@ const handleOpenAddAnnouncement = () => {
       });
     }
   };
-  const handleAddUpdate = async () => {
-  setLoading(true);
+const handleAddUpdate = async () => {
+  setIsAddingUpdate(true);
 
-  let update_type = "text";
-  if (update.media_url) {
-    update_type = update.media_url.includes("video") ? "video" : "image";
-  }
-
-  if (editingUpdate) {
-    // Update existing update
-    const { error: updateError } = await supabase
-      .from("project_updates")
-      .update({
-        description: update.description,
-        media_url: update.media_url || null,
-        update_type,
-        percentage: update.percentage ? parseInt(update.percentage) : null,
-      })
-      .eq("id", editingUpdate.id);
-
-    if (updateError) {
-      console.error("Update Error:", updateError);
-      toast({
-        title: "Error",
-        description: "Failed to update progress update: " + updateError.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Progress update updated successfully!",
-      });
-      setIsAddUpdateOpen(false);
-      setUpdate({ project_id: "", description: "", media_url: "", percentage: "" });
-      setEditingUpdate(null);
-      // Refresh the updates list
-      const { data } = await supabase
-        .from("project_updates")
-        .select("*, projects(title)")
-        .order("created_at", { ascending: false });
-
-      const formatted = data.map((u) => ({
-        ...u,
-        project_title: u.projects?.title || "Untitled",
-      }));
-
-      setUpdates(formatted);
+  try {
+    let update_type = "text";
+    if (update.media_url) {
+      update_type = update.media_url.includes("video") ? "video" : "image";
     }
-  } else {
-    // Insert new update
-    const { error: insertError } = await supabase
-      .from("project_updates")
-      .insert({
-        project_id: update.project_id,
-        description: update.description,
-        media_url: update.media_url || null,
-        update_type,
-        percentage: update.percentage ? parseInt(update.percentage) : null,
-      });
 
-    if (insertError) {
-      console.error("Insert Error:", insertError);
-      toast({
-        title: "Error",
-        description: "Failed to add progress update: " + insertError.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Progress update added successfully!",
-      });
-      setIsAddUpdateOpen(false);
-      setUpdate({ project_id: "", description: "", media_url: "", percentage: "" });
-      // Refresh the updates list
-      const { data } = await supabase
+    const payload: any = {
+      project_id: update.project_id,
+      description: update.description,
+      media_url: update.media_url || null,
+      update_type,
+      percentage: update.percentage ? parseInt(update.percentage as any, 10) : null,
+    };
+
+    if (editingUpdateId) {
+      // Update existing update
+      const { error: updateError } = await supabase
         .from("project_updates")
-        .select("*, projects(title)")
-        .order("created_at", { ascending: false });
+        .update(payload)
+        .eq("id", editingUpdateId);
 
-      const formatted = data.map((u) => ({
-        ...u,
-        project_title: u.projects?.title || "Untitled",
-      }));
+      if (updateError) {
+        console.error("Update Error:", updateError);
+        toast({
+          title: "Error",
+          description: `Failed to update progress: ${updateError.message}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Updated", description: "Progress update saved." });
+        setIsAddUpdateOpen(false);
+        setUpdate({ project_id: "", description: "", media_url: "", percentage: "" });
+        setEditingUpdateId(null);
+        // Refresh list
+        // reuse the fetch from the earlier useEffect by calling it here:
+        const { data } = await supabase
+          .from("project_updates")
+          .select("*, projects(title)")
+          .order("created_at", { ascending: false });
+        const formatted = (data || []).map((u: any) => ({
+          ...u,
+          project_title: u.projects?.title || "Untitled",
+        }));
+        setUpdates(formatted);
+      }
+    } else {
+      // Insert new update
+      const { error: insertError } = await supabase
+        .from("project_updates")
+        .insert([payload]);
 
-      setUpdates(formatted);
+      if (insertError) {
+        console.error("Insert Error:", insertError);
+        toast({
+          title: "Error",
+          description: `Failed to add update: ${insertError.message}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Added", description: "Update added!" });
+        setIsAddUpdateOpen(false);
+        setUpdate({ project_id: "", description: "", media_url: "", percentage: "" });
+
+        // Refresh list
+        const { data } = await supabase
+          .from("project_updates")
+          .select("*, projects(title)")
+          .order("created_at", { ascending: false });
+        const formatted = (data || []).map((u: any) => ({
+          ...u,
+          project_title: u.projects?.title || "Untitled",
+        }));
+        setUpdates(formatted);
+      }
     }
+  } catch (err) {
+    console.error("HandleAddUpdate error:", err);
+    toast({
+      title: "Error",
+      description: "An unexpected error occurred while saving the update.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsAddingUpdate(false);
   }
+};
 
-  setLoading(false);
-  }
 
 useEffect(() => {
   const fetchProjects = async () => {
@@ -1300,86 +1212,67 @@ useEffect(() => {
     setOngoingProjects(data || []);
   };
 
-  const fetchUpdates = async () => {
-    const { data } = await supabase
-      .from("project_updates")
-      .select("*, projects(title)")
-      .order("created_at", { ascending: false });
+  const fetchProjectUpdates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("project_updates")
+        .select("*, projects(title)")
+        .order("created_at", { ascending: false });
 
-    const formatted = data.map((u) => ({
-      ...u,
-      project_title: u.projects?.title || "Untitled",
-    }));
+      if (error) {
+        console.error("Error fetching project updates:", error);
+        return;
+      }
 
-    setUpdates(formatted);
+      const formatted = (data || []).map((u: any) => ({
+        ...u,
+        project_title: u.projects?.title || "Untitled",
+      }));
+
+      setUpdates(formatted);
+    } catch (err) {
+      console.error("Fetch project updates failed:", err);
+    }
   };
 
   fetchProjects();
-  fetchUpdates();
+  fetchProjectUpdates();
 
-  // Set up real-time subscription for project_updates
-  const channel = supabase
-    .channel('project_updates_changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'project_updates'
-      },
-      () => {
-        // Refresh updates when any change occurs
-        fetchUpdates();
-      }
-    )
-    .subscribe();
-
-  // Cleanup subscription
-  return () => {
-    supabase.removeChannel(channel);
-  };
+  // expose the updates fetch so other handlers can call it
+  // (we're not returning it — handlers below will call fetchProjectUpdates directly by re-declaring/duplicating if needed;
+  // if you prefer, pull fetchProjectUpdates to component scope)
 }, []);
 const handleDelete = async (id: string) => {
   if (!confirm("Are you sure you want to delete this update?")) return;
 
   const { error } = await supabase.from("project_updates").delete().eq("id", id);
   if (error) {
-    toast({
-      title: "Error",
-      description: "Failed to delete update",
-      variant: "destructive",
-    });
+    alert("Delete failed");
     console.error(error);
   } else {
-    toast({
-      title: "Success",
-      description: "Progress update deleted successfully!",
-    });
-    // Refresh the updates list
+    alert("Deleted!");
+    // Refresh updates list
     const { data } = await supabase
       .from("project_updates")
       .select("*, projects(title)")
       .order("created_at", { ascending: false });
-
-    const formatted = data.map((u) => ({
+    const formatted = (data || []).map((u: any) => ({
       ...u,
       project_title: u.projects?.title || "Untitled",
     }));
-
     setUpdates(formatted);
   }
 };
 
-const handleEdit = async (update) => {
+const handleEdit = (updateItem: any) => {
+  setEditingUpdateId(updateItem.id);
   setUpdate({
-    project_id: update.project_id,
-    description: update.description,
-    media_url: update.media_url || "",
-    percentage: update.percentage || "",
+    project_id: updateItem.project_id,
+    description: updateItem.description,
+    media_url: updateItem.media_url || "",
+    percentage: updateItem.percentage ? String(updateItem.percentage) : "",
   });
   setIsAddUpdateOpen(true);
-  // Set editing mode
-  setEditingUpdate(update);
 };
 
 
@@ -1875,7 +1768,7 @@ const handleEdit = async (update) => {
 
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingProjectId ? "Edit Project" : "Add New Project"}</DialogTitle>
+<DialogTitle>{editingUpdateId ? "Edit Update" : "Add Project Update"}</DialogTitle>
           <DialogDescription>
             {editingProjectId ? "Update the project details" : "Create a new project in your portfolio"}
           </DialogDescription>
@@ -2383,7 +2276,7 @@ const handleEdit = async (update) => {
 
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{editingUpdate ? "Edit Progress Update" : "Add Progress Update"}</DialogTitle>
+          {/* <DialogTitle>{update.id ? "Edit Update" : "Add Project Update"}</DialogTitle> */}
           <DialogDescription>Attach a photo/video or description</DialogDescription>
         </DialogHeader>
 
@@ -2395,7 +2288,6 @@ const handleEdit = async (update) => {
               className="w-full border rounded p-2"
               value={update.project_id}
               onChange={(e) => setUpdate({ ...update, project_id: e.target.value })}
-              disabled={!!editingUpdate}
             >
               <option value="">-- Select Project --</option>
               {ongoingProjects.map((project) => (
@@ -2437,24 +2329,9 @@ const handleEdit = async (update) => {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button onClick={handleAddUpdate} disabled={loading} className="flex-1">
-              {loading ? "Submitting..." : (editingUpdate ? "Update Progress" : "Submit Update")}
-            </Button>
-            {editingUpdate && (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setEditingUpdate(null);
-                  setUpdate({ project_id: "", description: "", media_url: "", percentage: "" });
-                  setIsAddUpdateOpen(false);
-                }}
-                className="flex-1"
-              >
-                Cancel Edit
-              </Button>
-            )}
-          </div>
+<Button onClick={handleAddUpdate} disabled={isAddingUpdate} className="w-full">
+  {isAddingUpdate ? (editingUpdateId ? "Saving..." : "Submitting...") : (editingUpdateId ? "Save Changes" : "Submit Update")}
+</Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -2496,15 +2373,16 @@ const handleEdit = async (update) => {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => {
-                  setUpdate({
-                    project_id: update.project_id,
-                    description: update.description,
-                    media_url: update.media_url || "",
-                    percentage: update.percentage || "",
-                  });
-                  setIsAddUpdateOpen(true);
-                }}
+  onClick={() => {
+    setEditingUpdateId(update.id); // <-- mark editing mode
+    setUpdate({
+      project_id: update.project_id,
+      description: update.description,
+      media_url: update.media_url || "",
+      percentage: update.percentage != null ? String(update.percentage) : "",
+    });
+    setIsAddUpdateOpen(true);
+  }}
               >
                 Edit
               </Button>
