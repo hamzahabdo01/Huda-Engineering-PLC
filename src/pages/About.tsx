@@ -209,31 +209,26 @@ const About = () => {
                 title: t("about.team.engineers.title"),
                 description: t("about.team.engineers.description"),
                 icon: Target,
-                count: t("about.team.engineers.count")
               },
               {
                 title: t("about.team.architects.title"), 
                 description: t("about.team.architects.description"),
                 icon: Building2,
-                count: t("about.team.architects.count")
               },
               {
                 title: t("about.team.foremen.title"),
                 description: t("about.team.foremen.description"),
                 icon: Shield,
-                count: t("about.team.foremen.count")
               },
               {
                 title: t("about.team.safety.title"),
                 description: t("about.team.safety.description"),
                 icon: CheckCircle,
-                count: t("about.team.safety.count")
               }
             ].map((member, index) => (
               <Card key={index} className="text-center hover:shadow-lg transition-all duration-300">
                 <CardHeader>
                   <member.icon className="w-16 h-16 text-primary mx-auto mb-4" />
-                  <Badge className="mb-2 bg-accent text-accent-foreground">{member.count}</Badge>
                   <CardTitle className="text-lg">{member.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -349,7 +344,6 @@ const About = () => {
               <div className="text-center">
                 <Star className="w-16 h-16 text-accent mx-auto mb-4" />
                 <div className="text-3xl font-bold text-primary mb-2">100%</div>
-                <div className="text-muted-foreground">{t("about.advantages.satisfaction")}</div>
               </div>
             </div>
           </div>
