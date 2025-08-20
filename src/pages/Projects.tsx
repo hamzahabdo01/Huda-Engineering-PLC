@@ -98,6 +98,7 @@ const Projects = () => {
   media_url: string;
   description: string;
   created_at: string;
+  percentage?: number | null;
 }
 
   const [selectedProjectUpdates, setSelectedProjectUpdates] = useState<ProjectUpdate[]>([]);
@@ -114,9 +115,13 @@ const fetchProjectUpdates = async (projectId: string) => {
     .select("*")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
-  if (!error) setSelectedProjectUpdates(data);
+  if (!error) setSelectedProjectUpdates(data as ProjectUpdate[]);
 };
 
+const getLatestPercentage = (projectId: string) => {
+  const latest = selectedProjectUpdates.find(u => u.project_id === projectId);
+  return typeof latest?.percentage === 'number' ? Math.min(100, Math.max(0, latest.percentage)) : 0;
+};
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -235,11 +240,11 @@ const fetchProjectUpdates = async (projectId: string) => {
                             <div className="flex justify-between mb-2 text-xs text-white">
                               <span>Project Progress</span>
                               <span>
-                                {Math.min(100, (selectedProjectUpdates.filter(u=>u.project_id===project.id).length || 0) * 10)}%
+                                {getLatestPercentage(project.id)}%
                               </span>
                             </div>
                             <Progress 
-                              value={Math.min(100, (selectedProjectUpdates.filter(u=>u.project_id===project.id).length || 0) * 10)} 
+                              value={getLatestPercentage(project.id)} 
                               className="h-2 bg-white/20"
                             />
                           </div>
