@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Calendar, Clock, Tag, ChevronDown, ChevronUp } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -65,21 +65,21 @@ const Announcements = () => {
     }
   };
 
-  const scrollToNext = () => {
+  const scrollToNext = useCallback(() => {
     if (currentIndex < announcements.length - 1 && !isScrolling) {
       setIsScrolling(true);
       setCurrentIndex(prev => prev + 1);
       setTimeout(() => setIsScrolling(false), 800);
     }
-  };
+  }, [currentIndex, announcements.length, isScrolling]);
 
-  const scrollToPrev = () => {
+  const scrollToPrev = useCallback(() => {
     if (currentIndex > 0 && !isScrolling) {
       setIsScrolling(true);
       setCurrentIndex(prev => prev - 1);
       setTimeout(() => setIsScrolling(false), 800);
     }
-  };
+  }, [currentIndex, isScrolling]);
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -148,7 +148,7 @@ const Announcements = () => {
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [currentIndex, isScrolling]);
+  }, [currentIndex, isScrolling, scrollToNext, scrollToPrev]);
 
   const currentAnnouncement = announcements[currentIndex];
 

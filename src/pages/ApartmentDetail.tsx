@@ -63,7 +63,7 @@ export default function ApartmentDetail() {
     return null;
   }, [project, type]);
 
-  const featurePresets: Record<string, string[]> = {
+  const featurePresets = useMemo<Record<string, string[]>>(() => ({
     '2b': [
       'Spacious living room with natural light',
       'Two bedrooms with built-in closets',
@@ -82,7 +82,7 @@ export default function ApartmentDetail() {
       'Spacious kitchen with pantry',
       'Two balconies and premium finishes',
     ],
-  };
+  }), []);
 
   const features = useMemo(() => {
     const key = (type || '').toLowerCase();
@@ -91,7 +91,7 @@ export default function ApartmentDetail() {
       'Quality finishes and materials',
       'Optimized ventilation and natural light',
     ];
-  }, [type]);
+  }, [type, featurePresets]);
 
   if (loading) {
     return (

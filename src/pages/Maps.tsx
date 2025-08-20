@@ -81,7 +81,7 @@ const Maps = () => {
     };
 
     initializeMap();
-  }, []);
+  }, [companyLocation.address]);
 
   // Open Google Maps
   const openInGoogleMaps = () => {
