@@ -73,19 +73,46 @@ export default function Contact() {
             <form onSubmit={handleContactSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label>{t("contact.form.firstName")}</Label>
-                <Input name="name" value={contact.name} onChange={e=>setContact({...contact,name:e.target.value})} required />
+                <Input
+                  name="name"
+                  value={contact.name}
+                  onChange={e=>setContact({...contact,name:e.target.value})}
+                  required
+                  className="border-[#088d92] focus:border-[#088d92] focus:ring-[#088d92]/30"
+                />
               </div>
               <div className="space-y-2">
                 <Label>{t("contact.form.email")}</Label>
-                <Input type="email" name="email" value={contact.email} onChange={e=>setContact({...contact,email:e.target.value})} required />
+                <Input
+                  type="email"
+                  name="email"
+                  value={contact.email}
+                  onChange={e=>setContact({...contact,email:e.target.value})}
+                  required
+                  className="border-[#088d92] focus:border-[#088d92] focus:ring-[#088d92]/30"
+                />
               </div>
               <div className="space-y-2">
                 <Label>{t("contact.form.phone")}</Label>
-                <Input type="tel" name="phone" value={contact.phone} onChange={e=>setContact({...contact,phone:e.target.value})} required />
+                <Input
+                  type="tel"
+                  name="phone"
+                  value={contact.phone}
+                  onChange={e=>setContact({...contact,phone:e.target.value})}
+                  required
+                  className="border-[#088d92] focus:border-[#088d92] focus:ring-[#088d92]/30"
+                />
               </div>
               <div className="space-y-2">
                 <Label>{t("contact.form.message")}</Label>
-                <Textarea name="message" value={contact.message} onChange={e=>setContact({...contact,message:e.target.value})} required rows={6} />
+                <Textarea
+                  name="message"
+                  value={contact.message}
+                  onChange={e=>setContact({...contact,message:e.target.value})}
+                  required
+                  rows={6}
+                  className="border-[#088d92] focus:border-[#088d92] focus:ring-[#088d92]/30"
+                />
               </div>
               <div className="pt-2">
                 <ReCAPTCHA sitekey={SITE_KEY} onChange={token => setCaptchaToken(token)} />

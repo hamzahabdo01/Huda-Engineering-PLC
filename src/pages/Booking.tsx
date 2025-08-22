@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ReCAPTCHA from "react-google-recaptcha";
 import { SITE_RECAPTCHA_KEY } from "@/utils/env";
+import { Card, CardContent } from "@/components/ui/card";
 
 // Captcha site key is injected via env
 const SITE_KEY = SITE_RECAPTCHA_KEY;
@@ -354,146 +355,165 @@ export default function Booking() {
         </div>
 
         {bookingType === "property" ? (
-          <form onSubmit={(e) => handleSubmit(e, "property")} className="space-y-6 max-w-2xl mx-auto">
-            <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
-            <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
-            <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
-            <SelectPreferredContact value={formData.preferredContact} onChange={(v:any)=>setFormData({...formData, preferredContact:v})} />
-            <InputGroup label="Secondary Phone" name="secondary_phone" type="tel" value={formData.secondary_phone} onChange={handleChange} required />
-            <InputGroup label="National ID" name="nationalId" value={formData.nationalId} onChange={handleChange} required />
-            <SelectProject projects={projects} value={formData.property} onChange={(v: any) => setFormData({ ...formData, property: v })} />
+<Card className="max-w-4xl mx-auto p-6">
+  <CardContent className="space-y-6">
+    <form onSubmit={(e) => handleSubmit(e, "property")}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
+        <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+        <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+        <SelectPreferredContact value={formData.preferredContact} onChange={(v:any)=>setFormData({...formData, preferredContact:v})} />
+        <InputGroup label="Secondary Phone" name="secondary_phone" type="tel" value={formData.secondary_phone} onChange={handleChange} required />
+        <InputGroup label="National ID" name="nationalId" value={formData.nationalId} onChange={handleChange} required />
+        <div className="md:col-span-2">
+          <SelectProject projects={projects} value={formData.property} onChange={(v: any) => setFormData({ ...formData, property: v })} />
+        </div>
 
-            <div className="space-y-2">
-              <Label>Select Unit Type *</Label>
-              {hasFloorPlans ? (
-                <Select value={selectedUnitComposite} onValueChange={(v) => {
-                  setSelectedUnitComposite(v);
-                  const [typeOnly, floorPart] = v.split("::");
-                  const floorNum = (floorPart || '').replace('floor-', '');
-                  const opt = availableFloorUnits.find(item => item.key === v);
-                  const avail = (opt?.availability || 'available') as 'available' | 'sold' | 'reserved';
-                  setSelectedAvailability(avail);
-                  setFormData({ ...formData, unitType: typeOnly || '', floorNumber: floorNum || '' });
-                }}>
-                  <SelectTrigger><SelectValue placeholder="Select floor & type" /></SelectTrigger>
-                  <SelectContent>
-                    {availableFloorUnits.length === 0 ? (
-                      <SelectItem value="__none__" disabled>
-                        No units available
-                      </SelectItem>
-                    ) : (
-                      availableFloorUnits.map((item) => {
-                        const meta = units[item.type] || {} as { size?: string; price?: string };
-                        const detailParts = [meta.size, meta.price].filter(Boolean) as string[];
-                        const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
-                        return (
-                          <SelectItem key={item.key} value={item.key}>
-                            {`Floor ${item.floor} — ${item.type}${detail}`}
-                          </SelectItem>
-                        );
-                      })
-                    )}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Select value={formData.unitType} onValueChange={(v) => {
-                  const count = stock[v] ?? 0;
-                  const avail = count > 0 ? 'available' : 'sold';
-                  setSelectedAvailability(avail);
-                  if (avail !== 'available') {
-                    toast({ title: 'Not Available', description: `This unit is already ${avail}.`, variant: 'destructive' });
-                  }
-                  setFormData({ ...formData, unitType: v });
-                }}>
-                  <SelectTrigger><SelectValue placeholder="Select unit type" /></SelectTrigger>
-                  <SelectContent>
-                    {stockLoading ? (
-                      <SelectItem value="__loading__" disabled>
-                        Loading availability...
-                      </SelectItem>
-                    ) : (
-                      (() => {
-                        const allKeys = Object.keys(units);
-                        if (allKeys.length === 0) {
-                          return (
-                            <SelectItem value="__none__" disabled>
-                              No unit types configured
-                            </SelectItem>
-                          );
-                        }
-                        return allKeys.map((unit) => {
-                          const meta = units[unit] || {} as { size?: string; price?: string };
-                          const detailParts = [meta.size, meta.price].filter(Boolean) as string[];
-                          const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
-                          const count = stock[unit] ?? 0;
-                          const status = count > 0 ? 'Available' : 'Sold';
-                          const availabilityText = count > 0 ? `${count} available` : status;
-                          return (
-                            <SelectItem key={unit} value={unit}>
-                              {unit}{detail} — {availabilityText}
-                            </SelectItem>
-                          );
-                        });
-                      })()
-                    )}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+        <div className="md:col-span-2">
+          <Label>Select Unit Type *</Label>
+          {hasFloorPlans ? (
+            <Select value={selectedUnitComposite} onValueChange={(v) => {
+              setSelectedUnitComposite(v);
+              const [typeOnly, floorPart] = v.split("::");
+              const floorNum = (floorPart || '').replace('floor-', '');
+              const opt = availableFloorUnits.find(item => item.key === v);
+              const avail = (opt?.availability || 'available') as 'available' | 'sold' | 'reserved';
+              setSelectedAvailability(avail);
+              setFormData({ ...formData, unitType: typeOnly || '', floorNumber: floorNum || '' });
+            }}>
+              <SelectTrigger className="border border-[#088d92] focus:border-[#088d92] focus:ring-[#088d92]/30">
+  <SelectValue placeholder="Select floor & type" />
+</SelectTrigger>
+              <SelectContent>
+                {availableFloorUnits.length === 0 ? (
+                  <SelectItem value="__none__" disabled>No units available</SelectItem>
+                ) : (
+                  availableFloorUnits.map((item) => {
+                    const meta = units[item.type] || {} as { size?: string; price?: string };
+                    const detailParts = [meta.size, meta.price].filter(Boolean) as string[];
+                    const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
+                    return <SelectItem key={item.key} value={item.key}>{`Floor ${item.floor} — ${item.type}${detail}`}</SelectItem>;
+                  })
+                )}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Select value={formData.unitType} onValueChange={(v) => {
+              const count = stock[v] ?? 0;
+              const avail = count > 0 ? 'available' : 'sold';
+              setSelectedAvailability(avail);
+              if (avail !== 'available') {
+                toast({ title: 'Not Available', description: `This unit is already ${avail}.`, variant: 'destructive' });
+              }
+              setFormData({ ...formData, unitType: v });
+            }}>
+              <SelectTrigger className="border border-[#088d92] focus:border-[#088d92] focus:ring-[#088d92]/30">
+  <SelectValue placeholder="Select unit type" />
+</SelectTrigger>
+              <SelectContent>
+                {stockLoading ? (
+                  <SelectItem value="__loading__" disabled>Loading availability...</SelectItem>
+                ) : (
+                  (() => {
+                    const allKeys = Object.keys(units);
+                    if (allKeys.length === 0) {
+                      return <SelectItem value="__none__" disabled>No unit types configured</SelectItem>;
+                    }
+                    return allKeys.map((unit) => {
+                      const meta = units[unit] || {} as { size?: string; price?: string };
+                      const detailParts = [meta.size, meta.price].filter(Boolean) as string[];
+                      const detail = detailParts.length ? ` (${detailParts.join(' • ')})` : '';
+                      const count = stock[unit] ?? 0;
+                      const status = count > 0 ? 'Available' : 'Sold';
+                      const availabilityText = count > 0 ? `${count} available` : status;
+                      return <SelectItem key={unit} value={unit}>{unit}{detail} — {availabilityText}</SelectItem>;
+                    });
+                  })()
+                )}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
 
-            <InputGroup label="Move In Date" name="moveInDate" type="date" value={formData.moveInDate} onChange={handleChange} />
-            <TextareaGroup label="Notes" name="notes" value={formData.notes} onChange={handleChange} />
-            <ConsentCheckbox checked={formData.consent} onChange={(v: any) => setFormData({ ...formData, consent: v })} />
-            <div className="flex items-center space-x-2">
-              <Checkbox checked={formData.acceptTnC} onCheckedChange={(v: any) => setFormData({ ...formData, acceptTnC: !!v })} />
-              <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
-            </div>
-            <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
-            <Button 
-              type="submit" 
-              className="w-full bg-primary" 
-              disabled={!formData.consent || !formData.acceptTnC || isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Processing...
-                </>
-              ) : (
-                'Submit'
-              )}
-            </Button>
-          </form>
+        <InputGroup label="Move In Date" name="moveInDate" type="date" value={formData.moveInDate} onChange={handleChange} />
+        <div className="md:col-span-2">
+          <TextareaGroup label="Notes" name="notes" value={formData.notes} onChange={handleChange} />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <ConsentCheckbox checked={formData.consent} onChange={(v: any) => setFormData({ ...formData, consent: v })} />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox checked={formData.acceptTnC} onCheckedChange={(v: any) => setFormData({ ...formData, acceptTnC: !!v })} />
+          <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
+        </div>
+
+        {/* keep ReCAPTCHA commented if you prefer; uncomment to enable */}
+        <div className="md:col-span-2"><ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} /></div>
+
+        <div className="md:col-span-2">
+          <Button 
+            type="submit" 
+            className="w-full bg-primary" 
+            disabled={!formData.consent || !formData.acceptTnC || isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Processing...
+              </>
+            ) : ('Submit')}
+          </Button>
+        </div>
+      </div>
+    </form>
+  </CardContent>
+</Card>
         ) : (
-          <form onSubmit={(e) => handleSubmit(e, "appointment")} className="space-y-6 max-w-2xl mx-auto">
-            <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
-            <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
-            <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
-            <SelectPreferredContact value={formData.preferredContact} onChange={(v:any)=>setFormData({...formData, preferredContact:v})} />
-            <InputGroup label="Secondary Phone" name="secondary_phone" type="tel" value={formData.secondary_phone} onChange={handleChange} required />
-            <InputGroup label="Preferred Date & Time" name="appointmentDate" type="datetime-local" value={formData.appointmentDate} onChange={handleChange} required />
-            <TextareaGroup label="Notes" name="notes" value={formData.notes} onChange={handleChange} />
-            <ConsentCheckbox checked={formData.consent} onChange={(v: any) => setFormData({ ...formData, consent: v })} />
-            <div className="flex items-center space-x-2">
-              <Checkbox checked={formData.acceptTnC} onCheckedChange={(v: any) => setFormData({ ...formData, acceptTnC: !!v })} />
-              <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
-            </div>
-            <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
-            <Button 
-              type="submit" 
-              className="w-full bg-primary"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Processing...
-                </>
-              ) : (
-                'Book Appointment'
-              )}
-            </Button>
-          </form>
+<Card className="max-w-4xl mx-auto p-6">
+  <CardContent className="space-y-6">
+    <form onSubmit={(e) => handleSubmit(e, "appointment")}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
+        <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+        <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+        <SelectPreferredContact value={formData.preferredContact} onChange={(v:any)=>setFormData({...formData, preferredContact:v})} />
+        <InputGroup label="Secondary Phone" name="secondary_phone" type="tel" value={formData.secondary_phone} onChange={handleChange} required />
+        <InputGroup label="Preferred Date & Time" name="appointmentDate" type="datetime-local" value={formData.appointmentDate} onChange={handleChange} required />
+        <div className="md:col-span-2">
+          <TextareaGroup label="Notes" name="notes" value={formData.notes} onChange={handleChange} />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <ConsentCheckbox checked={formData.consent} onChange={(v: any) => setFormData({ ...formData, consent: v })} />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox checked={formData.acceptTnC} onCheckedChange={(v: any) => setFormData({ ...formData, acceptTnC: !!v })} />
+          <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
+        </div>
+
+        <div className="md:col-span-2"><ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} /></div>
+
+        <div className="md:col-span-2">
+          <Button 
+            type="submit" 
+            className="w-full bg-primary"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Processing...
+              </>
+            ) : ('Book Appointment')}
+          </Button>
+        </div>
+      </div>
+    </form>
+  </CardContent>
+</Card>
         )}
       </main>
       <Footer />
@@ -501,17 +521,32 @@ export default function Booking() {
   );
 }
 
-const InputGroup = ({ label, name, value, onChange, type = "text", required = false }: any) => (
+const InputGroup = ({ label, name, value, onChange, type = "text", required = false, className = "" }: any) => (
   <div className="space-y-2">
     <Label htmlFor={name}>{label}{required && " *"}</Label>
-    <Input id={name} name={name} type={type} value={value} onChange={onChange} required={required} />
+    <Input
+      id={name}
+      name={name}
+      type={type}
+      value={value}
+      onChange={onChange}
+      required={required}
+      className={`bg-transparent placeholder:text-muted-foreground text-foreground border border-[#088d92] focus:border-[#088d92] focus:ring-[#088d92]/30 ${className}`}
+    />
   </div>
 );
 
-const TextareaGroup = ({ label, name, value, onChange }: any) => (
+const TextareaGroup = ({ label, name, value, onChange, className = "" }: any) => (
   <div className="space-y-2">
     <Label htmlFor={name}>{label}</Label>
-    <Textarea id={name} name={name} rows={4} value={value} onChange={onChange} />
+    <Textarea
+      id={name}
+      name={name}
+      rows={4}
+      value={value}
+      onChange={onChange}
+      className={`bg-transparent placeholder:text-muted-foreground text-foreground border border-[#088d92] focus:border-[#088d92] focus:ring-[#088d92]/30 ${className}`}
+    />
   </div>
 );
 
@@ -519,7 +554,9 @@ const SelectProject = ({ projects, value, onChange }: any) => (
   <div className="space-y-2">
     <Label htmlFor="property">Select Property *</Label>
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger><SelectValue placeholder="Select property" /></SelectTrigger>
+      <SelectTrigger className="border border-[#088d92] focus:border-[#088d92] focus:ring-[#088d92]/30">
+  <SelectValue placeholder="Select property" />
+</SelectTrigger>
       <SelectContent>
         {projects.map((p: any) => (<SelectItem key={p.id} value={p.id}>{p.title} - {p.location}</SelectItem>))}
       </SelectContent>

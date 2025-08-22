@@ -400,37 +400,42 @@ const getLatestPercentage = (projectId: string) => {
                     </div>
 
                     <div className="flex gap-2 pt-2">
-                      {project.status === "active" && (
+                      {/* Responsive buttons: stacked on mobile, inline on sm+ */}
+                      <div className="flex flex-col sm:flex-row gap-2 pt-0 w-full">
+                        {project.status === "active" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setActiveProjectId(project.id);
+                              fetchProjectUpdates(project.id);
+                            }}
+                            className="w-full sm:flex-1 text-xs flex items-center justify-center"
+                          >
+                            <Wrench className="w-3 h-3 mr-1" />
+                            <span>View Progress</span>
+                          </Button>
+                        )}
+
+                        <Button
+                          size="sm"
+                          className="w-full sm:flex-1 text-xs flex items-center justify-center"
+                          onClick={() => handleBookNow(project)}
+                        >
+                          <Target className="w-3 h-3 mr-1" />
+                          <span>Book Now</span>
+                        </Button>
+
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            setActiveProjectId(project.id);
-                            fetchProjectUpdates(project.id);
-                          }}
-                          className="flex-1 text-xs"
+                          className="w-full sm:flex-1 text-xs flex items-center justify-center"
+                          onClick={() => navigate(`/projects/${project.id}`)}
                         >
-                          <Wrench className="w-3 h-3 mr-1" />
-                          View Progress
+                          <span>View Details</span>
                         </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        className="flex-1 text-xs"
-                        onClick={() => handleBookNow(project)}
-                      >
-                        <Target className="w-3 h-3 mr-1" />
-                        Book Now
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 text-xs"
-                        onClick={() => navigate(`/projects/${project.id}`)}
-                      >
-                        View Details
-                      </Button>
-                    </div>
+                      </div>
+                     </div>
                   </CardContent>
                 </Card>
               ))}

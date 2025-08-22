@@ -199,57 +199,64 @@ const Announcements = () => {
       {/* Main Content */}
       <div className="relative min-h-[calc(100vh-8rem)] overflow-hidden">
         {/* Announcement Display */}
+
         <div 
           className={`min-h-full py-8 sm:py-12 transition-all duration-700 ease-in-out transform ${
-            isScrolling ? 'opacity-0 translate-y-8' : 'opacity-100 translate-y-0'
+            isScrolling ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'
           }`}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-            <Link to={`/announcements/${currentAnnouncement.id}`} className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 w-full items-center group">
-              {/* Image Section */}
-              <div className="relative order-1 lg:order-1">
-                <div className="aspect-[4/3] sm:aspect-[16/10] lg:aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden shadow-xl sm:shadow-2xl">
-                  <img
-                src={currentAnnouncement.image_url || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop"}
-                    alt={currentAnnouncement.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
-                    <Badge className={`${getCategoryColor(currentAnnouncement.category)} border-0 text-xs sm:text-sm`}>
-                      <Tag className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
-                      {currentAnnouncement.category}
-                    </Badge>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col md:flex-row items-center md:items-start">
+            <Link
+              to={`/announcements/${currentAnnouncement.id}`}
+              className="block w-full"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-start">
+                {/* Image Section */}
+                <div className="relative w-full">
+                  <div className="aspect-[4/3] sm:aspect-[16/10] lg:aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden shadow-xl sm:shadow-2xl">
+                    <img
+                      src={currentAnnouncement.image_url || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop"}
+                      alt={currentAnnouncement.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
+                      <Badge className={`${getCategoryColor(currentAnnouncement.category)} border-0 text-xs sm:text-sm`}>
+                        <Tag className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                        {currentAnnouncement.category}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Content Section */}
-              <div className="space-y-4 sm:space-y-6 order-2 lg:order-2 lg:pl-8">
-                <div className="flex items-center text-muted-foreground text-xs sm:text-sm mb-3 sm:mb-4">
-                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                  {formatDate(currentAnnouncement.created_at)}
-                </div>
-                
-                <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-foreground leading-tight group-hover:underline">
-                  {currentAnnouncement.title}
-                </h1>
-                
-                <p className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed">
-                  {currentAnnouncement.short_description}
-                </p>
-                
-                <div className="pt-2 sm:pt-4">
-                  <p className="text-sm sm:text-base text-foreground leading-relaxed">
-                    {currentAnnouncement.content}
+                {/* Content Section */}
+                <div className="space-y-4 sm:space-y-6 lg:pl-8 w-full">
+                  <div className="flex items-center text-muted-foreground text-xs sm:text-sm mb-3 sm:mb-4">
+                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                    {formatDate(currentAnnouncement.created_at)}
+                  </div>
+
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-foreground leading-tight group-hover:underline">
+                    {currentAnnouncement.title}
+                  </h1>
+
+                  <p className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed">
+                    {currentAnnouncement.short_description}
                   </p>
+
+                  <div className="pt-2 sm:pt-4">
+                    <p className="text-sm sm:text-base text-foreground leading-relaxed">
+                      {currentAnnouncement.content}
+                    </p>
+                  </div>
                 </div>
               </div>
             </Link>
           </div>
         </div>
 
-        {/* Navigation Indicators */}
-        <div className="absolute right-3 sm:right-6 lg:right-8 top-1/2 transform -translate-y-1/2 flex flex-col space-y-1 sm:space-y-2">
+
+        {/* Navigation Indicators: hidden on small screens, show on md+ */}
+        <div className="hidden md:flex absolute right-4 top-1/2 transform -translate-y-1/2 flex-col space-y-1">
           {announcements.map((_, index) => (
             <button
               key={index}
@@ -257,9 +264,10 @@ const Announcements = () => {
                 if (!isScrolling) {
                   setIsScrolling(true);
                   setCurrentIndex(index);
-                  setTimeout(() => setIsScrolling(false), 800);
+                  setTimeout(() => setIsScrolling(false), 700);
                 }
               }}
+              aria-label={`Go to announcement ${index + 1}`}
               className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                 index === currentIndex 
                   ? 'bg-primary scale-125' 
@@ -269,8 +277,9 @@ const Announcements = () => {
           ))}
         </div>
 
-        {/* Scroll Hints */}
-        <div className="absolute bottom-4 sm:bottom-6 lg:bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center space-y-2 text-muted-foreground">
+
+        {/* Scroll Hints - always visible, moved slightly higher on small screens to avoid overlap */}
+        <div className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center space-y-2 text-muted-foreground z-30">
           <div className="text-xs sm:text-sm text-center">
             <div>{currentIndex + 1} of {announcements.length}</div>
             <div className="text-xs hidden sm:block">Scroll or use arrow keys to navigate</div>
