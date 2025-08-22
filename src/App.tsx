@@ -4,26 +4,37 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import Index from "./pages/Index";
-import About from "./pages/About";
-import Services from "./pages/Services";
-import Projects from "./pages/Projects";
-import ProjectDetail from "./pages/ProjectDetail";
-import ApartmentDetail from "./pages/ApartmentDetail";
-import Contact from "./pages/Contact";
-import Auth from "./pages/Auth";
-import AdminDashboard from "./pages/AdminDashboard";
-import Booking from "./pages/Booking";
-import Announcements from "./pages/Announcements";
-import AnnouncementDetail from "./pages/AnnouncementDetail";
-import Maps from "./pages/Maps";
-import VirtualTour from "./pages/VirtualTour";
-import NotFound from "./pages/NotFound";
-
+import { lazyLoad } from "@/utils/lazyLoad";
 import ScrollToTop from "./components/ScrollToTop";
-import BackToHomeButton from "./components/BackToHomeButton"; // ✅ أضف هذا السطر
+import BackToHomeButton from "./components/BackToHomeButton";
 
-const queryClient = new QueryClient();
+// Lazy load pages for better performance
+const Index = lazyLoad(() => import("./pages/Index"));
+const About = lazyLoad(() => import("./pages/About"));
+const Services = lazyLoad(() => import("./pages/Services"));
+const Projects = lazyLoad(() => import("./pages/Projects"));
+const ProjectDetail = lazyLoad(() => import("./pages/ProjectDetail"));
+const ApartmentDetail = lazyLoad(() => import("./pages/ApartmentDetail"));
+const Contact = lazyLoad(() => import("./pages/Contact"));
+const Auth = lazyLoad(() => import("./pages/Auth"));
+const AdminDashboard = lazyLoad(() => import("./pages/AdminDashboard"));
+const Booking = lazyLoad(() => import("./pages/Booking"));
+const Announcements = lazyLoad(() => import("./pages/Announcements"));
+const AnnouncementDetail = lazyLoad(() => import("./pages/AnnouncementDetail"));
+const Maps = lazyLoad(() => import("./pages/Maps"));
+const VirtualTour = lazyLoad(() => import("./pages/VirtualTour"));
+const NotFound = lazyLoad(() => import("./pages/NotFound"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (
@@ -33,7 +44,7 @@ function App() {
           <Toaster />
           <Sonner />
           <ScrollToTop />
-          <BackToHomeButton /> {/* ✅ الزر العائم */}
+          <BackToHomeButton />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
