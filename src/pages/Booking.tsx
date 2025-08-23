@@ -358,18 +358,18 @@ export default function Booking() {
 <Card className="max-w-4xl mx-auto p-6">
   <CardContent className="space-y-6">
     <form onSubmit={(e) => handleSubmit(e, "property")}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
         <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
         <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
         <SelectPreferredContact value={formData.preferredContact} onChange={(v:any)=>setFormData({...formData, preferredContact:v})} />
         <InputGroup label="Secondary Phone" name="secondary_phone" type="tel" value={formData.secondary_phone} onChange={handleChange} required />
         <InputGroup label="National ID" name="nationalId" value={formData.nationalId} onChange={handleChange} required />
-        <div className="md:col-span-2">
+        <div className="w-full">
           <SelectProject projects={projects} value={formData.property} onChange={(v: any) => setFormData({ ...formData, property: v })} />
         </div>
 
-        <div className="md:col-span-2">
+        <div className="w-full">
           <Label>Select Unit Type *</Label>
           {hasFloorPlans ? (
             <Select value={selectedUnitComposite} onValueChange={(v) => {
@@ -436,7 +436,7 @@ export default function Booking() {
         </div>
 
         <InputGroup label="Move In Date" name="moveInDate" type="date" value={formData.moveInDate} onChange={handleChange} />
-        <div className="md:col-span-2">
+        <div>
           <TextareaGroup label="Notes" name="notes" value={formData.notes} onChange={handleChange} />
         </div>
 
@@ -450,9 +450,13 @@ export default function Booking() {
         </div>
 
         {/* keep ReCAPTCHA commented if you prefer; uncomment to enable */}
-        <div className="md:col-span-2"><ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} /></div>
+        <div className="w-full flex justify-center mt-2">
+          <div style={{ maxWidth: 312, width: "100%" }}>
+            <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
+          </div>
+        </div>
 
-        <div className="md:col-span-2">
+        <div>
           <Button 
             type="submit" 
             className="w-full bg-primary" 
@@ -474,14 +478,14 @@ export default function Booking() {
 <Card className="max-w-4xl mx-auto p-6">
   <CardContent className="space-y-6">
     <form onSubmit={(e) => handleSubmit(e, "appointment")}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
         <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleChange} required />
         <InputGroup label="Phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
         <SelectPreferredContact value={formData.preferredContact} onChange={(v:any)=>setFormData({...formData, preferredContact:v})} />
         <InputGroup label="Secondary Phone" name="secondary_phone" type="tel" value={formData.secondary_phone} onChange={handleChange} required />
         <InputGroup label="Preferred Date & Time" name="appointmentDate" type="datetime-local" value={formData.appointmentDate} onChange={handleChange} required />
-        <div className="md:col-span-2">
+        <div>
           <TextareaGroup label="Notes" name="notes" value={formData.notes} onChange={handleChange} />
         </div>
 
@@ -494,9 +498,13 @@ export default function Booking() {
           <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
         </div>
 
-        <div className="md:col-span-2"><ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} /></div>
+        <div className="w-full flex justify-center mt-2">
+          <div style={{ maxWidth: 312, width: "100%" }}>
+            <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
+          </div>
+        </div>
 
-        <div className="md:col-span-2">
+        <div>
           <Button 
             type="submit" 
             className="w-full bg-primary"
