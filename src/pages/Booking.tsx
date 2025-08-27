@@ -355,7 +355,7 @@ export default function Booking() {
         </div>
 
         {bookingType === "property" ? (
-<Card className="max-w-4xl mx-auto p-6">
+<Card className="shadow-lg broder">
   <CardContent className="space-y-6">
     <form onSubmit={(e) => handleSubmit(e, "property")}>
       <div className="grid grid-cols-1 gap-4">
@@ -450,10 +450,8 @@ export default function Booking() {
         </div>
 
         {/* keep ReCAPTCHA commented if you prefer; uncomment to enable */}
-        <div className="w-full flex justify-center mt-2">
-          <div style={{ maxWidth: 312, width: "100%" }}>
+        <div className="pt-2">
             <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
-          </div>
         </div>
 
         <div>
@@ -475,7 +473,7 @@ export default function Booking() {
   </CardContent>
 </Card>
         ) : (
-<Card className="max-w-4xl mx-auto p-6">
+<Card className="shadow-lg border">
   <CardContent className="space-y-6">
     <form onSubmit={(e) => handleSubmit(e, "appointment")}>
       <div className="grid grid-cols-1 gap-4">
