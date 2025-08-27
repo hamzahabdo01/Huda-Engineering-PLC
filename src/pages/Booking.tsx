@@ -498,10 +498,8 @@ export default function Booking() {
           <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
         </div>
 
-        <div className="w-full flex justify-center mt-2">
-          <div style={{ maxWidth: 312, width: "100%" }}>
+        <div className="pt-2">
             <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
-          </div>
         </div>
 
         <div>
