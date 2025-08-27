@@ -356,7 +356,7 @@ export default function Booking() {
 
         {bookingType === "property" ? (
 <Card className="shadow-lg broder">
-  <CardContent className="space-y-6">
+  <CardContent className="space-y-8">
     <form onSubmit={(e) => handleSubmit(e, "property")}>
       <div className="grid grid-cols-1 gap-4">
         <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
@@ -474,7 +474,7 @@ export default function Booking() {
 </Card>
         ) : (
 <Card className="shadow-lg border">
-  <CardContent className="space-y-6">
+  <CardContent className="space-y-8">
     <form onSubmit={(e) => handleSubmit(e, "appointment")}>
       <div className="grid grid-cols-1 gap-4">
         <InputGroup label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
