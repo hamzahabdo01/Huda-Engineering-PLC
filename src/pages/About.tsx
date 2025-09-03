@@ -55,10 +55,10 @@ const About = () => {
           </div>
 
           {/* Stats Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-8 mb-20">
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="text-4xl font-bold text-primary mb-2">7+</div>
+                <div className="text-4xl font-bold text-primary mb-2">9+</div>
                 <CardTitle className="text-lg">{t("about.stats.years")}</CardTitle>
               </CardHeader>
               <CardContent>
@@ -92,17 +92,6 @@ const About = () => {
               </CardContent>
             </Card>
 
-            <Card className="text-center hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="text-4xl font-bold text-primary mb-2">100%</div>
-                <CardTitle className="text-lg">{t("about.stats.satisfaction")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  {t("about.stats.satisfactionDesc")}
-                </CardDescription>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </section>
@@ -238,58 +227,6 @@ const About = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Our Equipment */}
-      <section className="py-20 lg:py-32 bg-muted">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("about.equipment.title")}</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              {t("about.equipment.description")}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <Building2 className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-2xl">{t("about.equipment.heavy.title")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base mb-4">
-                  {t("about.equipment.heavy.description")}
-                </CardDescription>
-                <ul className="text-sm space-y-2 text-muted-foreground">
-                  <li>• Tower cranes for high-rise construction</li>
-                  <li>• Excavators for foundation work</li>
-                  <li>• Concrete mixers and pumps</li>
-                  <li>• Bulldozers for site preparation</li>
-                  <li>• Material handling equipment</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <Target className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-2xl">{t("about.equipment.precision.title")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base mb-4">
-                  Professional-grade tools and equipment for precision work, quality finishing, and detailed construction tasks.
-                </CardDescription>
-                <ul className="text-sm space-y-2 text-muted-foreground">
-                  <li>• Surveying and measurement tools</li>
-                  <li>• Power tools and equipment</li>
-                  <li>• Safety equipment and gear</li>
-                  <li>• Quality testing instruments</li>
-                  <li>• Finishing and detailing tools</li>
-                </ul>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </section>

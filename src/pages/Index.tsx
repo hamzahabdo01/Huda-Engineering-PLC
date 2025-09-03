@@ -17,132 +17,7 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden md:pt-0">
-        {/* Background Image with Overlay */}
-        <div className="absolute inset-0">
-          <img 
-            src={heroImage} 
-            alt="Modern real estate" 
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#00555b]/85 via-[#004147]/80 to-[#002b2f]/90"></div>
-        </div>
-        
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-8 lg:gap-16 items-center py-8 md:py-16">
-          {/* Left Content */}
-          <div className="text-white space-y-8">
-            <div className="space-y-2">
-              <div className="inline-flex items-center px-4 py-2 bg-white/10 rounded-full backdrop-blur-sm border border-white/20 animate-fade-in">
-                <span className="text-sm font-medium tracking-wide">{t("hero.badge")}</span>
-              </div>
-              
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold leading-tight animate-fade-in">
-                <span className="">{t("hero.title")}</span>
-                <span className="block text-white/90 mt-2">{t("hero.subtitle")}</span>
-              </h1>
-            </div>
-            
-            <p className="text-lg md:text-xl text-white/80 leading-relaxed max-w-lg animate-fade-in">
-              {t("hero.description")}
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 animate-fade-in">
-              <Button 
-                size="lg" 
-                className="bg-white text-[#00555b] hover:bg-white/90 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
-                asChild
-              >
-                <Link to="/booking">
-                  {t("Book Now")}
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
-                asChild
-              >
-                <Link to="/virtual-tour" className="flex items-center gap-2">
-                  <Play className="h-5 w-5" />
-                  {t("nav.virtualTour")}
-                </Link>
-              </Button>
-            </div>
-            
-            {/* Statistics */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-6 pt-8 animate-fade-in">
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-white mb-1">50+</div>
-                <div className="text-xs sm:text-sm text-white/70">{t("hero.projectsCompleted")}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-white mb-1">100%</div>
-                <div className="text-xs sm:text-sm text-white/70">{t("hero.clientSatisfaction")}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-white mb-1">15+</div>
-                <div className="text-xs sm:text-sm text-white/70">{t("hero.yearsExperience")}</div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Right Content - Property Showcase */}
-          <div className="relative space-y-6 mt-8 lg:mt-0">
-            {/* Featured Property Card */}
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6 shadow-2xl animate-fade-in">
-                              <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg sm:text-xl font-bold text-white">{t("hero.featuredProperty")}</h3>
-                  <span className="bg-green-400/20 text-green-300 text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full backdrop-blur-sm">
-                    {t("hero.availableNow")}
-                  </span>
-                </div>
-              
-              <div className="space-y-4">
-                                  <div className="grid grid-cols-2 gap-3 sm:gap-4 text-white/80">
-                    <div className="bg-white/5 rounded-lg p-2 sm:p-3 text-center">
-                      <div className="text-xl sm:text-2xl font-bold text-white">4</div>
-                      <div className="text-xs sm:text-sm">{t("hero.bedrooms")}</div>
-                    </div>
-                    <div className="bg-white/5 rounded-lg p-2 sm:p-3 text-center">
-                      <div className="text-xl sm:text-2xl font-bold text-white">3</div>
-                      <div className="text-xs sm:text-sm">{t("hero.bathrooms")}</div>
-                    </div>
-                  </div>
-                
-                                  <div className="flex items-center justify-between pt-4">
-                    <div>
-                      <div className="text-xs sm:text-sm text-white/70">{t("hero.startingFrom")}</div>
-                      <div className="text-2xl sm:text-3xl font-bold text-white">8.5M ETB</div>
-                    </div>
-                    <Button className="bg-white/20 hover:bg-white/30 text-white border-white/30 text-sm" asChild>
-                      <Link to="/projects">
-                        {t("hero.viewDetails")}
-                        <ArrowUpRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-              </div>
-            </div>
-            
-            {/* Property Info Cards */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3 sm:p-4 animate-fade-in">
-                <h3 className="text-xs sm:text-sm font-medium text-white/70 mb-1">{t("hero.location")}</h3>
-                <p className="text-sm sm:text-base text-white font-semibold">{t("hero.locationValue")}</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3 sm:p-4 animate-fade-in">
-                <h3 className="text-xs sm:text-sm font-medium text-white/70 mb-1">{t("hero.pricing")}</h3>
-                <p className="text-sm sm:text-base text-white font-semibold">{t("hero.pricingValue")}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Floating Elements */}
-        <div className="absolute top-20 left-20 w-32 h-32 bg-white/5 rounded-full blur-2xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-48 h-48 bg-white/5 rounded-full blur-2xl animate-pulse"></div>
-        <div className="absolute top-1/2 right-10 w-24 h-24 bg-white/5 rounded-full blur-xl animate-pulse"></div>
+      
       </section>
 
 
@@ -151,8 +26,6 @@ const Index = () => {
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="text-center mb-16">
       <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("whyChoose.title")}</h2>
-      <p className="text-xl text-muted-foreground max-w-3xl mx-auto">{t("whyChoose.description")}</p>
-      <p className="text-sm text-muted-foreground mt-2">These highlight cards are informational and not clickable.</p>
     </div>
     <div className="relative">
       {/* Gradient edge fades (mobile only) */}
