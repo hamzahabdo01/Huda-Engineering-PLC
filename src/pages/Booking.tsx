@@ -454,9 +454,9 @@ export default function Booking() {
         </div>
 
         {/* keep ReCAPTCHA commented if you prefer; uncomment to enable */}
-        {/* <div className="pt-2">
+        <div className="pt-2">
             <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
-        </div> */}
+        </div>
 
         <div>
           <Button 
@@ -500,9 +500,9 @@ export default function Booking() {
           <Label>I have read and agree to <button type="button" onClick={() => setIsTermsOpen(true)} className="text-primary underline">Terms & Conditions</button>.</Label>
         </div>
 
-        {/* <div className="pt-2">
+        <div className="pt-2">
             <ReCAPTCHA sitekey={SITE_KEY} onChange={(token) => setCaptchaToken(token)} />
-        </div> */}
+        </div>
 
         <div>
           <Button 
