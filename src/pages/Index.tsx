@@ -5,11 +5,64 @@ import { Building2, Users, Calendar, Phone, Mail, MapPin, Award, Shield, Clock, 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Logo from "@/components/Logo";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import heroImage from "@/assets/hero-real-estate.jpg";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface ProjectCardItem {
+  id: string;
+  title: string;
+  short_description: string;
+  image_url: string;
+}
+
+interface TestimonialItem {
+  id: string;
+  name: string;
+  project: string;
+  content: string;
+  rating: number;
+  video_url?: string | null;
+}
 const Index = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [previousProjects, setPreviousProjects] = useState<ProjectCardItem[]>([]);
+  const [testimonials, setTestimonials] = useState<TestimonialItem[] | null>(null);
+
+  useEffect(() => {
+    const fetchPrevious = async () => {
+      const { data } = await supabase
+        .from("projects")
+        .select("id,title,short_description,image_url,status,created_at")
+        .in("status", ["previous"]) 
+        .order("created_at", { ascending: false })
+        .limit(6);
+      const normalized = (data || []).map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        short_description: p.short_description,
+        image_url: p.image_url,
+      }));
+      setPreviousProjects(normalized);
+    };
+    const fetchTestimonials = async () => {
+      const { data, error } = await supabase
+        .from("testimonials")
+        .select("id,name,project,content,rating,video_url,created_at")
+        .order("created_at", { ascending: false })
+        .limit(6);
+      if (!error && data) {
+        setTestimonials(data as unknown as TestimonialItem[]);
+      } else {
+        setTestimonials(null);
+      }
+    };
+    fetchPrevious();
+    fetchTestimonials();
+  }, []);
   
   return (
     <div className="min-h-screen bg-background">
@@ -166,14 +219,11 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Featured Projects */}
+      {/* Previous Projects (from backend) */}
       <section className="py-20 lg:py-32 bg-background overflow-x-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">{t("projects.title")}</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              {t("projects.description")}
-            </p>
+            <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">Previous Projects</h2>
           </div>
 
           <div className="relative mb-16">
@@ -199,55 +249,38 @@ const Index = () => {
               className="flex gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide px-4 snap-x snap-mandatory md:snap-none scroll-smooth pb-2 items-stretch"
               style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth', overscrollBehaviorX: 'contain' }}
             >
-              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[85vw] max-w-[85vw] mx-auto md:min-w-0 md:max-w-none snap-center md:snap-none">
-                <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                  <Building2 className="w-16 h-16 text-primary" />
-                </div>
-                <CardHeader>
-                  <CardTitle>{t("projects.hudaApartment.title")}</CardTitle>
-                  <Badge className="w-fit">{t("projects.hudaApartment.floors")}</Badge>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>
-                    {t("projects.hudaApartment.description")}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[85vw] max-w-[85vw] mx-auto md:min-w-0 md:max-w-none snap-center md:snap-none">
-                <div className="h-48 bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center">
-                  <Building2 className="w-16 h-16 text-primary" />
-                </div>
-                <CardHeader>
-                  <CardTitle>{t("projects.sysLuxury.title")}</CardTitle>
-                  <Badge className="w-fit">{t("projects.sysLuxury.floors")}</Badge>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>
-                    {t("projects.sysLuxury.description")}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-              <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[85vw] max-w-[85vw] mx-auto md:min-w-0 md:max-w-none snap-center md:snap-none">
-                <div className="h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                  <Globe className="w-16 h-16 text-primary" />
-                </div>
-                <CardHeader>
-                  <CardTitle>{t("projects.tokomaOffice.title")}</CardTitle>
-                  <Badge className="w-fit">{t("projects.tokomaOffice.floors")}</Badge>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>
-                    {t("projects.tokomaOffice.description")}
-                  </CardDescription>
-                </CardContent>
-              </Card>
+              {previousProjects.map((proj) => (
+                <Card
+                  key={proj.id}
+                  onClick={() => navigate(`/projects/${proj.id}`)}
+                  role="link"
+                  tabIndex={0}
+                  className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[85vw] max-w-[85vw] mx-auto md:min-w-0 md:max-w-none snap-center md:snap-none cursor-pointer"
+                >
+                  <div className="h-48 bg-muted flex items-center justify-center overflow-hidden">
+                    {proj.image_url ? (
+                      <img src={proj.image_url} alt={proj.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <Building2 className="w-16 h-16 text-primary" />
+                    )}
+                  </div>
+                  <CardHeader>
+                    <CardTitle>{proj.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>
+                      {proj.short_description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
 
           <div className="text-center">
-            <Link to="/projects">
+            <Link to="/projects?tab=delivered">
               <Button size="lg" variant="outline" className="px-8 py-4">
-                {t("projects.viewAll")}
+                See more
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -258,7 +291,7 @@ const Index = () => {
       {/* Our Process */}
       
 
-      {/* Testimonials */}
+      {/* Testimonials (video from backend) */}
       <section className="py-20 lg:py-32 bg-background overflow-x-hidden">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div className="text-center mb-16">
@@ -289,38 +322,41 @@ const Index = () => {
       <div
         id="testimonials-scroll"
         className="flex gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8 scrollbar-hide px-4 snap-x snap-mandatory md:snap-none scroll-smooth pb-2 items-stretch"
-        style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth', overscrollBehaviorX: 'contain' }}
+        style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth', overscrollBehavior: 'contain' }}
       >
-      {[
+      {(testimonials ?? [
         {
+          id: "fallback-1",
           name: "Ahmed Hassan",
           project: "Residential Complex Owner",
           content: "Huda Engineering delivered our apartment complex on time and within budget. Their attention to detail and professional approach exceeded our expectations.",
           rating: 5,
-          video: "/videos/testimonial1.mp4"
+          video_url: "/videos/testimonial1.mp4"
         },
         {
+          id: "fallback-2",
           name: "Meron Tadesse",
           project: "Commercial Building Client",
           content: "The quality of construction and the professionalism of the team was outstanding. They handled every aspect of our office building project perfectly.",
           rating: 5,
-          video: "/videos/testimonial1.mp4"
+          video_url: "/videos/testimonial1.mp4"
         },
         {
+          id: "fallback-3",
           name: "Solomon Bekele",
           project: "Luxury Home Owner",
           content: "From design to completion, Huda Engineering provided exceptional service. Our dream home became reality thanks to their expertise and dedication.",
           rating: 5,
-          video: "/videos/testimonial1.mp4"
+          video_url: "/videos/testimonial1.mp4"
         }
-      ].map((testimonial, index) => (
+      ]).map((testimonial) => (
         <Card
-          key={index}
+          key={testimonial.id}
           className="hover:shadow-lg transition-shadow min-w-[85vw] max-w-[85vw] mx-auto md:min-w-0 md:max-w-none snap-center md:snap-none"
         >
           <CardHeader>
             <div className="flex mb-4">
-              {[...Array(testimonial.rating)].map((_, i) => (
+              {[...Array(Math.max(0, Math.min(5, testimonial.rating || 0)))].map((_, i) => (
                 <Star key={i} className="w-5 h-5 fill-accent text-accent" />
               ))}
             </div>
@@ -329,11 +365,11 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground italic mb-4">"{testimonial.content}"</p>
-            {testimonial.video && (
-              (testimonial.video.includes("youtube.com") || testimonial.video.includes("youtu.be")) ? (
+            {testimonial.video_url && (
+              (testimonial.video_url.includes("youtube.com") || testimonial.video_url.includes("youtu.be")) ? (
                 <div className="w-full h-56">
                   <iframe
-                    src={testimonial.video}
+                    src={testimonial.video_url}
                     title={`${testimonial.name} video testimonial`}
                     allowFullScreen
                     className="w-full h-full rounded-lg"
@@ -341,7 +377,7 @@ const Index = () => {
                 </div>
               ) : (
                 <video controls className="w-full rounded-lg">
-                  <source src={testimonial.video} type="video/mp4" />
+                  <source src={testimonial.video_url} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
               )

@@ -12,12 +12,16 @@ import { supabase } from "@/integrations/supabase/client";
 import ReCAPTCHA from "react-google-recaptcha";
 import { SITE_RECAPTCHA_KEY } from "@/utils/env";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Captcha site key is injected via env
 const SITE_KEY = SITE_RECAPTCHA_KEY;
 
 export default function Booking() {
   const { toast } = useToast();
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [termsChoice, setTermsChoice] = useState<"agree" | "disagree" | "">("");
   const [projects, setProjects] = useState<any[]>([]);
   const [stock, setStock] = useState<Record<string, number>>({});
   const [stockLoading, setStockLoading] = useState(false);
@@ -446,7 +450,7 @@ export default function Booking() {
 
         <div className="flex items-center space-x-2">
           <Checkbox checked={formData.acceptTnC} onCheckedChange={(v: any) => setFormData({ ...formData, acceptTnC: !!v })} />
-          <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
+          <Label>I have read and agree to <button type="button" onClick={() => setIsTermsOpen(true)} className="text-primary underline">Terms & Conditions</button>.</Label>
         </div>
 
         {/* keep ReCAPTCHA commented if you prefer; uncomment to enable */}
@@ -493,7 +497,7 @@ export default function Booking() {
 
         <div className="flex items-center space-x-2">
           <Checkbox checked={formData.acceptTnC} onCheckedChange={(v: any) => setFormData({ ...formData, acceptTnC: !!v })} />
-          <Label>I have read and agree to <a href="/terms-and-conditions" className="text-primary underline">Terms & Conditions</a>.</Label>
+          <Label>I have read and agree to <button type="button" onClick={() => setIsTermsOpen(true)} className="text-primary underline">Terms & Conditions</button>.</Label>
         </div>
 
         {/* <div className="pt-2">
@@ -520,6 +524,145 @@ export default function Booking() {
 </Card>
         )}
       </main>
+      <Dialog open={isTermsOpen} onOpenChange={(open) => { setIsTermsOpen(open); if (!open) setTermsChoice(""); }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Terms and Conditions</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 text-sm leading-6">
+            <section className="space-y-2">
+              <p>These Terms and Conditions govern your use of the website of Huda Engineering PLC. By accessing or using this website, you agree to be bound by these Terms. If you do not agree, please do not use the Site.</p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">1. Use of the Site</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>1.1 You may use this Site only for lawful purposes and in accordance with these Terms.</li>
+                <li>1.2 You agree not to misuse the Site, attempt unauthorized access, or interfere with its operation.</li>
+              </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">2. Services</h3>
+              <p>2.1 The Site allows users to:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>View information about properties and projects.</li>
+                <li>Book property viewings and appointments online.</li>
+                <li>Submit inquiries.</li>
+              </ul>
+              <p>2.2 All bookings are subject to confirmation by Huda Engineering and do not create any binding agreement for purchase, lease, or service.</p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">3. Booking and Appointments</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>3.1 Provide accurate and complete information when submitting a booking.</li>
+                <li>3.2 Appointments are confirmed only after you receive confirmation by email, phone, or SMS.</li>
+                <li>3.3 We may decline, reschedule, or cancel bookings at our discretion.</li>
+              </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">4. Cancellations</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>4.1 You may cancel or reschedule by providing at least 24 hours’ notice.</li>
+                <li>4.2 Failure to attend without notice may affect your ability to make future bookings.</li>
+              </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">5. Payments</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>5.1 Online bookings are free of charge unless otherwise stated.</li>
+                <li>5.2 Any purchase, lease, or service agreement is subject to a separate written contract.</li>
+              </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">6. Intellectual Property</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>6.1 All content on the Site is the property of Huda Engineering PLC.</li>
+                <li>6.2 You may not copy, modify, distribute, or use any content without prior written consent.</li>
+              </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">7. Privacy</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>7.1 Personal information is used only for booking management and communication.</li>
+                <li>7.2 We handle information according to our Privacy Policy.</li>
+              </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">8. Limitation of Liability</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>8.1 We strive for accuracy but do not guarantee error-free content.</li>
+                <li>8.2 We are not responsible for any loss arising from use of the Site.</li>
+              </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">9. Termination</h3>
+              <p>9.1 We may suspend or terminate access if you violate these Terms or misuse the platform.</p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">10. Governing Law</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>10.1 Governed by the laws of the Federal Democratic Republic of Ethiopia.</li>
+                <li>10.2 Disputes are subject to the courts of Ethiopia.</li>
+              </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">11. Changes to Terms</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>11.1 We may update or modify these Terms at any time.</li>
+                <li>11.2 Changes are effective once posted on this page.</li>
+              </ul>
+            </section>
+
+            <section className="space-y-1">
+              <h3 className="text-base font-semibold">12. Contact Us</h3>
+              <p>Tel: +251940666661/62</p>
+              <p>Tel: +251993864242</p>
+              <p>Email: hudaconstructionoffice@gmail.com</p>
+              <p>Location: Amnen Building 2nd floor, behind Abyssinia Plaza</p>
+              <p>Web: www.hudaengineering.com</p>
+              <p>Huda Engineering - Trustworthy real estate</p>
+            </section>
+
+            <div className="pt-2 border-t">
+              <Label className="mb-2 block">Please confirm your choice:</Label>
+              <RadioGroup value={termsChoice} onValueChange={(v:any) => setTermsChoice(v)} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="agree" id="tnc_agree" />
+                  <Label htmlFor="tnc_agree">I have read and I agree</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="disagree" id="tnc_disagree" />
+                  <Label htmlFor="tnc_disagree">I do not agree</Label>
+                </div>
+              </RadioGroup>
+              <div className="mt-4 flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsTermsOpen(false)}>Close</Button>
+                <Button 
+                  onClick={() => {
+                    if (termsChoice === "agree") {
+                      setFormData((prev:any) => ({ ...prev, acceptTnC: true }));
+                      setIsTermsOpen(false);
+                    }
+                  }}
+                  disabled={termsChoice !== "agree"}
+                >
+                  Accept & Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Footer />
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -33,7 +33,7 @@ interface Project {
   short_description: string;
   location: string;
   project_type: string;
-  status: "active" | "completed" | "upcoming";
+  status: "active" | "completed" | "upcoming" | "previous";
   start_date: string;
   end_date: string;
   image_url: string;
@@ -48,6 +48,7 @@ interface Project {
 const Projects = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("active");
@@ -55,8 +56,14 @@ const Projects = () => {
   const [projectPercentages, setProjectPercentages] = useState<Record<string, number>>({});
 
   useEffect(() => {
+    // Initialize tab from URL param, supports: delivered->completed, ongoing->active, previous, upcoming
+    const tabParam = (searchParams.get("tab") || "").toLowerCase();
+    if (tabParam === "delivered" || tabParam === "completed") setActiveTab("completed");
+    else if (tabParam === "ongoing" || tabParam === "active") setActiveTab("active");
+    else if (tabParam === "upcoming") setActiveTab("upcoming");
+    else if (tabParam === "previous") setActiveTab("previous");
     fetchProjects();
-  }, []);
+  }, [searchParams]);
 
   const fetchLatestPercentages = async (projectIds: string[]) => {
   if (!projectIds?.length) return;
@@ -215,26 +222,33 @@ const getLatestPercentage = (projectId: string) => {
 
       <section className="py-10 bg-muted">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-center gap-4 mb-10">
-            <Button
-              variant={activeTab === "active" ? "default" : "outline"}
-              onClick={() => setActiveTab("active")}
-            >
-              Ongoing
-            </Button>
-            <Button
-              variant={activeTab === "completed" ? "default" : "outline"}
-              onClick={() => setActiveTab("completed")}
-            >
-              Delivered
-            </Button>
-            <Button
-              variant={activeTab === "upcoming" ? "default" : "outline"}
-              onClick={() => setActiveTab("upcoming")}
-            >
-              Upcoming
-            </Button>
-          </div>
+<div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-10">
+  <Button
+    variant={activeTab === "active" ? "default" : "outline"}
+    onClick={() => setActiveTab("active")}
+  >
+    Ongoing
+  </Button>
+  <Button
+    variant={activeTab === "completed" ? "default" : "outline"}
+    onClick={() => setActiveTab("completed")}
+  >
+    Delivered
+  </Button>
+  <Button
+    variant={activeTab === "upcoming" ? "default" : "outline"}
+    onClick={() => setActiveTab("upcoming")}
+  >
+    Upcoming
+  </Button>
+  <Button
+    variant={activeTab === "previous" ? "default" : "outline"}
+    onClick={() => setActiveTab("previous")}
+  >
+    Previous
+  </Button>
+</div>
+
 
           {filteredProjects.length === 0 ? (
             <div className="text-center py-12">
@@ -247,197 +261,158 @@ const getLatestPercentage = (projectId: string) => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-8">
               {filteredProjects.map((project) => (
                 <Card
-                  key={project.id}
-                  className="hover:shadow-xl transition-all duration-300 overflow-hidden border-0 bg-white/80 backdrop-blur-sm"
-                >
-                  <div className="relative">
-                    <div
-                      className={`bg-gradient-to-br ${getStatusColor(
-                        project.status
-                      )} h-56 flex items-center justify-center overflow-hidden relative`}
-                    >
-                      {project.image_url ? (
-                        <img
-                          src={project.image_url}
-                          alt={project.title}
-                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                        />
-                      ) : (
-                        <Building2 className="w-16 h-16 text-white" />
-                      )}
-                      <div className="absolute top-4 right-4">
-                        {getStatusBadge(project.status)}
-                      </div>
-                      {project.status === "active" && (
-                        <div className="absolute bottom-4 left-4 right-4">
-                          <div className="bg-white/10 backdrop-blur-md rounded-lg p-3">
-                            <div className="flex justify-between mb-2 text-xs text-white">
-                              <span>Project Progress</span>
-                              <span>
-                                {getLatestPercentage(project.id)}%
-                              </span>
-                            </div>
-                            <Progress 
-                              value={getLatestPercentage(project.id)} 
-                              className="h-2 bg-white/20"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-xl line-clamp-2 mb-2">
-                      {project.title}
-                    </CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Building2 className="w-4 h-4 text-primary" />
-                      <span className="line-clamp-1">{project.project_type}</span>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 gap-3">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-                        <span className="truncate">{project.location}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-                        <span>Started: {new Date(project.start_date).getFullYear()}</span>
-                        {project.end_date && (
-                          <>
-                            <span>•</span>
-                            <span>Target: {new Date(project.end_date).getFullYear()}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
+  key={project.id}
+  onClick={() => navigate(`/projects/${project.id}`)}
+  role="link"
+  tabIndex={0}
+  className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border bg-white/90 backdrop-blur-sm rounded-xl"
+>
+  <div className="flex flex-col md:flex-row md:items-center p-3 md:p-4 gap-4">
+    {/* Left: Thumbnail */}
+    <div className="relative w-full md:w-64 lg:w-80 aspect-video rounded-lg overflow-hidden flex-shrink-0">
+      <div
+        className={`bg-gradient-to-br ${getStatusColor(
+          project.status
+        )} w-full h-full flex items-center justify-center overflow-hidden relative`}
+      >
+        {project.image_url ? (
+          <img
+            src={project.image_url}
+            alt={project.title}
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          />
+        ) : (
+          <Building2 className="w-16 h-16 text-white" />
+        )}
 
-                    {Object.keys(project.units || {}).length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                          <Users className="w-4 h-4 text-primary" />
-                          <span>Available Units</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Object.entries(project.units).map(([type, price]) => (
-                            <div key={type} className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-center">
-                              <div className="text-sm font-medium text-primary">{type}</div>
-                              <div className="text-xs text-muted-foreground">{price}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+        {/* Status Badge */}
+        <div className="absolute top-2 right-2">{getStatusBadge(project.status)}</div>
 
-                    {project.floor_plans && project.floor_plans.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                          <Building2 className="w-4 h-4 text-primary" />
-                          <span>Floors & Types</span>
-                        </div>
-                        <div className="space-y-1 text-xs text-muted-foreground">
-                          <div>Floors: {project.floor_plans.length}</div>
-                          <div className="grid grid-cols-2 gap-1">
-                            {project.floor_plans.slice(0, 2).map((floor) => (
-                              <div key={floor.floor_number} className="bg-secondary/30 rounded p-2">
-                                <div className="font-medium text-foreground mb-1">Floor {floor.floor_number}</div>
-                                <div className="space-y-1">
-                                  {floor.apartment_types.slice(0, 2).map((apt, idx) => (
-                                    <div key={idx} className="flex justify-between">
-                                      <span>{apt.type}{apt.size ? ` (${apt.size})` : ''}</span>
-                                      <span className={apt.availability === 'available' ? 'text-green-600' : 'text-muted-foreground'}>
-                                        {apt.availability || 'n/a'}
-                                      </span>
-                                    </div>
-                                  ))}
-                                  {floor.apartment_types.length > 2 && (
-                                    <div className="text-center">+{floor.apartment_types.length - 2} more</div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+        {/* Progress overlay */}
+        {project.status === "active" && (
+          <div className="absolute bottom-2 left-2 right-2">
+            <div className="bg-black/30 backdrop-blur-md rounded-md p-2">
+              <div className="flex justify-between text-xs text-white">
+                <span>Progress</span>
+                <span>{getLatestPercentage(project.id)}%</span>
+              </div>
+              <Progress
+                value={getLatestPercentage(project.id)}
+                className="h-1.5 bg-white/20"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
 
-                    {project.Amenities && project.Amenities.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                          <CheckCircle className="w-4 h-4 text-primary" />
-                          <span>Key Amenities</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {project.Amenities.slice(0, 4).map((amenity, idx) => (
-                            <Badge
-                              key={idx}
-                              variant="secondary"
-                              className="text-xs bg-primary/10 text-primary hover:bg-primary/20"
-                            >
-                              {amenity}
-                            </Badge>
-                          ))}
-                          {project.Amenities.length > 4 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{project.Amenities.length - 4} more
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    )}
+    {/* Right: Details */}
+    <div className="flex-1 flex flex-col justify-between">
+      {/* Title + Meta */}
+      <div>
+        <CardHeader className="py-0 px-0">
+          <CardTitle className="text-lg md:text-xl line-clamp-1">{project.title}</CardTitle>
+          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
+            <Building2 className="w-4 h-4 text-primary" />
+            <span className="truncate">{project.project_type}</span>
+          </div>
+        </CardHeader>
 
-                    <div className="bg-secondary/30 rounded-lg p-3">
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {project.short_description}
-                      </p>
-                    </div>
+        <CardContent className="px-0 pt-2 pb-0">
+          <div className="flex flex-col gap-2 text-xs md:text-sm">
+            <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+              <MapPin className="w-4 h-4 text-primary" />
+              <span className="truncate">{project.location}</span>
+              <Calendar className="w-4 h-4 text-primary" />
+              <span>Start {new Date(project.start_date).getFullYear()}</span>
+              {project.end_date && (
+                <span className="whitespace-nowrap">
+                  • Target {new Date(project.end_date).getFullYear()}
+                </span>
+              )}
+            </div>
 
-                    <div className="flex gap-2 pt-2">
-                      {/* Responsive buttons: stacked on mobile, inline on sm+ */}
-                      <div className="flex flex-col sm:flex-row gap-2 pt-0 w-full">
-                        {project.status === "active" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setActiveProjectId(project.id);
-                              fetchProjectUpdates(project.id);
-                            }}
-                            className="w-full sm:flex-1 text-xs flex items-center justify-center"
-                          >
-                            <Wrench className="w-3 h-3 mr-1" />
-                            <span>View Progress</span>
-                          </Button>
-                        )}
+            {/* Units */}
+            {Object.keys(project.units || {}).length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Users className="w-4 h-4 text-primary" />
+                {Object.entries(project.units).slice(0, 3).map(([type, price]) => (
+                  <Badge
+                    key={type}
+                    variant="secondary"
+                    className="text-[10px] md:text-xs bg-primary/10 text-primary"
+                  >
+                    {type}{price ? ` • ${price}` : ''}
+                  </Badge>
+                ))}
+                {Object.entries(project.units).length > 3 && (
+                  <Badge variant="outline" className="text-[10px] md:text-xs">
+                    +{Object.entries(project.units).length - 3} more
+                  </Badge>
+                )}
+              </div>
+            )}
 
-                        <Button
-                          size="sm"
-                          className="w-full sm:flex-1 text-xs flex items-center justify-center"
-                          onClick={() => handleBookNow(project)}
-                        >
-                          <Target className="w-3 h-3 mr-1" />
-                          <span>Book Now</span>
-                        </Button>
+            {/* Amenities */}
+            {project.Amenities && project.Amenities.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <CheckCircle className="w-4 h-4 text-primary" />
+                {project.Amenities.slice(0, 3).map((amenity, idx) => (
+                  <Badge
+                    key={idx}
+                    variant="secondary"
+                    className="text-[10px] md:text-xs bg-primary/10 text-primary"
+                  >
+                    {amenity}
+                  </Badge>
+                ))}
+                {project.Amenities.length > 3 && (
+                  <Badge variant="outline" className="text-[10px] md:text-xs">
+                    +{project.Amenities.length - 3} more
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </div>
 
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full sm:flex-1 text-xs flex items-center justify-center"
-                          onClick={() => navigate(`/projects/${project.id}`)}
-                        >
-                          <span>View Details</span>
-                        </Button>
-                      </div>
-                     </div>
-                  </CardContent>
-                </Card>
+      {/* Action buttons */}
+      <div className="mt-4 flex gap-2 justify-end md:justify-start">
+        {project.status === "active" && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveProjectId(project.id);
+              fetchProjectUpdates(project.id);
+            }}
+          >
+            <Wrench className="w-3 h-3 mr-1" />
+            Progress
+          </Button>
+        )}
+        <Button
+          size="sm"
+          className="text-xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleBookNow(project);
+          }}
+        >
+          <Target className="w-3 h-3 mr-1" />
+          Book
+        </Button>
+      </div>
+    </div>
+  </div>
+</Card>
+
               ))}
             </div>
           )}

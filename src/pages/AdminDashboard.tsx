@@ -26,7 +26,8 @@ import {
   XCircle,
   MapPin,
   Building2,
-  Target
+  Target,
+  Play
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -130,6 +131,7 @@ const AdminDashboard = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [testimonials, setTestimonials] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   // Dialog states
@@ -171,6 +173,16 @@ const [updates, setUpdates] = useState([]);
     image_url: "",
     scheduled_for:"",
     is_published: false,
+  });
+  // Testimonials form state
+  const [isAddTestimonialOpen, setIsAddTestimonialOpen] = useState(false);
+  const [editingTestimonialId, setEditingTestimonialId] = useState<string | null>(null);
+  const [newTestimonial, setNewTestimonial] = useState({
+    name: "",
+    project: "",
+    content: "",
+    rating: 5 as number,
+    video_url: "",
   });
   // Floor plan management state
   const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
@@ -254,7 +266,7 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
 
 
   const [AmenitiesInput, setAmenitiesInput] = useState("");
-  const [activeTab, setActiveTab] = useState<'contacts' | 'bookings' | 'projects' | 'announcements' | 'appointments'>("contacts");
+  const [activeTab, setActiveTab] = useState<'contacts' | 'bookings' | 'projects' | 'announcements' | 'appointments' | 'testimonials'>("contacts");
   const [deletingContact, setDeletingContact] = useState<string | null>(null);
   const [deletingBooking, setDeletingBooking] = useState<string | null>(null);
   const [deletingAppointment, setDeletingAppointment] = useState<string | null>(null);
@@ -272,11 +284,12 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
       console.log('🔐 Current user:', user?.email);
       console.log('👤 Current profile:', profile);
       
-      const [contactsRes, projectsRes, announcementsRes, appointmentsRes] = await Promise.all([
+      const [contactsRes, projectsRes, announcementsRes, appointmentsRes, testimonialsRes] = await Promise.all([
         supabase.from('contact_submissions').select('*').order('created_at', { ascending: false }),
         supabase.from('projects').select('*').order('created_at', { ascending: false }),
         supabase.from('announcements').select('*').order('created_at', { ascending: false }),
         supabase.from('appointments').select('*').order('created_at', { ascending: false }),
+        supabase.from('testimonials').select('*').order('created_at', { ascending: false }),
       ]);
 
       // Fetch bookings with property names
@@ -295,6 +308,7 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
       console.log('🏗️ Projects response:', projectsRes);
       console.log('📢 Announcements response:', announcementsRes);
       console.log('📅 Appointments response:', appointmentsRes);
+      console.log('🎬 Testimonials response:', testimonialsRes);
 
       if (contactsRes.error) {
         console.error('❌ Contacts error:', contactsRes.error);
@@ -347,6 +361,12 @@ const updateApartmentType = (floorId: string, apartmentId: string, field: keyof 
       } else {
         console.log(`✅ Setting ${announcementsRes.data?.length || 0} announcements`);
         setAnnouncements(announcementsRes.data as Announcement[] || []);
+      }
+
+      if (testimonialsRes.error) {
+        console.error('❌ Testimonials error:', testimonialsRes.error);
+      } else {
+        setTestimonials(testimonialsRes.data || []);
       }
 
       if (appointmentsRes.error) {
@@ -1417,6 +1437,16 @@ const handleEdit = (updateItem: any) => {
               </div>
             </CardContent>
           </Card>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveTab('testimonials')}>
+            <CardContent className="flex items-center p-3 sm:p-4 lg:p-6">
+              <Play className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-indigo-600 flex-shrink-0" />
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Testimonials</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">{testimonials.length}</p>
+                <p className="text-xs text-muted-foreground truncate">Manage video testimonials</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
 
@@ -1730,6 +1760,107 @@ const handleEdit = (updateItem: any) => {
               )}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="testimonials" className="space-y-3 sm:space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg sm:text-xl font-semibold">Testimonials</h2>
+            <Dialog open={isAddTestimonialOpen} onOpenChange={setIsAddTestimonialOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" onClick={() => {
+                  setEditingTestimonialId(null);
+                  setNewTestimonial({ name: "", project: "", content: "", rating: 5, video_url: "" });
+                }}>Add Testimonial</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>{editingTestimonialId ? "Edit Testimonial" : "Add Testimonial"}</DialogTitle>
+                  <DialogDescription>Manage client testimonial videos here. These will appear on the homepage.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <Label>Name</Label>
+                    <Input value={newTestimonial.name} onChange={(e) => setNewTestimonial({ ...newTestimonial, name: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Project</Label>
+                    <Input value={newTestimonial.project} onChange={(e) => setNewTestimonial({ ...newTestimonial, project: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Content</Label>
+                    <Textarea rows={3} value={newTestimonial.content} onChange={(e) => setNewTestimonial({ ...newTestimonial, content: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>Rating (1-5)</Label>
+                    <Input type="number" min={1} max={5} value={newTestimonial.rating} onChange={(e) => setNewTestimonial({ ...newTestimonial, rating: Math.max(1, Math.min(5, Number(e.target.value) || 0)) })} />
+                  </div>
+                  <div>
+                    <Label>Video URL (YouTube or MP4)</Label>
+                    <Input value={newTestimonial.video_url} onChange={(e) => setNewTestimonial({ ...newTestimonial, video_url: e.target.value })} placeholder="https://youtu.be/... or https://.../video.mp4" />
+                  </div>
+                  <Button onClick={async () => {
+                    if (!newTestimonial.name || !newTestimonial.content) {
+                      toast({ title: "Missing fields", description: "Name and content are required", variant: "destructive" });
+                      return;
+                    }
+                    if (editingTestimonialId) {
+                      const { error } = await supabase.from('testimonials').update(newTestimonial).eq('id', editingTestimonialId);
+                      if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                    } else {
+                      const { error } = await supabase.from('testimonials').insert([newTestimonial]);
+                      if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                    }
+                    setIsAddTestimonialOpen(false);
+                    setEditingTestimonialId(null);
+                    fetchData();
+                  }} className="w-full">{editingTestimonialId ? 'Save Changes' : 'Add Testimonial'}</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+            {testimonials.length === 0 ? (
+              <Card className="col-span-full"><CardContent className="py-8 text-center text-muted-foreground">No testimonials yet</CardContent></Card>
+            ) : (
+              testimonials.map((t) => (
+                <Card key={t.id} className="hover:shadow-sm">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-base">{t.name}</CardTitle>
+                        <CardDescription className="text-xs">{t.project}</CardDescription>
+                      </div>
+                      <Badge>{t.rating}/5</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-2">{t.content}</p>
+                    {t.video_url && (
+                      (String(t.video_url).includes('youtube.com') || String(t.video_url).includes('youtu.be')) ? (
+                        <div className="w-full aspect-video">
+                          <iframe src={t.video_url} className="w-full h-full rounded" allowFullScreen title={`Testimonial of ${t.name}`}></iframe>
+                        </div>
+                      ) : (
+                        <video src={t.video_url} controls className="w-full rounded" />
+                      )
+                    )}
+                    <div className="flex gap-2 mt-3">
+                      <Button size="sm" variant="outline" onClick={() => {
+                        setEditingTestimonialId(t.id);
+                        setNewTestimonial({ name: t.name, project: t.project, content: t.content, rating: t.rating, video_url: t.video_url || '' });
+                        setIsAddTestimonialOpen(true);
+                      }}>Edit</Button>
+                      <Button size="sm" variant="destructive" onClick={async () => {
+                        const { error } = await supabase.from('testimonials').delete().eq('id', t.id);
+                        if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                        fetchData();
+                      }}>Delete</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
         </TabsContent>
 
                       <TabsContent value="projects" className="space-y-3 sm:space-y-4">
@@ -2091,6 +2222,7 @@ const handleEdit = (updateItem: any) => {
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="upcoming">Upcoming</SelectItem>
+                <SelectItem value="previous">Previous</SelectItem>
               </SelectContent>
             </Select>
           </div>
