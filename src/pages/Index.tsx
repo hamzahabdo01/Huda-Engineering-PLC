@@ -50,7 +50,7 @@ const Index = () => {
     const video = videoRef.current;
     if (!video) return;
 
-    const hlsUrl = "/videos/Exterior Animation R1.m3u8"; // HLS playlist URL
+    const hlsUrl = "/videos/master.m3u8"; // HLS playlist URL
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // Safari can play HLS directly
@@ -109,6 +109,7 @@ const Index = () => {
         muted
         loop
         playsInline
+        preload="auto"
     />
   {/* <video
     className="w-full h-full object-cover rounded-lg shadow-xl"
