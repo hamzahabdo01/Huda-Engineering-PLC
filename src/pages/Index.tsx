@@ -7,8 +7,10 @@ import Footer from "@/components/Footer";
 import Logo from "@/components/Logo";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import Hls from "hls.js";
+
 
 interface ProjectCardItem {
   id: string;
@@ -30,20 +32,36 @@ const Index = () => {
   const navigate = useNavigate();
   const [previousProjects, setPreviousProjects] = useState<ProjectCardItem[]>([]);
   const [testimonials, setTestimonials] = useState<TestimonialItem[] | null>(null);
-  const [videoSrc, setVideoSrc] = useState("/videos/Exterior Animation R1.mp4");
+  // const [videoSrc, setVideoSrc] = useState("/videos/Exterior Animation R1.mp4");
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
 
-  const getVideoSource = () => {
-  const connection = (navigator as any).connection;
-  if (connection) {
-    if (connection.downlink < 1.5) return "/videos/Exterior Animation R1 480p.mp4";  // very slow
-    if (connection.downlink < 3) return "/videos/Exterior Animation R1 640p.mp4";   // medium
-  }
-  return "/videos/Exterior Animation R1.mp4"; // fast connection
-  };
+
+  // const getVideoSource = () => {
+  // const connection = (navigator as any).connection;
+  // if (connection) {
+  //   if (connection.downlink < 1.5) return "/videos/Exterior Animation R1 480p.mp4";  // very slow
+  //   if (connection.downlink < 3) return "/videos/Exterior Animation R1 640p.mp4";   // medium
+  // }
+  // return "/videos/Exterior Animation R1.mp4"; // fast connection
+  // };
 
   useEffect(() => {
-    setVideoSrc(getVideoSource());
+    const video = videoRef.current;
+    if (!video) return;
+
+    const hlsUrl = "/videos/Exterior Animation R1.m3u8"; // HLS playlist URL
+
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari can play HLS directly
+      video.src = hlsUrl;
+    } else if (Hls.isSupported()) {
+      // Other browsers use hls.js
+      const hls = new Hls();
+      hls.loadSource(hlsUrl);
+      hls.attachMedia(video);
+    }
+    // setVideoSrc(getVideoSource());
     const fetchPrevious = async () => {
       const { data } = await supabase
         .from("projects")
@@ -84,7 +102,15 @@ const Index = () => {
         {/* Background Image with Overlay */}
  <div className="absolute inset-0 flex justify-center items-center">
   <div className="w-[1990px] h-[950px] relative">
-  <video
+    <video
+        ref={videoRef}
+        className="w-full h-full object-cover rounded-lg shadow-xl"
+        autoPlay
+        muted
+        loop
+        playsInline
+    />
+  {/* <video
     className="w-full h-full object-cover rounded-lg shadow-xl"
     autoPlay
     loop
@@ -93,7 +119,7 @@ const Index = () => {
   >
     <source src={videoSrc} type="video/mp4" />
       Your browser does not support the video tag.
-    </video>
+    </video> */}
     <div className="absolute inset-0 bg-gradient-to-br from-[#00555b]/70 via-[#004147]/60 to-[#002b2f]/80 rounded-lg"></div>
   </div>
 </div>
