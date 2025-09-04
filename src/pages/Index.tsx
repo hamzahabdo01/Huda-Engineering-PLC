@@ -7,7 +7,6 @@ import Footer from "@/components/Footer";
 import Logo from "@/components/Logo";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import heroVideo from "@/assets/Exterior Animation R1.mp4";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,8 +30,20 @@ const Index = () => {
   const navigate = useNavigate();
   const [previousProjects, setPreviousProjects] = useState<ProjectCardItem[]>([]);
   const [testimonials, setTestimonials] = useState<TestimonialItem[] | null>(null);
+  const [videoSrc, setVideoSrc] = useState("/videos/Exterior Animation R1.mp4");
+
+
+  const getVideoSource = () => {
+  const connection = (navigator as any).connection;
+  if (connection) {
+    if (connection.downlink < 1.5) return "/videos/Exterior Animation R1 480p.mp4";  // very slow
+    if (connection.downlink < 3) return "/videos/Exterior Animation R1 640p.mp4";   // medium
+  }
+  return "/videos/Exterior Animation R1.mp4"; // fast connection
+  };
 
   useEffect(() => {
+    setVideoSrc(getVideoSource());
     const fetchPrevious = async () => {
       const { data } = await supabase
         .from("projects")
@@ -72,15 +83,15 @@ const Index = () => {
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden md:pt-0">
         {/* Background Image with Overlay */}
  <div className="absolute inset-0 flex justify-center items-center">
-  <div className="w-[1990px] h-[920px] relative">
-    <video
-      className="w-full h-full object-cover rounded-lg shadow-xl"
-      autoPlay
-      loop
-      muted
-      playsInline
-    >
-      <source src={heroVideo} type="video/mp4" />
+  <div className="w-[1990px] h-[950px] relative">
+  <video
+    className="w-full h-full object-cover rounded-lg shadow-xl"
+    autoPlay
+    loop
+    muted
+    playsInline
+  >
+    <source src={videoSrc} type="video/mp4" />
       Your browser does not support the video tag.
     </video>
     <div className="absolute inset-0 bg-gradient-to-br from-[#00555b]/70 via-[#004147]/60 to-[#002b2f]/80 rounded-lg"></div>
@@ -496,5 +507,6 @@ const Index = () => {
     </div>
   );
 };
+
 
 export default Index;
