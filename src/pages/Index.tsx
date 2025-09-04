@@ -8,6 +8,7 @@ import Logo from "@/components/Logo";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import heroVideo from "@/assets/Exterior Animation R1.mp4";
+import heroImage from "@/assets/Screenshot 2025-09-04 164756.png";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -79,6 +80,8 @@ const Index = () => {
       loop
       muted
       playsInline
+      preload="auto"
+      poster={heroImage}
     >
       <source src={heroVideo} type="video/mp4" />
       Your browser does not support the video tag.
