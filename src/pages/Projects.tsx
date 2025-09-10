@@ -24,7 +24,12 @@ import Footer from "@/components/Footer";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Project {
   id: string;
@@ -42,7 +47,16 @@ interface Project {
   units: Record<string, string>; // 1B, 2B, 3B, 4B
   created_at: string;
   progress_updates?: string[];
-  floor_plans?: { floor_number: number; apartment_types: { id?: string; type: string; size?: string; availability?: 'available' | 'sold' | 'reserved'; price?: string }[] }[];
+  floor_plans?: {
+    floor_number: number;
+    apartment_types: {
+      id?: string;
+      type: string;
+      size?: string;
+      availability?: "available" | "sold" | "reserved";
+      price?: string;
+    }[];
+  }[];
 }
 
 const Projects = () => {
@@ -53,96 +67,106 @@ const Projects = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("active");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [projectPercentages, setProjectPercentages] = useState<Record<string, number>>({});
+  const [projectPercentages, setProjectPercentages] = useState<
+    Record<string, number>
+  >({});
 
   useEffect(() => {
     // Initialize tab from URL param, supports: delivered->completed, ongoing->active, previous, upcoming
     const tabParam = (searchParams.get("tab") || "").toLowerCase();
-    if (tabParam === "delivered" || tabParam === "completed") setActiveTab("completed");
-    else if (tabParam === "ongoing" || tabParam === "active") setActiveTab("active");
+    if (tabParam === "delivered" || tabParam === "completed")
+      setActiveTab("completed");
+    else if (tabParam === "ongoing" || tabParam === "active")
+      setActiveTab("active");
     else if (tabParam === "upcoming") setActiveTab("upcoming");
     else if (tabParam === "previous") setActiveTab("previous");
     fetchProjects();
   }, [searchParams]);
 
   const fetchLatestPercentages = async (projectIds: string[]) => {
-  if (!projectIds?.length) return;
-  try {
-    // fetch all updates for these projects, newest first
-    const { data, error } = await supabase
-      .from("project_updates")
-      .select("project_id, percentage, created_at")
-      .in("project_id", projectIds)
-      .order("created_at", { ascending: false });
+    if (!projectIds?.length) return;
+    try {
+      // fetch all updates for these projects, newest first
+      const { data, error } = await supabase
+        .from("project_updates")
+        .select("project_id, percentage, created_at")
+        .in("project_id", projectIds)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching project updates for percentages:", error);
-      return;
-    }
-
-    const map: Record<string, number> = {};
-    // data is ordered newest->oldest; take first percentage per project
-    for (const row of (data || [] as any[])) {
-      const pid = row.project_id;
-      if (pid && typeof row.percentage === "number" && map[pid] === undefined) {
-        map[pid] = Math.min(100, Math.max(0, row.percentage));
+      if (error) {
+        console.error("Error fetching project updates for percentages:", error);
+        return;
       }
+
+      const map: Record<string, number> = {};
+      // data is ordered newest->oldest; take first percentage per project
+      for (const row of data || ([] as any[])) {
+        const pid = row.project_id;
+        if (
+          pid &&
+          typeof row.percentage === "number" &&
+          map[pid] === undefined
+        ) {
+          map[pid] = Math.min(100, Math.max(0, row.percentage));
+        }
+      }
+      setProjectPercentages(map);
+    } catch (err) {
+      console.error("fetchLatestPercentages error:", err);
     }
-    setProjectPercentages(map);
-  } catch (err) {
-    console.error("fetchLatestPercentages error:", err);
-  }
-};
+  };
 
-const fetchProjects = async () => {
-  try {
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
 
-    const normalized = (data || []).map((p) => ({
-      id: p.id,
-      title: p.title,
-      description: p.description,
-      short_description: p.short_description,
-      location: p.location,
-      project_type: p.project_type,
-      status: p.status,
-      start_date: p.start_date,
-      end_date: p.end_date,
-      image_url: p.image_url,
-      gallery_urls: p.gallery_urls || [],
-      Amenities: p.Amenities || [],
-      units: p.units || {},
-      created_at: p.created_at,
-      progress_updates: p.progress_updates || [],
-      floor_plans: p.floor_plans || [],
-    }));
+      const normalized = (data || []).map((p) => ({
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        short_description: p.short_description,
+        location: p.location,
+        project_type: p.project_type,
+        status: p.status,
+        start_date: p.start_date,
+        end_date: p.end_date,
+        image_url: p.image_url,
+        gallery_urls: p.gallery_urls || [],
+        Amenities: p.Amenities || [],
+        units: p.units || {},
+        created_at: p.created_at,
+        progress_updates: p.progress_updates || [],
+        floor_plans: p.floor_plans || [],
+      }));
 
-    setProjects(normalized);
+      setProjects(normalized);
 
-    // PRELOAD latest percentages so progress bars don't jump when user clicks
-    const ids = normalized.map((p) => p.id);
-    await fetchLatestPercentages(ids);
-  } catch (error) {
-    console.error("Error fetching projects:", error);
-  } finally {
-    setLoading(false);
-  }
-};
+      // PRELOAD latest percentages so progress bars don't jump when user clicks
+      const ids = normalized.map((p) => p.id);
+      await fetchLatestPercentages(ids);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   interface ProjectUpdate {
-  id: string;
-  project_id: string;
-  update_type: "image" | "video" | "text";
-  media_url: string;
-  description: string;
-  created_at: string;
-  percentage?: number | null;
-}
+    id: string;
+    project_id: string;
+    update_type: "image" | "video" | "text";
+    media_url: string;
+    description: string;
+    created_at: string;
+    percentage?: number | null;
+  }
 
-  const [selectedProjectUpdates, setSelectedProjectUpdates] = useState<ProjectUpdate[]>([]);
+  const [selectedProjectUpdates, setSelectedProjectUpdates] = useState<
+    ProjectUpdate[]
+  >([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
   const handleBookNow = (project: Project) => {
@@ -150,22 +174,26 @@ const fetchProjects = async () => {
     navigate(`/booking?project=${project.id}`);
   };
 
-const fetchProjectUpdates = async (projectId: string) => {
-  const { data, error } = await supabase
-    .from("project_updates")
-    .select("*")
-    .eq("project_id", projectId)
-    .order("created_at", { ascending: false });
-  if (!error) setSelectedProjectUpdates(data as ProjectUpdate[]);
-};
+  const fetchProjectUpdates = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from("project_updates")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+    if (!error) setSelectedProjectUpdates(data as ProjectUpdate[]);
+  };
 
-const getLatestPercentage = (projectId: string) => {
-  const pre = projectPercentages[projectId];
-  if (typeof pre === "number") return pre;
-  // fallback: check selectedProjectUpdates (dialog list) for any matching update
-  const latest = selectedProjectUpdates.find(u => u.project_id === projectId);
-  return typeof latest?.percentage === 'number' ? Math.min(100, Math.max(0, latest.percentage)) : 0;
-};
+  const getLatestPercentage = (projectId: string) => {
+    const pre = projectPercentages[projectId];
+    if (typeof pre === "number") return pre;
+    // fallback: check selectedProjectUpdates (dialog list) for any matching update
+    const latest = selectedProjectUpdates.find(
+      (u) => u.project_id === projectId
+    );
+    return typeof latest?.percentage === "number"
+      ? Math.min(100, Math.max(0, latest.percentage))
+      : 0;
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -222,33 +250,32 @@ const getLatestPercentage = (projectId: string) => {
 
       <section className="py-10 bg-muted">
         <div className="max-w-7xl mx-auto px-4">
-<div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-10">
-  <Button
-    variant={activeTab === "active" ? "default" : "outline"}
-    onClick={() => setActiveTab("active")}
-  >
-    Ongoing
-  </Button>
-  <Button
-    variant={activeTab === "completed" ? "default" : "outline"}
-    onClick={() => setActiveTab("completed")}
-  >
-    Delivered
-  </Button>
-  <Button
-    variant={activeTab === "upcoming" ? "default" : "outline"}
-    onClick={() => setActiveTab("upcoming")}
-  >
-    Upcoming
-  </Button>
-  <Button
-    variant={activeTab === "previous" ? "default" : "outline"}
-    onClick={() => setActiveTab("previous")}
-  >
-    Previous
-  </Button>
-</div>
-
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-10">
+            <Button
+              variant={activeTab === "active" ? "default" : "outline"}
+              onClick={() => setActiveTab("active")}
+            >
+              Ongoing
+            </Button>
+            <Button
+              variant={activeTab === "completed" ? "default" : "outline"}
+              onClick={() => setActiveTab("completed")}
+            >
+              Delivered
+            </Button>
+            <Button
+              variant={activeTab === "upcoming" ? "default" : "outline"}
+              onClick={() => setActiveTab("upcoming")}
+            >
+              Upcoming
+            </Button>
+            <Button
+              variant={activeTab === "previous" ? "default" : "outline"}
+              onClick={() => setActiveTab("previous")}
+            >
+              Previous
+            </Button>
+          </div>
 
           {filteredProjects.length === 0 ? (
             <div className="text-center py-12">
@@ -264,177 +291,200 @@ const getLatestPercentage = (projectId: string) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-8">
               {filteredProjects.map((project) => (
                 <Card
-  key={project.id}
-  onClick={() => navigate(`/projects/${project.id}`)}
-  role="link"
-  tabIndex={0}
-  className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border bg-white/90 backdrop-blur-sm rounded-xl"
->
-  <div className="flex flex-col md:flex-row md:items-center p-3 md:p-4 gap-4">
-    {/* Left: Thumbnail */}
-    <div className="relative w-full md:w-64 lg:w-80 aspect-video rounded-lg overflow-hidden flex-shrink-0">
-      <div
-        className={`bg-gradient-to-br ${getStatusColor(
-          project.status
-        )} w-full h-full flex items-center justify-center overflow-hidden relative`}
-      >
-        {project.image_url ? (
-          <img
-            src={project.image_url}
-            alt={project.title}
-            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-          />
-        ) : (
-          <Building2 className="w-16 h-16 text-white" />
-        )}
+                  key={project.id}
+                  onClick={() => navigate(`/projects/${project.id}`)}
+                  role="link"
+                  tabIndex={0}
+                  className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border bg-white/90 backdrop-blur-sm rounded-xl"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center p-3 md:p-4 gap-4">
+                    {/* Left: Thumbnail */}
+                    <div className="relative w-full md:w-64 lg:w-80 aspect-video rounded-lg overflow-hidden flex-shrink-0">
+                      <div
+                        className={`bg-gradient-to-br ${getStatusColor(
+                          project.status
+                        )} w-full h-full flex items-center justify-center overflow-hidden relative`}
+                      >
+                        {project.image_url ? (
+                          <img
+                            src={project.image_url}
+                            alt={project.title}
+                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                          />
+                        ) : (
+                          <Building2 className="w-16 h-16 text-white" />
+                        )}
 
-        {/* Status Badge */}
-        <div className="absolute top-2 right-2">{getStatusBadge(project.status)}</div>
+                        {/* Status Badge */}
+                        <div className="absolute top-2 right-2">
+                          {getStatusBadge(project.status)}
+                        </div>
 
-        {/* Progress overlay */}
-        {project.status === "active" && (
-          <div className="absolute bottom-2 left-2 right-2">
-            <div className="bg-black/30 backdrop-blur-md rounded-md p-2">
-              <div className="flex justify-between text-xs text-white">
-                <span>Progress</span>
-                <span>{getLatestPercentage(project.id)}%</span>
-              </div>
-              <Progress
-                value={getLatestPercentage(project.id)}
-                className="h-1.5 bg-white/20"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+                        {/* Progress overlay */}
+                        {project.status === "active" && (
+                          <div className="absolute bottom-2 left-2 right-2">
+                            <div className="bg-black/30 backdrop-blur-md rounded-md p-2">
+                              <div className="flex justify-between text-xs text-white">
+                                <span>Progress</span>
+                                <span>{getLatestPercentage(project.id)}%</span>
+                              </div>
+                              <Progress
+                                value={getLatestPercentage(project.id)}
+                                className="h-1.5 bg-white/20"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-    {/* Right: Details */}
-    <div className="flex-1 flex flex-col justify-between">
-      {/* Title + Meta */}
-      <div>
-        <CardHeader className="py-0 px-0">
-          <CardTitle className="text-lg md:text-xl line-clamp-1">{project.title}</CardTitle>
-          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
-            <Building2 className="w-4 h-4 text-primary" />
-            <span className="truncate">{project.project_type}</span>
-          </div>
-        </CardHeader>
+                    {/* Right: Details */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      {/* Title + Meta */}
+                      <div>
+                        <CardHeader className="py-0 px-0">
+                          <CardTitle className="text-lg md:text-xl line-clamp-1">
+                            {project.title}
+                          </CardTitle>
+                          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
+                            <Building2 className="w-4 h-4 text-primary" />
+                            <span className="truncate">
+                              {project.project_type}
+                            </span>
+                          </div>
+                        </CardHeader>
 
-        <CardContent className="px-0 pt-2 pb-0">
-          <div className="flex flex-col gap-2 text-xs md:text-sm">
-            <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
-              <MapPin className="w-4 h-4 text-primary" />
-              <span className="truncate">{project.location}</span>
-              <Calendar className="w-4 h-4 text-primary" />
-              <span>Start {new Date(project.start_date).getFullYear()}</span>
-              {project.end_date && (
-                <span className="whitespace-nowrap">
-                  • Target {new Date(project.end_date).getFullYear()}
-                </span>
-              )}
-            </div>
+                        <CardContent className="px-0 pt-2 pb-0">
+                          <div className="flex flex-col gap-2 text-xs md:text-sm">
+                            <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                              <MapPin className="w-4 h-4 text-primary" />
+                              <span className="truncate">
+                                {project.location}
+                              </span>
+                              <Calendar className="w-4 h-4 text-primary" />
+                              <span>
+                                Start{" "}
+                                {new Date(project.start_date).getFullYear()}
+                              </span>
+                              {project.end_date && (
+                                <span className="whitespace-nowrap">
+                                  • Target{" "}
+                                  {new Date(project.end_date).getFullYear()}
+                                </span>
+                              )}
+                            </div>
 
-            {/* Units */}
-            {Object.keys(project.units || {}).length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <Users className="w-4 h-4 text-primary" />
-                {Object.entries(project.units).slice(0, 3).map(([type, price]) => (
-                  <Badge
-                    key={type}
-                    variant="secondary"
-                    className="text-[10px] md:text-xs bg-primary/10 text-primary"
-                  >
-                    {type}{price ? ` • ${price}` : ''}
-                  </Badge>
-                ))}
-                {Object.entries(project.units).length > 3 && (
-                  <Badge variant="outline" className="text-[10px] md:text-xs">
-                    +{Object.entries(project.units).length - 3} more
-                  </Badge>
-                )}
-              </div>
-            )}
+                            {/* Units */}
+                            {Object.keys(project.units || {}).length > 0 && (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Users className="w-4 h-4 text-primary" />
+                                {Object.entries(project.units)
+                                  .slice(0, 3)
+                                  .map(([type, price]) => (
+                                    <Badge
+                                      key={type}
+                                      variant="secondary"
+                                      className="text-[10px] md:text-xs bg-primary/10 text-primary"
+                                    >
+                                      {type}
+                                      {price ? ` • ${price}` : ""}
+                                    </Badge>
+                                  ))}
+                                {Object.entries(project.units).length > 3 && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] md:text-xs"
+                                  >
+                                    +{Object.entries(project.units).length - 3}{" "}
+                                    more
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
 
-            {/* Amenities */}
-            {project.Amenities && project.Amenities.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <CheckCircle className="w-4 h-4 text-primary" />
-                {project.Amenities.slice(0, 3).map((amenity, idx) => (
-                  <Badge
-                    key={idx}
-                    variant="secondary"
-                    className="text-[10px] md:text-xs bg-primary/10 text-primary"
-                  >
-                    {amenity}
-                  </Badge>
-                ))}
-                {project.Amenities.length > 3 && (
-                  <Badge variant="outline" className="text-[10px] md:text-xs">
-                    +{project.Amenities.length - 3} more
-                  </Badge>
-                )}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </div>
+                            {/* Amenities */}
+                            {project.Amenities &&
+                              project.Amenities.length > 0 && (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <CheckCircle className="w-4 h-4 text-primary" />
+                                  {project.Amenities.slice(0, 3).map(
+                                    (amenity, idx) => (
+                                      <Badge
+                                        key={idx}
+                                        variant="secondary"
+                                        className="text-[10px] md:text-xs bg-primary/10 text-primary"
+                                      >
+                                        {amenity}
+                                      </Badge>
+                                    )
+                                  )}
+                                  {project.Amenities.length > 3 && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] md:text-xs"
+                                    >
+                                      +{project.Amenities.length - 3} more
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                          </div>
+                        </CardContent>
+                      </div>
 
-      {/* Action buttons */}
-      <div className="mt-4 flex gap-2 justify-end md:justify-start">
-        {project.status === "active" && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveProjectId(project.id);
-              fetchProjectUpdates(project.id);
-            }}
-          >
-            <Wrench className="w-3 h-3 mr-1" />
-            Progress
-          </Button>
-        )}
-        <Button
-          size="sm"
-          className="text-xs"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleBookNow(project);
-          }}
-        >
-          <Target className="w-3 h-3 mr-1" />
-          Book
-        </Button>
-      </div>
-    </div>
-  </div>
-</Card>
-
+                      {/* Action buttons */}
+                      <div className="mt-4 flex gap-2 justify-end md:justify-start">
+                        {project.status === "active" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveProjectId(project.id);
+                              fetchProjectUpdates(project.id);
+                            }}
+                          >
+                            <Wrench className="w-3 h-3 mr-1" />
+                            Progress
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
               ))}
             </div>
           )}
-          <Dialog open={!!activeProjectId} onOpenChange={() => setActiveProjectId(null)}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Project Progress Updates</DialogTitle>
-    </DialogHeader>
-    <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-      {selectedProjectUpdates.map((update) => (
-        <div key={update.id} className="border p-2 rounded-md">
-          {update.update_type === "image" && <img src={update.media_url} className="w-full" />}
-          {update.update_type === "video" && (
-            <video src={update.media_url} className="w-full" controls />
-          )}
-          {update.description && <p className="mt-2 text-sm">{update.description}</p>}
-        </div>
-      ))}
-    </div>
-  </DialogContent>
-</Dialog>
-
+          <Dialog
+            open={!!activeProjectId}
+            onOpenChange={() => setActiveProjectId(null)}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Project Progress Updates</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                {selectedProjectUpdates.map((update) => (
+                  <div key={update.id} className="border p-2 rounded-md">
+                    {update.update_type === "image" && (
+                      <img src={update.media_url} className="w-full" />
+                    )}
+                    {update.update_type === "video" && (
+                      <video
+                        src={update.media_url}
+                        className="w-full"
+                        controls
+                      />
+                    )}
+                    {update.description && (
+                      <p className="mt-2 text-sm">{update.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {selectedProject && (
             <div className="mt-10 p-6 bg-white rounded-xl shadow">

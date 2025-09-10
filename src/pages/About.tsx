@@ -1,17 +1,40 @@
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Award, Target, Zap, CheckCircle, Calendar, MapPin, Phone, Mail, TrendingUp, Globe, Shield, Clock, Star, ArrowRight } from "lucide-react";
+import {
+  Building2,
+  Users,
+  Award,
+  Target,
+  Zap,
+  CheckCircle,
+  Calendar,
+  MapPin,
+  Phone,
+  Mail,
+  TrendingUp,
+  Globe,
+  Shield,
+  Clock,
+  Star,
+  ArrowRight,
+} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Logo from "@/components/Logo";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import heroVideo from "@/assets/video_2025-09-10_12-35-58.mp4";
 
 const About = () => {
   const { t } = useTranslation();
-  
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -22,7 +45,9 @@ const About = () => {
           <div className="flex justify-center mb-8">
             <Logo size="lg" className="text-accent w-16 h-16 lg:w-20 lg:h-20" />
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">{t("about.hero.title")}</h1>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            {t("about.hero.title")}
+          </h1>
           <p className="text-xl lg:text-2xl text-primary-foreground/90 max-w-4xl mx-auto">
             {t("about.hero.subtitle")}
           </p>
@@ -32,13 +57,15 @@ const About = () => {
       {/* Company Story */}
       <section className="py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 lg:space-x-36 space-x-4 space-y-4 items-center mb-20">
             <div>
               <Badge className="mb-6 bg-accent text-accent-foreground text-base">
                 <Calendar className="w-4 h-4 mr-2" />
                 {t("about.story.badge")}
               </Badge>
-              <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("about.story.title")}</h2>
+              <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">
+                {t("about.story.title")}
+              </h2>
               <p className="text-muted-foreground text-lg leading-relaxed mb-6">
                 {t("about.story.p1")}
               </p>
@@ -49,9 +76,13 @@ const About = () => {
                 {t("about.story.p3")}
               </p>
             </div>
-            <div className="bg-gradient-to-br from-primary/10 to-accent/10 h-96 lg:h-[500px] rounded-lg flex items-center justify-center">
-              <Building2 className="text-primary w-32 h-32 lg:w-40 lg:h-40" />
-            </div>
+            <video
+              controls
+              className="bg-gradient-to-br from-primary/10 to-accent/10 h-96 lg:h-[600px] w-auto rounded-lg flex items-center justify-center"
+            >
+              <source src={heroVideo} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
 
           {/* Stats Section */}
@@ -59,19 +90,21 @@ const About = () => {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="text-4xl font-bold text-primary mb-2">9+</div>
-                <CardTitle className="text-lg">{t("about.stats.years")}</CardTitle>
+                <CardTitle className="text-lg">
+                  {t("about.stats.years")}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>
-                  {t("about.stats.yearsDesc")}
-                </CardDescription>
+                <CardDescription>{t("about.stats.yearsDesc")}</CardDescription>
               </CardContent>
             </Card>
 
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="text-4xl font-bold text-primary mb-2">50+</div>
-                <CardTitle className="text-lg">{t("about.stats.projects")}</CardTitle>
+                <CardTitle className="text-lg">
+                  {t("about.stats.projects")}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>
@@ -83,7 +116,9 @@ const About = () => {
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="text-4xl font-bold text-primary mb-2">0</div>
-                <CardTitle className="text-lg">{t("about.stats.disputes")}</CardTitle>
+                <CardTitle className="text-lg">
+                  {t("about.stats.disputes")}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>
@@ -91,7 +126,6 @@ const About = () => {
                 </CardDescription>
               </CardContent>
             </Card>
-
           </div>
         </div>
       </section>
@@ -100,17 +134,21 @@ const About = () => {
       <section className="py-20 lg:py-32 bg-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("about.values.title")}</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">
+              {t("about.values.title")}
+            </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               {t("about.values.description")}
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Target className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">{t("about.values.quality.title")}</CardTitle>
+                <CardTitle className="text-xl">
+                  {t("about.values.quality.title")}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
@@ -118,11 +156,13 @@ const About = () => {
                 </CardDescription>
               </CardContent>
             </Card>
-            
+
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <CheckCircle className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">{t("about.values.integrity.title")}</CardTitle>
+                <CardTitle className="text-xl">
+                  {t("about.values.integrity.title")}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
@@ -130,11 +170,13 @@ const About = () => {
                 </CardDescription>
               </CardContent>
             </Card>
-            
+
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Zap className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">{t("about.values.innovation.title")}</CardTitle>
+                <CardTitle className="text-xl">
+                  {t("about.values.innovation.title")}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
@@ -142,11 +184,13 @@ const About = () => {
                 </CardDescription>
               </CardContent>
             </Card>
-            
+
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Users className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">{t("about.values.teamwork.title")}</CardTitle>
+                <CardTitle className="text-xl">
+                  {t("about.values.teamwork.title")}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
@@ -154,11 +198,13 @@ const About = () => {
                 </CardDescription>
               </CardContent>
             </Card>
-            
+
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Award className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">{t("about.values.excellence.title")}</CardTitle>
+                <CardTitle className="text-xl">
+                  {t("about.values.excellence.title")}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
@@ -166,11 +212,13 @@ const About = () => {
                 </CardDescription>
               </CardContent>
             </Card>
-            
+
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader>
                 <Building2 className="w-12 h-12 text-primary mb-4" />
-                <CardTitle className="text-xl">{t("about.values.sustainability.title")}</CardTitle>
+                <CardTitle className="text-xl">
+                  {t("about.values.sustainability.title")}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
@@ -186,7 +234,9 @@ const About = () => {
       <section className="py-20 lg:py-32 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("about.team.title")}</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">
+              {t("about.team.title")}
+            </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               {t("about.team.description")}
             </p>
@@ -200,7 +250,7 @@ const About = () => {
                 icon: Target,
               },
               {
-                title: t("about.team.architects.title"), 
+                title: t("about.team.architects.title"),
                 description: t("about.team.architects.description"),
                 icon: Building2,
               },
@@ -213,9 +263,12 @@ const About = () => {
                 title: t("about.team.safety.title"),
                 description: t("about.team.safety.description"),
                 icon: CheckCircle,
-              }
+              },
             ].map((member, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-all duration-300">
+              <Card
+                key={index}
+                className="text-center hover:shadow-lg transition-all duration-300"
+              >
                 <CardHeader>
                   <member.icon className="w-16 h-16 text-primary mx-auto mb-4" />
                   <CardTitle className="text-lg">{member.title}</CardTitle>
@@ -235,7 +288,9 @@ const About = () => {
       <section className="py-20 lg:py-32 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">{t("about.advantages.title")}</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">
+              {t("about.advantages.title")}
+            </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               {t("about.advantages.description")}
             </p>
@@ -243,35 +298,41 @@ const About = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h3 className="text-2xl font-bold text-foreground mb-6">{t("about.advantages.competitive")}</h3>
+              <h3 className="text-2xl font-bold text-foreground mb-6">
+                {t("about.advantages.competitive")}
+              </h3>
               <div className="space-y-6">
                 {[
                   {
                     icon: Globe,
                     title: t("about.advantages.local.title"),
-                    description: t("about.advantages.local.description")
+                    description: t("about.advantages.local.description"),
                   },
                   {
                     icon: Clock,
                     title: t("about.advantages.proven.title"),
-                    description: t("about.advantages.proven.description")
+                    description: t("about.advantages.proven.description"),
                   },
                   {
                     icon: Shield,
                     title: t("about.advantages.risk.title"),
-                    description: t("about.advantages.risk.description")
+                    description: t("about.advantages.risk.description"),
                   },
                   {
                     icon: TrendingUp,
                     title: t("about.advantages.value.title"),
-                    description: t("about.advantages.value.description")
-                  }
+                    description: t("about.advantages.value.description"),
+                  },
                 ].map((advantage, index) => (
                   <div key={index} className="flex items-start space-x-4">
                     <advantage.icon className="w-8 h-8 text-primary mt-1 flex-shrink-0" />
                     <div>
-                      <h4 className="font-semibold text-foreground mb-2">{advantage.title}</h4>
-                      <p className="text-muted-foreground">{advantage.description}</p>
+                      <h4 className="font-semibold text-foreground mb-2">
+                        {advantage.title}
+                      </h4>
+                      <p className="text-muted-foreground">
+                        {advantage.description}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -291,19 +352,36 @@ const About = () => {
       <section className="py-20 lg:py-32 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">Our Portfolio</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">
+              Our Portfolio
+            </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               A curated selection of our delivered and ongoing projects.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[ 
-              { title: "Huda Luxury Apartments", location: "Bole, Addis Ababa", tag: "Delivered" },
-              { title: "Tokoma Office Tower", location: "Kazanchis, Addis Ababa", tag: "Ongoing" },
-              { title: "SYS Mixed-Use", location: "CMC, Addis Ababa", tag: "Upcoming" },
+            {[
+              {
+                title: "Huda Luxury Apartments",
+                location: "Bole, Addis Ababa",
+                tag: "Delivered",
+              },
+              {
+                title: "Tokoma Office Tower",
+                location: "Kazanchis, Addis Ababa",
+                tag: "Ongoing",
+              },
+              {
+                title: "SYS Mixed-Use",
+                location: "CMC, Addis Ababa",
+                tag: "Upcoming",
+              },
             ].map((item, idx) => (
-              <Card key={idx} className="relative overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <Card
+                key={idx}
+                className="relative overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              >
                 <div className="h-44 bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center">
                   <Building2 className="w-12 h-12 text-primary" />
                 </div>
@@ -320,34 +398,46 @@ const About = () => {
 
           <div className="text-center mt-12">
             <Link to="/projects">
-              <Button size="lg" variant="outline">View All Projects</Button>
+              <Button size="lg" variant="outline">
+                View All Projects
+              </Button>
             </Link>
           </div>
         </div>
       </section>
 
-
       {/* Call to Action */}
       <section className="py-20 lg:py-32 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold mb-6">Ready to Work With Us?</h2>
+          <h2 className="text-3xl lg:text-4xl font-bold mb-6">
+            Ready to Work With Us?
+          </h2>
           <p className="text-xl text-primary-foreground/90 mb-8">
-            Experience the Huda Engineering difference. Let's discuss how we can bring your construction vision to life with our proven expertise and unwavering commitment to excellence.
+            Experience the Huda Engineering difference. Let's discuss how we can
+            bring your construction vision to life with our proven expertise and
+            unwavering commitment to excellence.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-  <Link to="/contact">
-    <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-4 text-lg transition-transform hover:scale-105">
-      {t("nav.contact")}
-      <Phone className="ml-2 h-5 w-5" />
-    </Button>
-  </Link>
-  <Link to="/projects">
-    <Button size="lg" variant="outline" className="border-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg transition-transform hover:scale-105">
-      {t("nav.projects")}
-      <ArrowRight className="ml-2 h-5 w-5" />
-    </Button>
-  </Link>
-</div>
+            <Link to="/contact">
+              <Button
+                size="lg"
+                className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-4 text-lg transition-transform hover:scale-105"
+              >
+                {t("nav.contact")}
+                <Phone className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <Link to="/projects">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg transition-transform hover:scale-105"
+              >
+                {t("nav.projects")}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
