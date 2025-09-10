@@ -119,7 +119,7 @@ const Index = () => {
           </div>
         </div>
         {/* Middle Content - Property Showcase */}
-        <div className="relative space-y-6 mt-8 lg:mt-0">
+        <div className="relative space-y-6 mb-36 lg:mb-0 lg:mt-0">
           {/* Featured Property Card */}
           <div
             className="bg-white/30 border border-white/30 rounded-2xl shadow-2xl animate-fade-in mx-auto flex flex-col justify-center items-center"

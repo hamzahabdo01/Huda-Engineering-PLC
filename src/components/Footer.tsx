@@ -38,16 +38,12 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           {/* Company Info */}
-          <div>
+          <div className="mb-10 lg:mb-0">
             <div className="flex items-center space-x-3 mb-6">
               <Logo size="lg" className="text-accent" />
               <div>
                 <h3 className="text-xl font-bold">Huda Engineering PLC</h3>
-                <p
-                  className="text-lg font-semibold bg-gradient-to-r from-yellow-400 to-green-500
-            bg-clip-text text-transparent drop-shadow-md animate-pulse 
-            transition-all duration-300 hover:scale-105 hover:drop-shadow-xl"
-                >
+                <p className="text-lg font-semibold bg-gradient-to-r from-yellow-400 to-green-500 bg-clip-text text-transparent drop-shadow-md animate-pulse transition-all duration-300 hover:scale-105 hover:drop-shadow-xl">
                   Trustworthy Real Estate
                 </p>
               </div>
@@ -101,7 +97,7 @@ const Footer = () => {
           </div>
 
           {/* Leaflet Map - Centered and Wide */}
-          <div className="bg-white text-foreground p-4 rounded-lg shadow-md lg:col-span-1 min-w-[350px] max-w-full flex flex-col justify-center">
+          <div className="bg-white text-foreground p-4 rounded-lg shadow-md mb-10 lg:mb-0 flex flex-col justify-center">
             <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <MapPin className="w-5 h-5 text-primary" /> Our Location
             </h4>
@@ -141,8 +137,8 @@ const Footer = () => {
           </div>
 
           {/* Contact Info */}
-          <div className="flex items-center justify-end">
-            <div className="space-y-3">
+          <div className="flex flex-col items-start lg:items-end ">
+            <div className="space-y-3 w-full">
               <h4 className="text-lg font-semibold mb-4">
                 {t("footer.contactInfo")}
               </h4>
