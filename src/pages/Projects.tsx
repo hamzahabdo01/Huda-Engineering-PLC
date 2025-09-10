@@ -435,19 +435,32 @@ const Projects = () => {
                       {/* Action buttons */}
                       <div className="mt-4 flex gap-2 justify-end md:justify-start">
                         {project.status === "active" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveProjectId(project.id);
-                              fetchProjectUpdates(project.id);
-                            }}
-                          >
-                            <Wrench className="w-3 h-3 mr-1" />
-                            Progress
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveProjectId(project.id);
+                                fetchProjectUpdates(project.id);
+                              }}
+                            >
+                              <Wrench className="w-3 h-3 mr-1" />
+                              Progress
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleBookNow(project);
+                              }}
+                            >
+                              <Target className="w-3 h-3 mr-1" />
+                              Book
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
