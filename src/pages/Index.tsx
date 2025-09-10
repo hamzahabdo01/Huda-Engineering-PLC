@@ -122,15 +122,19 @@ const Index = () => {
         <div className="relative space-y-6 mb-36 lg:mb-0 lg:mt-0">
           {/* Featured Property Card */}
           <div
-            className="bg-white/30 border border-white/30 rounded-2xl shadow-2xl animate-fade-in mx-auto flex flex-col justify-center items-center"
-            style={{
-              width: "1200px",
-              height: "520px",
-              maxWidth: "90vw",
-              minWidth: "340px",
-              minHeight: "340px",
-              backdropFilter: "blur(16px)",
-            }}
+            className="
+          bg-white/30
+          border border-white/30
+          rounded-2xl
+          shadow-2xl
+          animate-fade-in
+          mx-auto
+          flex flex-col justify-center items-center
+          w-[1200px] h-[520px]
+          max-w-[90vw]
+          max-h-[110vw]
+          backdrop-blur-xl
+        "
           >
             <div className="flex items-center justify-between w-full px-6 sm:px-16 pt-12 mb-10">
               <h3 className="text-xl sm:text-5xl font-extrabold text-[#00555b] tracking-tight drop-shadow-sm">
