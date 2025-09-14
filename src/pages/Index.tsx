@@ -188,7 +188,6 @@ const Index = () => {
           {/* Property Info Cards */}
           <div className="flex justify-center items-center gap-3 sm:gap-4">
             <Button
-              size="lg"
               className="bg-white text-[#00555b] hover:bg-white/90 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
               asChild
             >
@@ -199,7 +198,6 @@ const Index = () => {
             </Button>
 
             <Button
-              size="lg"
               variant="outline"
               className="bg-white/20 hover:bg-white text-white border-white/30 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
               asChild
