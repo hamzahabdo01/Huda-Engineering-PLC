@@ -145,7 +145,7 @@ const Index = () => {
               </span>
             </div>
 
-            <div className="flex flex-row gap-6 sm:gap-16 w-full px-6 sm:px-10 mb-6 sm:mb-10">
+            <div className="flex flex-row items-center justify-center gap-6 w-11/12 mb-6 sm:mb-10">
               <div className="flex flex-col items-center justify-center bg-white/40 rounded-2xl p-10 shadow-lg w-[45%]">
                 <div className="text-3xl sm:text-6xl font-extrabold text-[#00555b] mb-1 sm:mb-2">
                   4
