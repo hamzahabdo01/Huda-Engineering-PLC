@@ -77,7 +77,11 @@ const About = () => {
               </p>
             </div>
             <video
-              controls
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
               className="bg-gradient-to-br from-primary/10 to-accent/10 h-96 lg:h-[600px] w-auto rounded-lg flex items-center justify-center"
             >
               <source src={heroVideo} type="video/mp4" />
