@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, MapPin, Calendar, CheckCircle, ArrowLeft, ArrowRight } from "lucide-react";
@@ -48,6 +49,7 @@ export default function ProjectDetail() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [stock, setStock] = useState<Record<string, number>>({});
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -109,7 +111,7 @@ export default function ProjectDetail() {
     </Badge>
   );
 
-  // add this handler near the top of the component (just after hooks)
+  // navigate to dedicated apartment page
   const handleNavigateApartment = (type: string) => {
     navigate(`/projects/${project?.id}/apartment/${encodeURIComponent(type)}`);
   };
@@ -254,6 +256,8 @@ export default function ProjectDetail() {
           </Card>
         )}
       </main>
+
+      {/* Removed project-level gallery dialog; apartment types now navigate to dedicated page */}
 
       <Footer />
     </div>

@@ -15,6 +15,7 @@ interface ApartmentType {
   availability?: 'available' | 'sold' | 'reserved';
   price?: string;
   image_url?: string;
+  gallery_urls?: string[];
   description?: string;
   features?: string[];
 }
@@ -32,6 +33,11 @@ interface Project {
   short_description: string;
   image_url: string;
   floor_plans?: FloorPlan[];
+  location?: string;
+  project_type?: string;
+  Amenities?: string[];
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export default function ApartmentDetail() {
@@ -142,12 +148,19 @@ export default function ApartmentDetail() {
             <CardTitle>Apartment Overview</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            <div>
+            <div className="space-y-3">
               <img
-                src={aptMeta.image_url || project.image_url}
+                src={(aptMeta.gallery_urls && aptMeta.gallery_urls.length > 0 ? aptMeta.gallery_urls[0] : (aptMeta.image_url || project.image_url)) as string}
                 alt={`${aptMeta.type} representative`}
                 className="w-full max-h-[420px] object-cover rounded"
               />
+              {aptMeta.gallery_urls && aptMeta.gallery_urls.length > 1 && (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {(aptMeta.gallery_urls || []).slice(1).map((url, idx) => (
+                    <img key={idx} src={url} alt={`thumb-${idx + 1}`} className="w-full h-24 object-cover rounded" />
+                  ))}
+                </div>
+              )}
             </div>
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">Floor {('floor' in aptMeta) ? (aptMeta as any).floor : '—'}</div>
@@ -166,12 +179,115 @@ export default function ApartmentDetail() {
                   {(aptMeta.features && aptMeta.features.length > 0 ? aptMeta.features : features).map((f, i) => (<li key={i}>{f}</li>))}
                 </ul>
               </div>
-              <div className="pt-2">
+              <div className="pt-2 flex gap-2">
                 <Button onClick={() => navigate(`/booking?project=${project.id}`)}>Book This Property</Button>
+                <Button variant="outline" onClick={() => navigate(`/projects/${project.id}`)}>View Project</Button>
               </div>
             </div>
           </CardContent>
         </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Key Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="p-3 border rounded">
+                  <div className="text-xs text-muted-foreground">Building Type</div>
+                  <div className="font-medium">{project.project_type || '—'}</div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="text-xs text-muted-foreground">Area Size</div>
+                  <div className="font-medium">{aptMeta.size || '—'}</div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="text-xs text-muted-foreground">Location</div>
+                  <div className="font-medium">{project.location || '—'}</div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="text-xs text-muted-foreground">Status</div>
+                  <div className="font-medium">{aptMeta.availability || '—'}</div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="text-xs text-muted-foreground">Floor</div>
+                  <div className="font-medium">{('floor' in aptMeta) ? (aptMeta as any).floor : '—'}</div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="text-xs text-muted-foreground">Delivery</div>
+                  <div className="font-medium">—</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Contact & Appointment</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-sm text-muted-foreground">Have questions about this unit?</div>
+              <Button className="w-full" onClick={() => navigate(`/booking?project=${project.id}&unit=${encodeURIComponent(aptMeta.type)}`)}>Request for Appointment</Button>
+              <Button className="w-full" variant="outline" onClick={() => navigate('/contact')}>Contact Us</Button>
+            </CardContent>
+          </Card>
+        </div>
+        {(project.Amenities && project.Amenities.length > 0) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Premium Amenities</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {project.Amenities!.map((a, i) => (
+                  <div key={i} className="p-3 border rounded text-sm">{a}</div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        {(project.latitude != null && project.longitude != null) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Location</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full aspect-video rounded overflow-hidden border">
+                <iframe
+                  title="Project Map"
+                  className="w-full h-full"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps?q=${project.latitude},${project.longitude}&z=16&output=embed`}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        {project.floor_plans && project.floor_plans.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Similar Listings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {project.floor_plans.flatMap(fp => fp.apartment_types)
+                  .filter(t => (t.type || '').toLowerCase() !== (aptMeta.type || '').toLowerCase())
+                  .slice(0, 6)
+                  .map((t, idx) => (
+                    <div key={idx} className="border rounded overflow-hidden cursor-pointer" onClick={() => navigate(`/projects/${project.id}/apartment/${encodeURIComponent(t.type)}`)}>
+                      <div className="h-32 bg-muted overflow-hidden">
+                        <img src={t.image_url || project.image_url} alt={t.type} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="p-3">
+                        <div className="font-medium">{t.type}</div>
+                        <div className="text-sm text-muted-foreground">{t.size || '—'}</div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
 
       <Footer />

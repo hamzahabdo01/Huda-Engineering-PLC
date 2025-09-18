@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Bed, ChefHat, Sofa, Bath, Maximize, Play, ArrowLeft, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
 const VirtualTour = () => {
   const { t } = useTranslation();
@@ -14,43 +15,29 @@ const VirtualTour = () => {
   const [viewAngle, setViewAngle] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
 
-  const rooms = [
-    {
-      id: "bedroom",
-      name: t("virtualTour.bedroom"),
-      icon: Bed,
-      image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=600&fit=crop",
-      description: "Spacious master bedroom with modern furnishings"
-    },
-    {
-      id: "kitchen", 
-      name: t("virtualTour.kitchen"),
-      icon: ChefHat,
-      image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop",
-      description: "Modern kitchen with premium appliances"
-    },
-    {
-      id: "livingroom",
-      name: t("virtualTour.livingRoom"),
-      icon: Sofa,
-      image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=600&fit=crop",
-      description: "Comfortable living area with natural lighting"
-    },
-    {
-      id: "bathroom",
-      name: t("virtualTour.bathroom"),
-      icon: Bath,
-      image: "https://images.unsplash.com/photo-1620626011761-996317b8d101?w=800&h=600&fit=crop",
-      description: "Luxurious bathroom with modern fixtures"
-    },
-    {
-      id: "balcony",
-      name: t("virtualTour.balcony"),
-      icon: Maximize,
-      image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop",
-      description: "Beautiful balcony with city views"
-    }
-  ];
+  const [tours, setTours] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTours = async () => {
+      const { data, error } = await supabase
+        .from('virtual_tours')
+        .select('*')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
+      if (!error) setTours(data || []);
+      setLoading(false);
+    };
+    loadTours();
+  }, []);
+
+  const roomIconMap: Record<string, any> = {
+    bedroom: Bed,
+    kitchen: ChefHat,
+    livingroom: Sofa,
+    bathroom: Bath,
+    balcony: Maximize,
+  };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isVRMode) return;
@@ -77,12 +64,10 @@ const VirtualTour = () => {
     setZoom(1);
   };
 
-  const getCurrentRoom = () => {
-    return rooms.find(room => room.id === selectedRoom);
-  };
+  const getCurrentTour = () => tours.find(t => t.id === selectedRoom);
 
   if (isVRMode && selectedRoom) {
-    const currentRoom = getCurrentRoom();
+    const current = getCurrentTour();
     return (
       <div className="min-h-screen bg-black relative overflow-hidden">
         {/* VR Controls */}
@@ -118,7 +103,7 @@ const VirtualTour = () => {
         <div className="absolute top-4 right-4 z-50">
           <Card className="bg-black/80 text-white border-white/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{currentRoom?.name}</CardTitle>
+              <CardTitle className="text-lg">{current?.title}</CardTitle>
             </CardHeader>
           </Card>
         </div>
@@ -128,7 +113,7 @@ const VirtualTour = () => {
           className="w-full h-screen cursor-move"
           onMouseMove={handleMouseMove}
           style={{
-            background: `url(${currentRoom?.image})`,
+            background: current?.thumbnail_url ? `url(${current.thumbnail_url})` : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             transform: `scale(${zoom}) rotateX(${viewAngle.x}deg) rotateY(${viewAngle.y}deg)`,
@@ -136,9 +121,13 @@ const VirtualTour = () => {
             transition: 'transform 0.1s ease-out'
           }}
         >
-          {/* 360° Image Container */}
           <div className="w-full h-full relative">
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20" />
+            {current?.video_url && (
+              <div className="absolute inset-0 flex items-center justify-center p-4">
+                <video src={current.video_url} controls className="w-full h-auto max-h-full rounded" />
+              </div>
+            )}
           </div>
         </div>
 
@@ -172,7 +161,7 @@ const VirtualTour = () => {
         </div>
       </section>
 
-      {/* Room Selection */}
+      {/* Tours Selection */}
       <section className="py-20 lg:py-32 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -181,26 +170,35 @@ const VirtualTour = () => {
             </h2>
           </div>
 
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {rooms.map((room) => {
-              const IconComponent = room.icon;
+            {tours.map((tour) => {
+              const IconComponent = roomIconMap[tour.room] || Sofa;
               return (
                 <Card 
-                  key={room.id} 
+                  key={tour.id} 
                   className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer group"
-                  onClick={() => startVRTour(room.id)}
+                  onClick={() => startVRTour(tour.id)}
                 >
                   <div className="relative h-48 overflow-hidden rounded-t-lg">
-                    <img
-                      src={room.image}
-                      alt={room.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
+                    {tour.thumbnail_url ? (
+                      <img
+                        src={tour.thumbnail_url}
+                        alt={tour.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">No thumbnail</div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute top-4 left-4">
                       <Badge className="bg-primary text-primary-foreground">
                         <IconComponent className="h-4 w-4 mr-2" />
-                        {room.name}
+                        {tour.room}
                       </Badge>
                     </div>
                     <div className="absolute bottom-4 left-4 right-4">
@@ -213,16 +211,17 @@ const VirtualTour = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <IconComponent className="h-5 w-5 text-primary" />
-                      {room.name}
+                      {tour.title}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription>{room.description}</CardDescription>
+                    <CardDescription>{tour.description}</CardDescription>
                   </CardContent>
                 </Card>
               );
             })}
           </div>
+          )}
         </div>
       </section>
 
