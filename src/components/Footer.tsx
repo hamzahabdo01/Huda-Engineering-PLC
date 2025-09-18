@@ -3,13 +3,10 @@ import {
   Mail,
   MapPin,
   Calendar,
-  Award,
-  Users,
   Facebook,
   Instagram,
   Youtube,
   TrendingUp,
-  Navigation,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Logo from "./Logo";
@@ -35,10 +32,11 @@ const Footer = () => {
 
   return (
     <footer className="bg-primary text-primary-foreground">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          {/* Company Info */}
-          <div className="mb-10 lg:mb-0">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {/* Switch from grid to flex on desktop */}
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-8">
+          {/* Company Info (Left) */}
+          <div className="lg:flex-1">
             <div className="flex items-center space-x-3 mb-6">
               <Logo size="lg" className="text-accent" />
               <div>
@@ -54,9 +52,8 @@ const Footer = () => {
                 <span className="text-sm">{t("footer.established")}</span>
               </div>
             </div>
-            {/* Social Media Icons */}
+            {/* Social Media */}
             <div className="flex space-x-5">
-              {/* ...social links unchanged... */}
               <a
                 href="https://www.facebook.com/profile.php?id=100085425223137&mibextid=wwXIfr&mibextid=wwXIfr"
                 target="_blank"
@@ -96,12 +93,9 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Leaflet Map - Centered and Wide */}
-          <div className="bg-white text-foreground p-4 rounded-lg shadow-md mb-10 lg:mb-0 flex flex-col justify-center">
-            <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-primary" /> Our Location
-            </h4>
-            <div className="w-full h-56 rounded-lg overflow-hidden mb-4 shadow">
+          {/* Map Block (Center, grows wide) */}
+          <div className="flex-grow flex flex-col lg:flex-row lg:items-center bg-white text-foreground p-4 rounded-lg shadow-md">
+            <div className="w-full lg:w-2/3 h-56 lg:h-64 rounded-lg overflow-hidden mb-4 lg:mb-0 lg:mr-6 shadow">
               <MapContainer
                 center={[companyLocation.lat, companyLocation.lng]}
                 zoom={15}
@@ -120,25 +114,27 @@ const Footer = () => {
                 </Marker>
               </MapContainer>
             </div>
-            <p className="text-sm text-muted-foreground mb-2">
-              Location: Apartment Amnen Building 2nd floor, behind Abyssinia
-              Plaza
-            </p>
-            <div className="flex space-x-3">
-              <a
-                href="https://maps.app.goo.gl/nmv2qvBH7TpsnVTb6?g_st=it"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <MapPin className="w-4 h-4" /> View Map
-              </a>
+            <div className="lg:w-1/3">
+              <p className="text-sm text-muted-foreground mb-2">
+                Location: Apartment Amnen Building 2nd floor, behind Abyssinia
+                Plaza
+              </p>
+              <div className="flex space-x-3">
+                <a
+                  href="https://maps.app.goo.gl/nmv2qvBH7TpsnVTb6?g_st=it"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <MapPin className="w-4 h-4" /> View Map
+                </a>
+              </div>
             </div>
           </div>
 
-          {/* Contact Info */}
-          <div className="flex flex-col items-start lg:items-end ">
-            <div className="space-y-3 w-full">
+          {/* Contact Info (Right) */}
+          <div className="lg:flex-1 flex flex-col items-start lg:items-end">
+            <div className="space-y-3">
               <h4 className="text-lg font-semibold mb-4">
                 {t("footer.contactInfo")}
               </h4>
@@ -177,7 +173,7 @@ const Footer = () => {
 
       {/* Bottom Footer */}
       <div className="border-t border-primary-foreground/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className=" mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-sm text-primary-foreground/80 mb-4 md:mb-0">
               © 2026 Huda Engineering PLC. {t("footer.allRights")}

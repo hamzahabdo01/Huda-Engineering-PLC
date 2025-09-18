@@ -38,6 +38,8 @@ interface Project {
   Amenities?: string[];
   units?: Record<string, string>;
   floor_plans?: FloorPlan[];
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export default function ProjectDetail() {
@@ -186,53 +188,68 @@ export default function ProjectDetail() {
         {project.floor_plans && project.floor_plans.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Floor Plans & Availability</CardTitle>
+              <CardTitle>Apartment Types</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {project.floor_plans
-                .slice()
-                .sort((a, b) => a.floor_number - b.floor_number)
-                .map((floor) => (
-                <div key={floor.id || floor.floor_number}>
-                  <div className="font-semibold mb-2">Floor {floor.floor_number}</div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Apartment Type</TableHead>
-                        <TableHead>Size</TableHead>
-                        <TableHead>Price</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {floor.apartment_types.map((apt, idx) => (
-                        <TableRow
-                          key={apt.id || idx}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => handleNavigateApartment(apt.type)}
-                          onKeyDown={(e: any) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              handleNavigateApartment(apt.type);
-                            }
-                          }}
-                          aria-label={`View ${apt.type} details`}
-                          className="cursor-pointer select-none transition-colors hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded"
-                        >
-                          <TableCell className="font-medium">
-                              <span className="text-sm sm:text-base font-semibold">{apt.type}</span>
-                          </TableCell>
-                          <TableCell>{apt.size || '—'}</TableCell>
-                          <TableCell className="flex items-center justify-between">
-                            <span>{apt.price || '—'}</span>
-                            <ArrowRight className="w-4 h-4 text-muted-foreground ml-3" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ))}
+            <CardContent>
+              {(() => {
+                const typeToSizes: Record<string, Set<string>> = {};
+                project.floor_plans?.forEach((floor) => {
+                  floor.apartment_types.forEach((apt) => {
+                    const key = apt.type;
+                    if (!typeToSizes[key]) typeToSizes[key] = new Set<string>();
+                    if (apt.size) typeToSizes[key].add(apt.size);
+                  });
+                });
+                const entries = Object.entries(typeToSizes);
+                if (entries.length === 0) return <div className="text-muted-foreground">No apartment types available.</div>;
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {entries.map(([type, sizes]) => (
+                      <div
+                        key={type}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleNavigateApartment(type)}
+                        onKeyDown={(e: any) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleNavigateApartment(type);
+                          }
+                        }}
+                        className="border rounded-lg p-4 aspect-square flex flex-col items-center justify-center text-center cursor-pointer hover:shadow-md transition"
+                        aria-label={`View ${type} overview`}
+                      >
+                        <div className="text-lg font-semibold mb-2">{type}</div>
+                        <div className="flex flex-wrap gap-2 justify-center text-sm text-muted-foreground">
+                          {Array.from(sizes).map((s) => (
+                            <span key={s} className="inline-block px-2 py-1 bg-secondary rounded">{s}</span>
+                          ))}
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-muted-foreground mt-3" />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        )}
+
+        {(project.latitude != null && project.longitude != null) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Project Location</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full aspect-video rounded overflow-hidden border">
+                <iframe
+                  title="Project Map"
+                  className="w-full h-full"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps?q=${project.latitude},${project.longitude}&z=16&output=embed`}
+                />
+              </div>
             </CardContent>
           </Card>
         )}

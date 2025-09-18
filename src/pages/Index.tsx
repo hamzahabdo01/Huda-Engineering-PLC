@@ -123,7 +123,7 @@ const Index = () => {
           {/* Featured Property Card */}
           <div
             className="
-          bg-white/30
+          bg-transparent
           border border-white/30
           rounded-2xl
           shadow-2xl
@@ -146,7 +146,7 @@ const Index = () => {
             </div>
 
             <div className="flex flex-row items-center justify-center gap-6 w-11/12 mb-6 sm:mb-10">
-              <div className="flex flex-col items-center justify-center bg-white/40 rounded-2xl p-10 shadow-lg w-[45%]">
+              <div className="flex flex-col items-center justify-center bg-white/20 rounded-2xl p-10 shadow-lg w-[45%]">
                 <div className="text-3xl sm:text-6xl font-extrabold text-[#00555b] mb-1 sm:mb-2">
                   4
                 </div>
@@ -154,7 +154,7 @@ const Index = () => {
                   {t("hero.bedrooms")}
                 </div>
               </div>
-              <div className="flex flex-col items-center justify-center bg-white/40 rounded-2xl p-10 shadow-lg w-[45%]">
+              <div className="flex flex-col items-center justify-center bg-white/20 rounded-2xl p-10 shadow-lg w-[45%]">
                 <div className="text-3xl sm:text-6xl font-extrabold text-[#00555b] mb-1 sm:mb-2">
                   3
                 </div>
