@@ -254,7 +254,10 @@ const AdminDashboard = () => {
   ): Promise<string | null> => {
     try {
       setAssetUploading(true);
-      const toastHandle = toast({ title: "Uploading to Supabase Storage...", description: `Bucket: ${bucket}` });
+      const toastHandle = toast({
+        title: "Uploading to Supabase Storage...",
+        description: `Bucket: ${bucket}`,
+      });
       const ext = file.name.split(".").pop();
       const fileName = `${Date.now()}_${Math.random()
         .toString(36)
@@ -263,19 +266,35 @@ const AdminDashboard = () => {
         .from(bucket)
         .upload(fileName, file, { upsert: false });
       if (error) {
-        toastHandle.update({ title: "Upload failed", description: error.message, variant: "destructive" } as any);
+        toastHandle.update({
+          title: "Upload failed",
+          description: error.message,
+          variant: "destructive",
+        } as any);
         toastHandle.dismiss();
         setAssetUploading(false);
         return null;
       }
-      toastHandle.update({ title: "Processing...", description: "Preparing public URL" } as any);
-      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(data.path);
+      toastHandle.update({
+        title: "Processing...",
+        description: "Preparing public URL",
+      } as any);
+      const { data: pub } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(data.path);
       const url = pub.publicUrl;
-      toastHandle.update({ title: "Uploaded", description: "Loaded from Supabase into the form." } as any);
+      toastHandle.update({
+        title: "Uploaded",
+        description: "Loaded from Supabase into the form.",
+      } as any);
       setAssetUploading(false);
       return url;
     } catch (e: any) {
-      toast({ title: "Upload error", description: e.message, variant: "destructive" });
+      toast({
+        title: "Upload error",
+        description: e.message,
+        variant: "destructive",
+      });
       setAssetUploading(false);
       return null;
     }
@@ -2387,8 +2406,15 @@ const AdminDashboard = () => {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-                            const url = await uploadFileToBucket("testimonial-videos", file);
-                            if (url) setNewTestimonial((p) => ({ ...p, video_url: url }));
+                            const url = await uploadFileToBucket(
+                              "testimonial-videos",
+                              file
+                            );
+                            if (url)
+                              setNewTestimonial((p) => ({
+                                ...p,
+                                video_url: url,
+                              }));
                           }}
                         />
                       </div>
@@ -2565,7 +2591,7 @@ const AdminDashboard = () => {
                   </Button>
                 </DialogTrigger>
 
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
                       {editingUpdateId ? "Edit Update" : "Add Project Update"}
@@ -2702,13 +2728,17 @@ const AdminDashboard = () => {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-                            const url = await uploadFileToBucket("project-images", file);
-                            if (url) setNewProject((p) => ({ ...p, image_url: url }));
+                            const url = await uploadFileToBucket(
+                              "project-images",
+                              file
+                            );
+                            if (url)
+                              setNewProject((p) => ({ ...p, image_url: url }));
                           }}
                         />
                       </div>
                     </div>
-
+                    {/* 
                     <div>
                       <Label>Gallery Images</Label>
                       <div className="flex gap-2 mb-2">
@@ -2788,7 +2818,7 @@ const AdminDashboard = () => {
                           ))}
                         </div>
                       )}
-                    </div>
+                    </div> */}
 
                     {/* Floor Plan Management */}
                     <div className="space-y-4">
@@ -2881,7 +2911,7 @@ const AdminDashboard = () => {
                                     (apartment, aptIndex) => (
                                       <div
                                         key={apartment.id}
-                                        className="grid grid-cols-2 lg:grid-cols-6 gap-3 p-3 bg-white rounded border"
+                                        className="grid grid-cols-2 lg:grid-cols-5 gap-3 p-3 bg-white rounded border"
                                       >
                                         <div>
                                           <Label className="text-xs font-medium">
@@ -2981,9 +3011,9 @@ const AdminDashboard = () => {
                                         </div>
                                         <div>
                                           <Label className="text-xs font-medium">
-                                            Apartment Image URL
+                                            Apartment Image
                                           </Label>
-                                          <div className="flex items-center gap-2">
+                                          <div className="flex gap-2">
                                             <Input
                                               value={apartment.image_url || ""}
                                               onChange={(e) =>
@@ -3002,9 +3032,14 @@ const AdminDashboard = () => {
                                               accept="image/*"
                                               className="text-sm"
                                               onChange={async (e) => {
-                                                const file = e.target.files?.[0];
+                                                const file =
+                                                  e.target.files?.[0];
                                                 if (!file) return;
-                                                const url = await uploadFileToBucket("apartment-images", file);
+                                                const url =
+                                                  await uploadFileToBucket(
+                                                    "apartment-images",
+                                                    file
+                                                  );
                                                 if (url) {
                                                   updateApartmentType(
                                                     floor.id,
@@ -3025,7 +3060,9 @@ const AdminDashboard = () => {
                                           )}
                                         </div>
                                         <div className="col-span-2 lg:col-span-6">
-                                          <Label className="text-xs font-medium">Gallery Images</Label>
+                                          <Label className="text-xs font-medium">
+                                            Gallery Images
+                                          </Label>
                                           <div className="flex gap-2 mb-2">
                                             <Input
                                               placeholder="Paste image URL and press Add (optional)"
@@ -3033,10 +3070,14 @@ const AdminDashboard = () => {
                                               onKeyDown={(e) => {
                                                 if (e.key === "Enter") {
                                                   e.preventDefault();
-                                                  const value = (e.target as HTMLInputElement).value.trim();
+                                                  const value = (
+                                                    e.target as HTMLInputElement
+                                                  ).value.trim();
                                                   if (!value) return;
                                                   const next = [
-                                                    ...((apartment.gallery_urls as string[] | undefined) || []),
+                                                    ...((apartment.gallery_urls as
+                                                      | string[]
+                                                      | undefined) || []),
                                                     value,
                                                   ];
                                                   updateApartmentType(
@@ -3045,7 +3086,9 @@ const AdminDashboard = () => {
                                                     "gallery_urls",
                                                     next
                                                   );
-                                                  (e.target as HTMLInputElement).value = "";
+                                                  (
+                                                    e.target as HTMLInputElement
+                                                  ).value = "";
                                                 }
                                               }}
                                             />
@@ -3053,11 +3096,17 @@ const AdminDashboard = () => {
                                               type="button"
                                               size="sm"
                                               onClick={(e) => {
-                                                const input = (e.currentTarget.parentElement?.querySelector("input") as HTMLInputElement)!;
-                                                const value = input.value.trim();
+                                                const input =
+                                                  (e.currentTarget.parentElement?.querySelector(
+                                                    "input"
+                                                  ) as HTMLInputElement)!;
+                                                const value =
+                                                  input.value.trim();
                                                 if (!value) return;
                                                 const next = [
-                                                  ...((apartment.gallery_urls as string[] | undefined) || []),
+                                                  ...((apartment.gallery_urls as
+                                                    | string[]
+                                                    | undefined) || []),
                                                   value,
                                                 ];
                                                 updateApartmentType(
@@ -3077,15 +3126,23 @@ const AdminDashboard = () => {
                                               multiple
                                               className="text-sm"
                                               onChange={async (e) => {
-                                                const files = Array.from(e.target.files || []);
+                                                const files = Array.from(
+                                                  e.target.files || []
+                                                );
                                                 if (files.length === 0) return;
                                                 const uploaded: string[] = [];
                                                 for (const f of files) {
-                                                  const url = await uploadFileToBucket("apartment-images", f);
+                                                  const url =
+                                                    await uploadFileToBucket(
+                                                      "apartment-images",
+                                                      f
+                                                    );
                                                   if (url) uploaded.push(url);
                                                 }
                                                 const next = [
-                                                  ...((apartment.gallery_urls as string[] | undefined) || []),
+                                                  ...((apartment.gallery_urls as
+                                                    | string[]
+                                                    | undefined) || []),
                                                   ...uploaded,
                                                 ];
                                                 updateApartmentType(
@@ -3098,33 +3155,49 @@ const AdminDashboard = () => {
                                               }}
                                             />
                                           </div>
-                                          {(apartment.gallery_urls && apartment.gallery_urls.length > 0) && (
-                                            <div className="flex flex-wrap gap-2">
-                                              {(apartment.gallery_urls || []).map((url, gidx) => (
-                                                <div key={gidx} className="relative">
-                                                  <img src={url} alt={`g-${gidx}`} className="h-16 w-24 object-cover rounded" />
-                                                  <Button
-                                                    type="button"
-                                                    size="icon"
-                                                    variant="destructive"
-                                                    className="absolute -top-2 -right-2 h-6 w-6"
-                                                    onClick={() => {
-                                                      const next = (apartment.gallery_urls || []).filter((_, i) => i !== gidx);
-                                                      updateApartmentType(
-                                                        floor.id,
-                                                        apartment.id,
-                                                        "gallery_urls",
-                                                        next
-                                                      );
-                                                    }}
-                                                    title="Remove"
+                                          {apartment.gallery_urls &&
+                                            apartment.gallery_urls.length >
+                                              0 && (
+                                              <div className="flex flex-wrap gap-2">
+                                                {(
+                                                  apartment.gallery_urls || []
+                                                ).map((url, gidx) => (
+                                                  <div
+                                                    key={gidx}
+                                                    className="relative"
                                                   >
-                                                    ×
-                                                  </Button>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
+                                                    <img
+                                                      src={url}
+                                                      alt={`g-${gidx}`}
+                                                      className="h-16 w-24 object-cover rounded"
+                                                    />
+                                                    <Button
+                                                      type="button"
+                                                      size="icon"
+                                                      variant="destructive"
+                                                      className="absolute -top-2 -right-2 h-6 w-6"
+                                                      onClick={() => {
+                                                        const next = (
+                                                          apartment.gallery_urls ||
+                                                          []
+                                                        ).filter(
+                                                          (_, i) => i !== gidx
+                                                        );
+                                                        updateApartmentType(
+                                                          floor.id,
+                                                          apartment.id,
+                                                          "gallery_urls",
+                                                          next
+                                                        );
+                                                      }}
+                                                      title="Remove"
+                                                    >
+                                                      ×
+                                                    </Button>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
                                         </div>
                                         <div className="col-span-2 lg:col-span-6">
                                           <Label className="text-xs font-medium">
@@ -3361,17 +3434,32 @@ const AdminDashboard = () => {
                           </Badge>
                         </div>
                       </CardHeader>
-                      {(project.gallery_urls && project.gallery_urls.length > 0) || project.image_url ? (
+                      {(project.gallery_urls &&
+                        project.gallery_urls.length > 0) ||
+                      project.image_url ? (
                         <div className="px-6 pb-4">
                           <div className="flex gap-2 overflow-x-auto">
                             <img
-                              src={(project.gallery_urls && project.gallery_urls.length > 0) ? project.gallery_urls[0] : project.image_url}
+                              src={
+                                project.gallery_urls &&
+                                project.gallery_urls.length > 0
+                                  ? project.gallery_urls[0]
+                                  : project.image_url
+                              }
                               alt={project.title}
                               className="w-full h-32 object-cover rounded-lg"
                             />
-                            {project.gallery_urls && project.gallery_urls.slice(1).map((url, idx) => (
-                              <img key={idx} src={url} alt={`${project.title}-${idx+2}`} className="h-32 w-48 object-cover rounded-lg" />
-                            ))}
+                            {project.gallery_urls &&
+                              project.gallery_urls
+                                .slice(1)
+                                .map((url, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={url}
+                                    alt={`${project.title}-${idx + 2}`}
+                                    className="h-32 w-48 object-cover rounded-lg"
+                                  />
+                                ))}
                           </div>
                         </div>
                       ) : null}
@@ -3641,9 +3729,18 @@ const AdminDashboard = () => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
                                 const isVideo = file.type.startsWith("video/");
-                                const bucket = isVideo ? "project-update-videos" : "project-update-images";
-                                const url = await uploadFileToBucket(bucket, file);
-                                if (url) setUpdate((prev) => ({ ...prev, media_url: url }));
+                                const bucket = isVideo
+                                  ? "project-update-videos"
+                                  : "project-update-images";
+                                const url = await uploadFileToBucket(
+                                  bucket,
+                                  file
+                                );
+                                if (url)
+                                  setUpdate((prev) => ({
+                                    ...prev,
+                                    media_url: url,
+                                  }));
                               }}
                             />
                           </div>
@@ -3863,7 +3960,9 @@ const AdminDashboard = () => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="ann_image_url">Announcement Image</Label>
+                        <Label htmlFor="ann_image_url">
+                          Announcement Image
+                        </Label>
                         <div className="flex items-center gap-2">
                           <Input
                             id="ann_image_url"
@@ -3882,8 +3981,15 @@ const AdminDashboard = () => {
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (!file) return;
-                              const url = await uploadFileToBucket("announcement-images", file);
-                              if (url) setNewAnnouncement((p) => ({ ...p, image_url: url }));
+                              const url = await uploadFileToBucket(
+                                "announcement-images",
+                                file
+                              );
+                              if (url)
+                                setNewAnnouncement((p) => ({
+                                  ...p,
+                                  image_url: url,
+                                }));
                             }}
                           />
                         </div>
@@ -3903,7 +4009,11 @@ const AdminDashboard = () => {
                       />
                       <Label htmlFor="ann_published">Publish immediately</Label>
                     </div>
-                    <Button onClick={handleSaveAnnouncement} className="w-full" disabled={assetUploading}>
+                    <Button
+                      onClick={handleSaveAnnouncement}
+                      className="w-full"
+                      disabled={assetUploading}
+                    >
                       {editingAnnouncement
                         ? "Save Changes"
                         : "Add Announcement"}
@@ -4087,7 +4197,10 @@ const AdminDashboard = () => {
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (!file) return;
-                              const url = await uploadFileToBucket("virtual-tour-videos", file);
+                              const url = await uploadFileToBucket(
+                                "virtual-tour-videos",
+                                file
+                              );
                               if (url) setVtVideoUrl(url);
                             }}
                           />
@@ -4107,7 +4220,10 @@ const AdminDashboard = () => {
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (!file) return;
-                              const url = await uploadFileToBucket("virtual-tour-thumbnails", file);
+                              const url = await uploadFileToBucket(
+                                "virtual-tour-thumbnails",
+                                file
+                              );
                               if (url) setVtThumbUrl(url);
                             }}
                           />
@@ -4136,7 +4252,10 @@ const AdminDashboard = () => {
 
                           try {
                             if (assetUploading) {
-                              toast({ title: "Please wait", description: "Finishing file upload..." });
+                              toast({
+                                title: "Please wait",
+                                description: "Finishing file upload...",
+                              });
                               return;
                             }
                             if (editingVtId) {

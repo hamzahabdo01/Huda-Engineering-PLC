@@ -148,7 +148,7 @@ const Index = () => {
             <div className="flex flex-row items-center justify-center gap-6 w-11/12 mb-6 sm:mb-10">
               <div className="flex flex-col items-center justify-center bg-white/20 rounded-2xl p-10 shadow-lg w-[45%]">
                 <div className="text-3xl sm:text-6xl font-extrabold text-[#00555b] mb-1 sm:mb-2">
-                  4
+                  3
                 </div>
                 <div className="text-lg sm:text-2xl font-semibold text-[#00555b]">
                   {t("hero.bedrooms")}
@@ -156,7 +156,7 @@ const Index = () => {
               </div>
               <div className="flex flex-col items-center justify-center bg-white/20 rounded-2xl p-10 shadow-lg w-[45%]">
                 <div className="text-3xl sm:text-6xl font-extrabold text-[#00555b] mb-1 sm:mb-2">
-                  3
+                  2
                 </div>
                 <div className="text-lg sm:text-2xl font-semibold text-[#00555b]">
                   {t("hero.bathrooms")}
