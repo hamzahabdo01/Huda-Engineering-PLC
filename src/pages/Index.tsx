@@ -35,6 +35,7 @@ import Logo from "@/components/Logo";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import heroVideo from "@/assets/video_2025-09-10_11-26-19.mp4";
+import heroImage from "@/assets/Screenshot 2025-09-23 152611.png";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -111,7 +112,7 @@ const Index = () => {
               muted
               playsInline
               preload="auto"
-              // poster={heroImage}
+              poster={heroImage}
             >
               <source src={heroVideo} type="video/mp4" />
               Your browser does not support the video tag.
@@ -123,66 +124,66 @@ const Index = () => {
           {/* Featured Property Card */}
           <div
             className="
-          bg-transparent
-          border border-white/30
-          rounded-2xl
-          shadow-2xl
-          animate-fade-in
-          mx-auto
-          flex flex-col justify-center items-center
-          w-[1200px] h-[520px]
-          max-w-[90vw]
-          max-h-[110vw]
-          backdrop-blur-xl
-        "
+            bg-transparent
+            border border-white/30
+            rounded-2xl
+            shadow-2xl
+            animate-fade-in
+            mx-auto
+            flex flex-col justify-center items-center
+            w-[1200px] h-[520px]
+            max-w-[90vw]
+            max-h-[110vw]
+            backdrop-blur-xl
+          "
           >
-            <div className="flex items-center justify-between w-full px-6 sm:px-16 pt-12 mb-10">
-              <h3 className="text-xl sm:text-5xl font-extrabold text-[#00555b] tracking-tight drop-shadow-sm">
-                {t("hero.featuredProperty")}
-              </h3>
-              <span className="bg-[#00555b] text-white text-xs sm:text-lg font-semibold px-2 sm:px-6 py-2 rounded-full shadow backdrop-blur-sm">
-                {t("hero.availableNow")}
-              </span>
-            </div>
+            {/* <div className="flex items-center justify-between w-full px-6 sm:px-16 pt-12 mb-10">
+                <h3 className="text-xl sm:text-5xl font-extrabold text-[#00555b] tracking-tight drop-shadow-sm">
+                  {t("hero.featuredProperty")}
+                </h3>
+                <span className="bg-[#00555b] text-white text-xs sm:text-lg font-semibold px-2 sm:px-6 py-2 rounded-full shadow backdrop-blur-sm">
+                  {t("hero.availableNow")}
+                </span>
+              </div>
 
-            <div className="flex flex-row items-center justify-center gap-6 w-11/12 mb-6 sm:mb-10">
-              <div className="flex flex-col items-center justify-center bg-white/20 rounded-2xl p-10 shadow-lg w-[45%]">
-                <div className="text-3xl sm:text-6xl font-extrabold text-[#00555b] mb-1 sm:mb-2">
-                  3
+              <div className="flex flex-row items-center justify-center gap-6 w-11/12 mb-6 sm:mb-10">
+                <div className="flex flex-col items-center justify-center bg-white/20 rounded-2xl p-10 shadow-lg w-[45%]">
+                  <div className="text-3xl sm:text-6xl font-extrabold text-[#00555b] mb-1 sm:mb-2">
+                    3
+                  </div>
+                  <div className="text-lg sm:text-2xl font-semibold text-[#00555b]">
+                    {t("hero.bedrooms")}
+                  </div>
                 </div>
-                <div className="text-lg sm:text-2xl font-semibold text-[#00555b]">
-                  {t("hero.bedrooms")}
+                <div className="flex flex-col items-center justify-center bg-white/20 rounded-2xl p-10 shadow-lg w-[45%]">
+                  <div className="text-3xl sm:text-6xl font-extrabold text-[#00555b] mb-1 sm:mb-2">
+                    2
+                  </div>
+                  <div className="text-lg sm:text-2xl font-semibold text-[#00555b]">
+                    {t("hero.bathrooms")}
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col items-center justify-center bg-white/20 rounded-2xl p-10 shadow-lg w-[45%]">
-                <div className="text-3xl sm:text-6xl font-extrabold text-[#00555b] mb-1 sm:mb-2">
-                  2
-                </div>
-                <div className="text-lg sm:text-2xl font-semibold text-[#00555b]">
-                  {t("hero.bathrooms")}
-                </div>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-between w-full px-6 sm:px-16 pt-2">
-              <div>
-                <div className="text-lg sm:text-2xl text-[#00555b] font-medium mb-2">
-                  {t("hero.startingFrom")}
+              <div className="flex items-center justify-between w-full px-6 sm:px-16 pt-2">
+                <div>
+                  <div className="text-lg sm:text-2xl text-[#00555b] font-medium mb-2">
+                    {t("hero.startingFrom")}
+                  </div>
+                  <div className="text-2xl sm:text-5xl font-extrabold text-[#00555b] tracking-tight drop-shadow-sm">
+                    8.5M ETB
+                  </div>
                 </div>
-                <div className="text-2xl sm:text-5xl font-extrabold text-[#00555b] tracking-tight drop-shadow-sm">
-                  8.5M ETB
-                </div>
-              </div>
-              <Button
-                className="bg-[#00555b] hover:bg-white hover:text-[#00555b] text-white border-white/30 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
-                asChild
-              >
-                <Link to="/projects">
-                  {t("hero.viewDetails")}
-                  <ArrowUpRight className="ml-3 h-7 w-7" />
-                </Link>
-              </Button>
-            </div>
+                <Button
+                  className="bg-[#00555b] hover:bg-white hover:text-[#00555b] text-white border-white/30 font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
+                  asChild
+                >
+                  <Link to="/projects">
+                    {t("hero.viewDetails")}
+                    <ArrowUpRight className="ml-3 h-7 w-7" />
+                  </Link>
+                </Button>
+              </div> */}
           </div>
 
           {/* Property Info Cards */}
