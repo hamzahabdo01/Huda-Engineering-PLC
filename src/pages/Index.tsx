@@ -275,7 +275,7 @@ const Index = () => {
             muted
             playsInline
             preload="auto"
-            poster={heroImage}
+            // poster={heroImage}
           >
             <source src={heroVideo} type="video/mp4" />
             Your browser does not support the video tag.
@@ -367,7 +367,7 @@ const Index = () => {
               <Button 
                 onClick={handleSearch}
                 disabled={isSearching}
-                className="w-full sm:w-auto bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold transition-all duration-200"
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground border-primary/30 font-semibold shadow-lg px-6 py-2.5 sm:py-3 text-sm sm:text-base transition-all duration-200"
               >
                 {isSearching ? (
                   <>
@@ -378,7 +378,7 @@ const Index = () => {
                 ) : (
                   <>
                     <Search className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                    <span className="hidden sm:inline">Search Properties</span>
+                    <span className="hidden sm:inline">Search</span>
                     <span className="sm:hidden">Search</span>
                   </>
                 )}
