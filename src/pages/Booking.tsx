@@ -539,7 +539,6 @@ export default function Booking() {
                     type="tel"
                     value={formData.secondary_phone}
                     onChange={handleChange}
-                    required
                   />
                   <InputGroup
                     label="National ID (Optional)"
