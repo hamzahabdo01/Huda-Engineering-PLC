@@ -170,7 +170,7 @@ export default function ProjectDetail() {
                   <TableRow>
                     <TableHead>Type</TableHead>
                     <TableHead>Size/Price</TableHead>
-                    <TableHead>Available</TableHead>
+                    <TableHead>Availableee</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
