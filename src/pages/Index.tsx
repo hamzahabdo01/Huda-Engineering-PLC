@@ -111,7 +111,7 @@ const Index = () => {
       muted
       playsInline
       preload="auto"
-      poster={heroImage}
+      // poster={heroImage}
     >
       <source src={heroVideo} type="video/mp4" />
       Your browser does not support the video tag.
