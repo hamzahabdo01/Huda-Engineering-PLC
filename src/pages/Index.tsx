@@ -104,23 +104,28 @@ const Index = () => {
 <section className="relative min-h-screen flex flex-col items-center justify-center text-center">
   {/* Background Video */}
   <div className="absolute inset-0">
+    {/* Static background image that shows immediately */}
+    <div 
+      className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${heroImage})` }}
+    />
+    
     <video
-      className="w-full h-full object-cover"
+      className="w-full h-full object-cover relative z-10"
       autoPlay
       loop
       muted
       playsInline
       preload="auto"
-      // poster={heroImage}
     >
       <source src={heroVideo} type="video/mp4" />
       Your browser does not support the video tag.
     </video>
-    <div className="absolute inset-0 bg-black/40" />
+    <div className="absolute inset-0 bg-black/40 z-20" />
   </div>
   
   {/* Hero Content Container */}
-  <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-20">
+  <div className="relative z-30 flex flex-col items-center justify-center min-h-screen px-4 py-20">
     {/* Hero Text + Logo */}
     <div className="text-white space-y-4 sm:space-y-6 md:space-y-8 flex flex-col items-center max-w-4xl mx-auto">
       {/* Logo above text - responsive sizing */}
