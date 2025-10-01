@@ -136,7 +136,7 @@ export default function ApartmentDetail() {
             <ArrowLeft className="w-4 h-4 mr-1"/> Back
           </Button>
           <h1 className="text-3xl md:text-4xl font-bold">{project.title} — {aptMeta.type}</h1>
-          <Badge variant={aptMeta.availability === 'available' ? 'outline' : 'secondary'} className="capitalize ml-2">
+          <Badge variant={aptMeta.availability === 'available' ? 'inline' : 'secondary'} className="capitalize ml-2">
             {aptMeta.availability || 'n/a'}
           </Badge>
         </div>

@@ -1,6 +1,3 @@
-
-
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,8 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Building2,
   Users,
@@ -32,15 +27,6 @@ import {
   Play,
   ArrowUpRight,
   ArrowLeft,
-  Search,
-  ChevronDown,
-  Facebook,
-  Twitter,
-  Instagram,
-  Linkedin,
-  MessageCircle,
-  Bed,
-  Home,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -57,13 +43,6 @@ interface ProjectCardItem {
   title: string;
   short_description: string;
   image_url: string;
-  status: string;
-  location: string;
-  project_type: string;
-  start_date: string;
-  end_date: string;
-  units: Record<string, string>;
-  Amenities: string[];
 }
 
 interface TestimonialItem {
@@ -84,27 +63,12 @@ const Index = () => {
   const [testimonials, setTestimonials] = useState<TestimonialItem[] | null>(
     null
   );
-  
-  // Search form state
-  const [searchLocation, setSearchLocation] = useState("");
-  const [searchPropertyType, setSearchPropertyType] = useState("");
-  const [searchBedrooms, setSearchBedrooms] = useState("");
-  const [searchStatus, setSearchStatus] = useState("");
-  
-  // Backend data for dropdowns
-  const [propertyTypes, setPropertyTypes] = useState<string[]>([]);
-  const [locations, setLocations] = useState<string[]>([]);
-  
-  // Search results state
-  const [searchResults, setSearchResults] = useState<ProjectCardItem[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     const fetchPrevious = async () => {
       const { data } = await supabase
         .from("projects")
-        .select("id,title,short_description,image_url,status,created_at,location,project_type,start_date,end_date,units,Amenities")
+        .select("id,title,short_description,image_url,status,created_at")
         .in("status", ["previous"])
         .order("created_at", { ascending: false })
         .limit(6);
@@ -113,17 +77,9 @@ const Index = () => {
         title: p.title,
         short_description: p.short_description,
         image_url: p.image_url,
-        status: p.status,
-        location: p.location || "",
-        project_type: p.project_type || "",
-        start_date: p.start_date || "",
-        end_date: p.end_date || "",
-        units: p.units || {},
-        Amenities: p.Amenities || [],
       }));
       setPreviousProjects(normalized);
     };
-    
     const fetchTestimonials = async () => {
       const { data, error } = await supabase
         .from("testimonials")
@@ -136,447 +92,78 @@ const Index = () => {
         setTestimonials(null);
       }
     };
-    
-    const fetchPropertyTypesAndLocations = async () => {
-      const { data } = await supabase
-        .from("projects")
-        .select("project_type,location")
-        .not("project_type", "is", null)
-        .not("location", "is", null);
-      
-      if (data) {
-        // Extract unique property types
-        const uniqueTypes = [...new Set(data.map(p => p.project_type).filter(Boolean))];
-        setPropertyTypes(uniqueTypes);
-        
-        // Extract unique locations
-        const uniqueLocations = [...new Set(data.map(p => p.location).filter(Boolean))];
-        setLocations(uniqueLocations);
-      }
-    };
-    
     fetchPrevious();
     fetchTestimonials();
-    fetchPropertyTypesAndLocations();
   }, []);
-
-  // Helper functions from Projects page
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "previous":
-        return (
-          <Badge variant="secondary">
-            Previous
-          </Badge>
-        );
-      case "completed":
-        return (
-          <Badge variant="secondary">
-            Completed
-          </Badge>
-        );
-      case "active":
-        return (
-          <Badge variant="default" className="bg-green-600 text-white">
-            Active
-          </Badge>
-        );
-      case "upcoming":
-        return <Badge variant="default">Upcoming</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "from-green-500 to-green-600";
-      case "active":
-        return "from-blue-500 to-blue-600";
-      case "upcoming":
-        return "from-purple-500 to-purple-600";
-      default:
-        return "from-gray-500 to-gray-600";
-    }
-  };
-
-  const handleSearch = async () => {
-    setIsSearching(true);
-    setHasSearched(true);
-    
-    try {
-      let query = supabase
-        .from("projects")
-        .select("id,title,short_description,image_url,status,created_at,location,project_type,start_date,end_date,units,Amenities");
-
-      // Apply filters based on search criteria
-      if (searchLocation) {
-        query = query.ilike('location', `%${searchLocation}%`);
-      }
-      
-      if (searchPropertyType) {
-        query = query.eq('project_type', searchPropertyType);
-      }
-      
-      if (searchStatus) {
-        query = query.eq('status', searchStatus);
-      }
-
-      // For bedrooms, we'll need to check the units field if it exists
-      if (searchBedrooms) {
-        // This is a simplified approach - you might need to adjust based on your exact data structure
-        query = query.contains('units', { [`${searchBedrooms}B`]: '' });
-      }
-
-      const { data, error } = await query
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (error) {
-        console.error('Search error:', error);
-        setSearchResults([]);
-      } else {
-        const normalized = (data || []).map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          short_description: p.short_description,
-          image_url: p.image_url,
-          status: p.status,
-          location: p.location,
-          project_type: p.project_type,
-          start_date: p.start_date,
-          end_date: p.end_date,
-          units: p.units || {},
-          Amenities: p.Amenities || [],
-        }));
-        setSearchResults(normalized);
-      }
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center py-8 sm:py-12">
-        {/* Background Video */}
-        <div className="absolute inset-0">
-          <video
-            className="w-full h-full object-cover"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            // poster={heroImage}
-          >
-            <source src={heroVideo} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-          <div className="absolute inset-0 bg-black/40" />
-        </div>
+<section className="relative min-h-screen flex flex-col items-center justify-center text-center">
+  {/* Background Video */}
+  <div className="absolute inset-0">
+    <video
+      className="w-full h-full object-cover"
+      autoPlay
+      loop
+      muted
+      playsInline
+      preload="auto"
+      poster={heroImage}
+    >
+      <source src={heroVideo} type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+    <div className="absolute inset-0 bg-black/40" />
+  </div>
+  
+  {/* Hero Content Container */}
+  <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-20">
+    {/* Hero Text + Logo */}
+    <div className="text-white space-y-4 sm:space-y-6 md:space-y-8 flex flex-col items-center max-w-4xl mx-auto">
+      {/* Logo above text - responsive sizing */}
+      <Logo 
+        variant="wy" 
+        className="w-48 h-auto sm:w-56 md:w-64 lg:w-72 xl:w-80 transition-all duration-300" 
+      /> 
 
-        {/* Main Content */}
-        <div className="relative z-10 text-center text-white px-4 sm:px-6 lg:px-8 w-full max-w-7xl mx-auto">
-          {/* Logo */}
-          <div className="mb-6 sm:mb-8">
-            <Logo variant="white" className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 mx-auto mb-3 sm:mb-4" />
-          </div>
+      <p className="text-base sm:text-lg md:text-xl lg:text-2xl tracking-wide font-medium">
+        Trustworthy Real Estate
+      </p>
+      
+      <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight">
+        HUDA ENGINEERING
+      </h1>
+    </div>
 
-          {/* Tagline */}
-          <p className="text-base sm:text-lg lg:text-xl font-medium mb-3 sm:mb-4 tracking-wide">
-            TRUSTWORTHY REAL ESTATE
-          </p>
-          
-          {/* Main Heading */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-8 sm:mb-10 lg:mb-12 leading-tight">
-            HUDA ENGINEERING
-          </h1>
+    {/* CTA Buttons */}
+    <div className="mt-8 sm:mt-10 md:mt-12 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 w-full max-w-md sm:max-w-none">
+      <Button
+        className="bg-white text-[#00555b] hover:bg-white/90 font-semibold shadow-lg px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-base"
+        asChild
+      >
+        <Link to="/booking">
+          {t("Book Now")}
+          <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+        </Link>
+      </Button>
 
-          {/* Search Form */}
-          <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 max-w-5xl mx-auto mb-6 sm:mb-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {/* Location Search */}
-              <div className="relative group sm:col-span-2 lg:col-span-1">
-                <input
-                  type="text"
-                  placeholder="Search by location"
-                  value={searchLocation}
-                  onChange={(e) => setSearchLocation(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg bg-white text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-lg transition-all duration-200 border border-gray-200 hover:border-gray-300"
-                />
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-primary transition-colors duration-200" />
-              </div>
+      <Button
+        variant="outline"
+        className="bg-white/20 hover:bg-white text-white border-white/30 font-semibold shadow-lg px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-base"
+        asChild
+      >
+        <Link to="/virtual-tour" className="flex items-center gap-2">
+          <Play className="h-4 w-4 sm:h-5 sm:w-5" />
+          {t("nav.virtualTour")}
+        </Link>
+      </Button>
+    </div>
+  </div>
+</section>
 
-              {/* Property Type */}
-              <div className="relative group">
-                <select 
-                  value={searchPropertyType}
-                  onChange={(e) => setSearchPropertyType(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-lg appearance-none border border-gray-200 hover:border-gray-300 transition-all duration-200 cursor-pointer"
-                >
-                  <option value="">Property Type</option>
-                  {propertyTypes.map((type) => (
-                    <option key={type} value={type} className="py-2">{type}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none group-focus-within:text-primary transition-colors duration-200" />
-              </div>
-
-              {/* Bedrooms */}
-              <div className="relative group">
-                <select 
-                  value={searchBedrooms}
-                  onChange={(e) => setSearchBedrooms(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-lg appearance-none border border-gray-200 hover:border-gray-300 transition-all duration-200 cursor-pointer"
-                >
-                  <option value="">Bedrooms</option>
-                  <option value="1" className="py-2">1 Bedroom</option>
-                  <option value="2" className="py-2">2 Bedrooms</option>
-                  <option value="3" className="py-2">3 Bedrooms</option>
-                  <option value="4+" className="py-2">4+ Bedrooms</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none group-focus-within:text-primary transition-colors duration-200" />
-              </div>
-
-              {/* Property Status */}
-              <div className="relative group">
-                <select 
-                  value={searchStatus}
-                  onChange={(e) => setSearchStatus(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary focus:shadow-lg appearance-none border border-gray-200 hover:border-gray-300 transition-all duration-200 cursor-pointer"
-                >
-                  <option value="">Property Status</option>
-                  <option value="active" className="py-2">Active</option>
-                  <option value="completed" className="py-2">Completed</option>
-                  <option value="upcoming" className="py-2">Upcoming</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none group-focus-within:text-primary transition-colors duration-200" />
-              </div>
-            </div>
-
-            {/* Search Button */}
-            <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-              <Button 
-                onClick={handleSearch}
-                disabled={isSearching}
-                className="w-full sm:w-auto bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground border-primary/30 font-semibold shadow-lg px-6 py-2.5 sm:py-3 text-sm sm:text-base transition-all duration-200"
-              >
-                {isSearching ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2"></div>
-                    <span className="hidden sm:inline">Searching...</span>
-                    <span className="sm:hidden">Search...</span>
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                    <span className="hidden sm:inline">Search</span>
-                    <span className="sm:hidden">Search</span>
-                  </>
-                )}
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto bg-white/20 hover:bg-white hover:text-gray-800 text-white border-white/30 font-semibold shadow-lg px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base transition-all duration-200"
-                asChild
-              >
-                <Link to="/virtual-tour" className="flex items-center justify-center gap-2">
-                  <Play className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="hidden sm:inline">{t("nav.virtualTour")}</span>
-                  <span className="sm:hidden">Virtual Tour</span>
-                </Link>
-              </Button>
-            </div>
-
-            {/* Search Results - Inline */}
-            {hasSearched && (
-              <div className="mt-6 sm:mt-8 max-w-6xl mx-auto px-2 sm:px-0">
-                {/* Results Header */}
-                <div className="text-center mb-4 sm:mb-6">
-                  <p className="text-white text-sm sm:text-base lg:text-lg font-medium px-2">
-                    {isSearching ? (
-                      "Searching for properties..."
-                    ) : searchResults.length > 0 ? (
-                      `Found ${searchResults.length} ${searchResults.length === 1 ? 'property' : 'properties'} matching your criteria`
-                    ) : (
-                      "No properties found matching your search criteria."
-                    )}
-                  </p>
-                </div>
-
-                {/* Results Grid */}
-                {searchResults.length > 0 && (
-                  <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                    {searchResults.map((project) => (
-                      <Card
-                        key={project.id}
-                        onClick={() => navigate(`/projects/${project.id}`)}
-                        role="link"
-                        tabIndex={0}
-                        className="cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden border bg-white/90 backdrop-blur-sm rounded-xl"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center p-3 sm:p-4 gap-3 sm:gap-4">
-                          {/* Left: Thumbnail */}
-                          <div className="relative w-full sm:w-48 md:w-64 lg:w-80 aspect-video rounded-lg overflow-hidden flex-shrink-0">
-                            <div
-                              className={`bg-gradient-to-br ${getStatusColor(
-                                project.status
-                              )} w-full h-full flex items-center justify-center overflow-hidden relative`}
-                            >
-                              {project.image_url ? (
-                                <img
-                                  src={project.image_url}
-                                  alt={project.title}
-                                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                                />
-                              ) : (
-                                <Building2 className="w-16 h-16 text-white" />
-                              )}
-
-                              {/* Status Badge */}
-                              <div className="absolute top-2 right-2">
-                                {getStatusBadge(project.status)}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Right: Details */}
-                          <div className="flex-1 flex flex-col justify-between">
-                            {/* Title + Meta */}
-                            <div>
-                              <CardHeader className="py-0 px-0">
-                                <CardTitle className="text-lg md:text-xl line-clamp-1 text-left">
-                                  {project.title}
-                                </CardTitle>
-                                <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
-                                  <Building2 className="w-4 h-4 text-primary" />
-                                  <span className="truncate">
-                                    {project.project_type}
-                                  </span>
-                                </div>
-                              </CardHeader>
-
-                              <CardContent className="px-0 pt-2 pb-0">
-                                <div className="flex flex-col gap-2 text-xs md:text-sm">
-                                  <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
-                                    <MapPin className="w-4 h-4 text-primary" />
-                                    <span className="truncate">
-                                      {project.location}
-                                    </span>
-                                    <Calendar className="w-4 h-4 text-primary" />
-                                    <span>
-                                      Start{" "}
-                                      {new Date(project.start_date).getFullYear()}
-                                    </span>
-                                    {project.end_date && (
-                                      <span className="whitespace-nowrap">
-                                        • Target{" "}
-                                        {new Date(project.end_date).getFullYear()}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {/* Units */}
-                                  {Object.keys(project.units || {}).length > 0 && (
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <Users className="w-4 h-4 text-primary" />
-                                      {Object.entries(project.units)
-                                        .slice(0, 3)
-                                        .map(([type, price]) => (
-                                          <Badge
-                                            key={type}
-                                            variant="secondary"
-                                            className="text-[10px] md:text-xs bg-primary/10 text-primary"
-                                          >
-                                            {type}
-                                            {price ? ` • ${price}` : ""}
-                                          </Badge>
-                                        ))}
-                                      {Object.entries(project.units).length > 3 && (
-                                        <Badge
-                                          variant="outline"
-                                          className="text-[10px] md:text-xs"
-                                        >
-                                          +{Object.entries(project.units).length - 3}{" "}
-                                          more
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  {/* Amenities */}
-                                  {project.Amenities &&
-                                    project.Amenities.length > 0 && (
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <CheckCircle className="w-4 h-4 text-primary" />
-                                        {project.Amenities.slice(0, 3).map(
-                                          (amenity, idx) => (
-                                            <Badge
-                                              key={idx}
-                                              variant="secondary"
-                                              className="text-[10px] md:text-xs bg-primary/10 text-primary"
-                                            >
-                                              {amenity}
-                                            </Badge>
-                                          )
-                                        )}
-                                        {project.Amenities.length > 3 && (
-                                          <Badge
-                                            variant="outline"
-                                            className="text-[10px] md:text-xs"
-                                          >
-                                            +{project.Amenities.length - 3} more
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    )}
-                                </div>
-                              </CardContent>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-
-                {/* Empty State */}
-                {searchResults.length === 0 && !isSearching && (
-                  <div className="text-center py-6 sm:py-8 px-4">
-                    <Building2 className="w-12 h-12 sm:w-16 sm:h-16 text-white/60 mx-auto mb-3 sm:mb-4" />
-                    <p className="text-white/80 mb-3 sm:mb-4 text-sm sm:text-base">
-                      Try adjusting your search criteria
-                    </p>
-                    <Button
-                      onClick={() => {
-                        setSearchLocation("");
-                        setSearchPropertyType("");
-                        setSearchBedrooms("");
-                        setSearchStatus("");
-                        setHasSearched(false);
-                        setSearchResults([]);
-                      }}
-                      variant="outline"
-                      className="bg-white/20 hover:bg-white hover:text-gray-800 text-white border-white/30 px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base"
-                    >
-                      Clear Search
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
 
       {/* Why Choose Us Section */}
       <section className="py-20 lg:py-32 bg-background">
