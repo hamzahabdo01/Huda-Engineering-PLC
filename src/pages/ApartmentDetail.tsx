@@ -12,7 +12,7 @@ interface ApartmentType {
   id?: string;
   type: string;
   size?: string;
-  availability?: 'available' | 'sold' | 'reserved';
+  availability?: "available" | "sold" | "reserved";
   price?: string;
   image_url?: string;
   gallery_urls?: string[];
@@ -23,6 +23,7 @@ interface ApartmentType {
 interface FloorPlan {
   id?: string;
   floor_number: number;
+  floor_url?: string;
   apartment_types: ApartmentType[];
 }
 
@@ -49,7 +50,11 @@ export default function ApartmentDetail() {
   useEffect(() => {
     if (!id) return;
     const fetchProject = async () => {
-      const { data } = await supabase.from('projects').select('*').eq('id', id).maybeSingle();
+      const { data } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
       if (data) setProject(data as unknown as Project);
       setLoading(false);
     };
@@ -61,42 +66,49 @@ export default function ApartmentDetail() {
     const lower = decodeURIComponent(type).toLowerCase();
     for (const floor of project.floor_plans || []) {
       for (const apt of floor.apartment_types) {
-        if ((apt.type || '').toLowerCase() === lower) {
-          return { floor: floor.floor_number, ...apt } as ApartmentType & { floor: number };
+        if ((apt.type || "").toLowerCase() === lower) {
+          return { floor: floor.floor_number, ...apt } as ApartmentType & {
+            floor: number;
+          };
         }
       }
     }
     return null;
   }, [project, type]);
 
-  const featurePresets = useMemo<Record<string, string[]>>(() => ({
-    '2b': [
-      'Spacious living room with natural light',
-      'Two bedrooms with built-in closets',
-      'Modern kitchen with storage cabinetry',
-      'One shared bathroom + en-suite master bath',
-    ],
-    '3b': [
-      'Large open-plan living and dining area',
-      'Three bedrooms with master suite',
-      'Balcony with city views',
-      'Dedicated laundry and storage space',
-    ],
-    '4b': [
-      'Family-sized living space with separate lounge',
-      'Four bedrooms with ample storage',
-      'Spacious kitchen with pantry',
-      'Two balconies and premium finishes',
-    ],
-  }), []);
+  const featurePresets = useMemo<Record<string, string[]>>(
+    () => ({
+      "2b": [
+        "Spacious living room with natural light",
+        "Two bedrooms with built-in closets",
+        "Modern kitchen with storage cabinetry",
+        "One shared bathroom + en-suite master bath",
+      ],
+      "3b": [
+        "Large open-plan living and dining area",
+        "Three bedrooms with master suite",
+        "Balcony with city views",
+        "Dedicated laundry and storage space",
+      ],
+      "4b": [
+        "Family-sized living space with separate lounge",
+        "Four bedrooms with ample storage",
+        "Spacious kitchen with pantry",
+        "Two balconies and premium finishes",
+      ],
+    }),
+    []
+  );
 
   const features = useMemo(() => {
-    const key = (type || '').toLowerCase();
-    return featurePresets[key] || [
-      'Thoughtful layout focused on functionality',
-      'Quality finishes and materials',
-      'Optimized ventilation and natural light',
-    ];
+    const key = (type || "").toLowerCase();
+    return (
+      featurePresets[key] || [
+        "Thoughtful layout focused on functionality",
+        "Quality finishes and materials",
+        "Optimized ventilation and natural light",
+      ]
+    );
   }, [type, featurePresets]);
 
   if (loading) {
@@ -104,7 +116,9 @@ export default function ApartmentDetail() {
       <div className="min-h-screen bg-background">
         <Navbar />
         <main className="max-w-7xl mx-auto px-4 py-16">
-          <div className="text-center text-muted-foreground">Loading apartment details...</div>
+          <div className="text-center text-muted-foreground">
+            Loading apartment details...
+          </div>
         </main>
         <Footer />
       </div>
@@ -116,9 +130,13 @@ export default function ApartmentDetail() {
       <div className="min-h-screen bg-background">
         <Navbar />
         <main className="max-w-7xl mx-auto px-4 py-16">
-          <div className="text-center text-muted-foreground">Apartment details not found.</div>
+          <div className="text-center text-muted-foreground">
+            Apartment details not found.
+          </div>
           <div className="text-center mt-6">
-            <Button variant="outline" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4 mr-1"/> Go Back</Button>
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-4 h-4 mr-1" /> Go Back
+            </Button>
           </div>
         </main>
         <Footer />
@@ -132,12 +150,23 @@ export default function ApartmentDetail() {
 
       <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-14">
         <div className="max-w-7xl mx-auto px-4 flex items-center gap-3">
-          <Button variant="outline" className="bg-white/10 text-white border-white/30" onClick={() => navigate(`/projects/${project.id}`)}>
-            <ArrowLeft className="w-4 h-4 mr-1"/> Back
+          <Button
+            variant="outline"
+            className="bg-white/10 text-white border-white/30"
+            onClick={() => navigate(`/projects/${project.id}`)}
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back
           </Button>
-          <h1 className="text-3xl md:text-4xl font-bold">{project.title} — {aptMeta.type}</h1>
-          <Badge variant={aptMeta.availability === 'available' ? 'inline' : 'secondary'} className="capitalize ml-2">
-            {aptMeta.availability || 'n/a'}
+          <h1 className="text-3xl md:text-4xl font-bold">
+            {project.title} — {aptMeta.type}
+          </h1>
+          <Badge
+            variant={
+              aptMeta.availability === "available" ? "default" : "secondary"
+            }
+            className="capitalize ml-2"
+          >
+            {aptMeta.availability || "n/a"}
           </Badge>
         </div>
       </section>
@@ -150,42 +179,92 @@ export default function ApartmentDetail() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             <div className="space-y-3">
               <img
-                src={(aptMeta.gallery_urls && aptMeta.gallery_urls.length > 0 ? aptMeta.gallery_urls[0] : (aptMeta.image_url || project.image_url)) as string}
+                src={
+                  (aptMeta.gallery_urls && aptMeta.gallery_urls.length > 0
+                    ? aptMeta.gallery_urls[0]
+                    : aptMeta.image_url || project.image_url) as string
+                }
                 alt={`${aptMeta.type} representative`}
                 className="w-full max-h-[420px] object-cover rounded"
               />
               {aptMeta.gallery_urls && aptMeta.gallery_urls.length > 1 && (
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {(aptMeta.gallery_urls || []).slice(1).map((url, idx) => (
-                    <img key={idx} src={url} alt={`thumb-${idx + 1}`} className="w-full h-24 object-cover rounded" />
+                    <img
+                      key={idx}
+                      src={url}
+                      alt={`thumb-${idx + 1}`}
+                      className="w-full h-24 object-cover rounded"
+                    />
                   ))}
                 </div>
               )}
             </div>
             <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">Floor {('floor' in aptMeta) ? (aptMeta as any).floor : '—'}</div>
-              <div className="text-lg">
-                <span className="font-medium">Size:</span> {aptMeta.size || '—'}
+              <div className="text-sm text-muted-foreground">
+                Floor {"floor" in aptMeta ? (aptMeta as any).floor : "—"}
               </div>
               <div className="text-lg">
-                <span className="font-medium">Price:</span> {aptMeta.price || '—'}
+                <span className="font-medium">Size:</span> {aptMeta.size || "—"}
+              </div>
+              <div className="text-lg">
+                <span className="font-medium">Price:</span>{" "}
+                {aptMeta.price || "—"}
               </div>
               {aptMeta.description && (
-                <div className="text-muted-foreground whitespace-pre-wrap">{aptMeta.description}</div>
+                <div className="text-muted-foreground whitespace-pre-wrap">
+                  {aptMeta.description}
+                </div>
               )}
               <div>
                 <div className="font-medium mb-2">Features</div>
                 <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                  {(aptMeta.features && aptMeta.features.length > 0 ? aptMeta.features : features).map((f, i) => (<li key={i}>{f}</li>))}
+                  {(aptMeta.features && aptMeta.features.length > 0
+                    ? aptMeta.features
+                    : features
+                  ).map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
                 </ul>
               </div>
               <div className="pt-2 flex gap-2">
-                <Button onClick={() => navigate(`/booking?project=${project.id}`)}>Book This Property</Button>
-                <Button variant="outline" onClick={() => navigate(`/projects/${project.id}`)}>View Project</Button>
+                <Button
+                  onClick={() => navigate(`/booking?project=${project.id}`)}
+                >
+                  Book This Property
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/projects/${project.id}`)}
+                >
+                  View Project
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Floor Plan</CardTitle>
+          </CardHeader>
+          {project.floor_plans && project.floor_plans.length > 0 && (
+            <div className="mb-6">
+              {project.floor_plans.map((floor) => (
+                <div key={floor.id} className="mb-4 flex justify-center">
+                  {floor.floor_number === (aptMeta as any).floor &&
+                    floor.floor_url && (
+                      <img
+                        src={floor.floor_url}
+                        alt={`Floor ${floor.floor_number} plan`}
+                        className="w-11/12 max-h-[420px] object-cover rounded mb-4"
+                      />
+                    )}
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="md:col-span-2">
             <CardHeader>
@@ -194,24 +273,32 @@ export default function ApartmentDetail() {
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div className="p-3 border rounded">
-                  <div className="text-xs text-muted-foreground">Building Type</div>
-                  <div className="font-medium">{project.project_type || '—'}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Building Type
+                  </div>
+                  <div className="font-medium">
+                    {project.project_type || "—"}
+                  </div>
                 </div>
                 <div className="p-3 border rounded">
                   <div className="text-xs text-muted-foreground">Area Size</div>
-                  <div className="font-medium">{aptMeta.size || '—'}</div>
+                  <div className="font-medium">{aptMeta.size || "—"}</div>
                 </div>
                 <div className="p-3 border rounded">
                   <div className="text-xs text-muted-foreground">Location</div>
-                  <div className="font-medium">{project.location || '—'}</div>
+                  <div className="font-medium">{project.location || "—"}</div>
                 </div>
                 <div className="p-3 border rounded">
                   <div className="text-xs text-muted-foreground">Status</div>
-                  <div className="font-medium">{aptMeta.availability || '—'}</div>
+                  <div className="font-medium">
+                    {aptMeta.availability || "—"}
+                  </div>
                 </div>
                 <div className="p-3 border rounded">
                   <div className="text-xs text-muted-foreground">Floor</div>
-                  <div className="font-medium">{('floor' in aptMeta) ? (aptMeta as any).floor : '—'}</div>
+                  <div className="font-medium">
+                    {"floor" in aptMeta ? (aptMeta as any).floor : "—"}
+                  </div>
                 </div>
                 <div className="p-3 border rounded">
                   <div className="text-xs text-muted-foreground">Delivery</div>
@@ -225,13 +312,32 @@ export default function ApartmentDetail() {
               <CardTitle>Contact & Appointment</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="text-sm text-muted-foreground">Have questions about this unit?</div>
-              <Button className="w-full" onClick={() => navigate(`/booking?project=${project.id}&unit=${encodeURIComponent(aptMeta.type)}`)}>Request for Appointment</Button>
-              <Button className="w-full" variant="outline" onClick={() => navigate('/contact')}>Contact Us</Button>
+              <div className="text-sm text-muted-foreground">
+                Have questions about this unit?
+              </div>
+              <Button
+                className="w-full"
+                onClick={() =>
+                  navigate(
+                    `/booking?project=${project.id}&unit=${encodeURIComponent(
+                      aptMeta.type
+                    )}`
+                  )
+                }
+              >
+                Request for Appointment
+              </Button>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => navigate("/contact")}
+              >
+                Contact Us
+              </Button>
             </CardContent>
           </Card>
         </div>
-        {(project.Amenities && project.Amenities.length > 0) && (
+        {project.Amenities && project.Amenities.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Premium Amenities</CardTitle>
@@ -239,13 +345,15 @@ export default function ApartmentDetail() {
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {project.Amenities!.map((a, i) => (
-                  <div key={i} className="p-3 border rounded text-sm">{a}</div>
+                  <div key={i} className="p-3 border rounded text-sm">
+                    {a}
+                  </div>
                 ))}
               </div>
             </CardContent>
           </Card>
         )}
-        {(project.latitude != null && project.longitude != null) && (
+        {project.latitude != null && project.longitude != null && (
           <Card>
             <CardHeader>
               <CardTitle>Location</CardTitle>
@@ -270,17 +378,38 @@ export default function ApartmentDetail() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {project.floor_plans.flatMap(fp => fp.apartment_types)
-                  .filter(t => (t.type || '').toLowerCase() !== (aptMeta.type || '').toLowerCase())
+                {project.floor_plans
+                  .flatMap((fp) => fp.apartment_types)
+                  .filter(
+                    (t) =>
+                      (t.type || "").toLowerCase() !==
+                      (aptMeta.type || "").toLowerCase()
+                  )
                   .slice(0, 6)
                   .map((t, idx) => (
-                    <div key={idx} className="border rounded overflow-hidden cursor-pointer" onClick={() => navigate(`/projects/${project.id}/apartment/${encodeURIComponent(t.type)}`)}>
+                    <div
+                      key={idx}
+                      className="border rounded overflow-hidden cursor-pointer"
+                      onClick={() =>
+                        navigate(
+                          `/projects/${
+                            project.id
+                          }/apartment/${encodeURIComponent(t.type)}`
+                        )
+                      }
+                    >
                       <div className="h-32 bg-muted overflow-hidden">
-                        <img src={t.image_url || project.image_url} alt={t.type} className="w-full h-full object-cover" />
+                        <img
+                          src={t.image_url || project.image_url}
+                          alt={t.type}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div className="p-3">
                         <div className="font-medium">{t.type}</div>
-                        <div className="text-sm text-muted-foreground">{t.size || '—'}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {t.size || "—"}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -294,4 +423,3 @@ export default function ApartmentDetail() {
     </div>
   );
 }
-

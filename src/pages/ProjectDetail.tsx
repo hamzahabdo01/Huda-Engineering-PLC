@@ -5,22 +5,42 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, MapPin, Calendar, CheckCircle, ArrowLeft, ArrowRight } from "lucide-react";
+import {
+  Building2,
+  MapPin,
+  Calendar,
+  CheckCircle,
+  ArrowLeft,
+  ArrowRight,
+} from "lucide-react";
 
 interface ApartmentType {
   id?: string;
   type: string;
   size?: string;
-  availability?: 'available' | 'sold' | 'reserved';
+  availability?: "available" | "sold" | "reserved";
   price?: string;
 }
 
 interface FloorPlan {
   id?: string;
   floor_number: number;
+  floor_url?: string;
   apartment_types: ApartmentType[];
 }
 
@@ -31,7 +51,7 @@ interface Project {
   short_description: string;
   location: string;
   project_type: string;
-  status: 'active' | 'completed' | 'upcoming';
+  status: "active" | "completed" | "upcoming";
   start_date: string;
   end_date: string;
   image_url: string;
@@ -55,9 +75,9 @@ export default function ProjectDetail() {
     if (!id) return;
     const fetchProject = async () => {
       const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', id)
+        .from("projects")
+        .select("*")
+        .eq("id", id)
         .maybeSingle();
       if (!error && data) {
         setProject(data as unknown as Project);
@@ -70,9 +90,9 @@ export default function ProjectDetail() {
 
   const fetchStock = async (projectId: string) => {
     const { data, error } = await supabase
-      .from('unit_stock')
-      .select('unit_type,total_units,booked_units')
-      .eq('property_id', projectId);
+      .from("unit_stock")
+      .select("unit_type,total_units,booked_units")
+      .eq("property_id", projectId);
     if (!error && data) {
       const map: Record<string, number> = {};
       data.forEach((row: any) => {
@@ -82,31 +102,48 @@ export default function ProjectDetail() {
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="max-w-7xl mx-auto px-4 py-16">
-        <div className="text-center text-muted-foreground">Loading project...</div>
-      </main>
-      <Footer />
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center text-muted-foreground">
+            Loading project...
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
 
-  if (!project) return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="max-w-7xl mx-auto px-4 py-16">
-        <div className="text-center text-muted-foreground">Project not found.</div>
-        <div className="text-center mt-6">
-          <Button variant="outline" onClick={() => navigate('/projects')}><ArrowLeft className="w-4 h-4 mr-1"/> Back to Projects</Button>
-        </div>
-      </main>
-      <Footer />
-    </div>
-  );
+  if (!project)
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center text-muted-foreground">
+            Project not found.
+          </div>
+          <div className="text-center mt-6">
+            <Button variant="outline" onClick={() => navigate("/projects")}>
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back to Projects
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
 
   const statusBadge = (
-    <Badge variant={project.status === 'completed' ? 'secondary' : project.status === 'active' ? 'default' : 'outline'} className={project.status === 'active' ? 'bg-green-600 text-white' : ''}>
+    <Badge
+      variant={
+        project.status === "completed"
+          ? "secondary"
+          : project.status === "active"
+          ? "default"
+          : "outline"
+      }
+      className={project.status === "active" ? "bg-green-600 text-white" : ""}
+    >
       {project.status}
     </Badge>
   );
@@ -122,16 +159,30 @@ export default function ProjectDetail() {
       <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-14">
         <div className="max-w-7xl mx-auto px-4 flex flex-col gap-4">
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="bg-white/10 text-white border-white/30" onClick={() => navigate('/projects')}>
-              <ArrowLeft className="w-4 h-4 mr-1"/> Back
+            <Button
+              variant="outline"
+              className="bg-white/10 text-white border-white/30"
+              onClick={() => navigate("/projects")}
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </Button>
             <h1 className="text-3xl md:text-4xl font-bold">{project.title}</h1>
             {statusBadge}
           </div>
           <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2"><Building2 className="w-4 h-4"/> {project.project_type}</div>
-            <div className="flex items-center gap-2"><MapPin className="w-4 h-4"/> {project.location}</div>
-            <div className="flex items-center gap-2"><Calendar className="w-4 h-4"/> {new Date(project.start_date).toLocaleDateString()} {project.end_date ? `- ${new Date(project.end_date).toLocaleDateString()}` : ''}</div>
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" /> {project.project_type}
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" /> {project.location}
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />{" "}
+              {new Date(project.start_date).toLocaleDateString()}{" "}
+              {project.end_date
+                ? `- ${new Date(project.end_date).toLocaleDateString()}`
+                : ""}
+            </div>
           </div>
         </div>
       </section>
@@ -143,15 +194,27 @@ export default function ProjectDetail() {
           </CardHeader>
           <CardContent className="space-y-4">
             {project.image_url && (
-              <img src={project.image_url} alt={project.title} className="w-full max-h-[420px] object-cover rounded" />
+              <img
+                src={project.image_url}
+                alt={project.title}
+                className="w-full max-h-[420px] object-cover rounded"
+              />
             )}
-            <p className="text-muted-foreground">{project.description || project.short_description}</p>
+            <p className="text-muted-foreground">
+              {project.description || project.short_description}
+            </p>
             {project.Amenities && project.Amenities.length > 0 && (
               <div>
                 <div className="font-medium mb-2">Amenities</div>
                 <div className="flex flex-wrap gap-2">
                   {project.Amenities.map((a, i) => (
-                    <Badge key={i} variant="secondary" className="bg-primary/10 text-primary">{a}</Badge>
+                    <Badge
+                      key={i}
+                      variant="secondary"
+                      className="bg-primary/10 text-primary"
+                    >
+                      {a}
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -159,7 +222,7 @@ export default function ProjectDetail() {
           </CardContent>
         </Card>
 
-        {(project.units && Object.keys(project.units).length > 0) && (
+        {project.units && Object.keys(project.units).length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Unit Types (Legacy)</CardTitle>
@@ -178,7 +241,7 @@ export default function ProjectDetail() {
                     <TableRow key={type}>
                       <TableCell className="font-medium">{type}</TableCell>
                       <TableCell>{String(sizeOrPrice)}</TableCell>
-                      <TableCell>{stock[type] ?? '—'}</TableCell>
+                      <TableCell>{stock[type] ?? "—"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -203,7 +266,12 @@ export default function ProjectDetail() {
                   });
                 });
                 const entries = Object.entries(typeToSizes);
-                if (entries.length === 0) return <div className="text-muted-foreground">No apartment types available.</div>;
+                if (entries.length === 0)
+                  return (
+                    <div className="text-muted-foreground">
+                      No apartment types available.
+                    </div>
+                  );
                 return (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {entries.map(([type, sizes]) => (
@@ -213,7 +281,7 @@ export default function ProjectDetail() {
                         tabIndex={0}
                         onClick={() => handleNavigateApartment(type)}
                         onKeyDown={(e: any) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
+                          if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
                             handleNavigateApartment(type);
                           }
@@ -224,7 +292,12 @@ export default function ProjectDetail() {
                         <div className="text-lg font-semibold mb-2">{type}</div>
                         <div className="flex flex-wrap gap-2 justify-center text-sm text-muted-foreground">
                           {Array.from(sizes).map((s) => (
-                            <span key={s} className="inline-block px-2 py-1 bg-secondary rounded">{s}</span>
+                            <span
+                              key={s}
+                              className="inline-block px-2 py-1 bg-secondary rounded"
+                            >
+                              {s}
+                            </span>
                           ))}
                         </div>
                         <ArrowRight className="w-4 h-4 text-muted-foreground mt-3" />
@@ -237,7 +310,7 @@ export default function ProjectDetail() {
           </Card>
         )}
 
-        {(project.latitude != null && project.longitude != null) && (
+        {project.latitude != null && project.longitude != null && (
           <Card>
             <CardHeader>
               <CardTitle>Project Location</CardTitle>

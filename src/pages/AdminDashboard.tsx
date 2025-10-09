@@ -47,6 +47,7 @@ import {
   Building2,
   Target,
   Play,
+  Copy,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -95,6 +96,7 @@ interface ApartmentType {
 interface FloorPlan {
   id: string;
   floor_number: number;
+  floor_url: string;
   apartment_types: ApartmentType[];
 }
 
@@ -109,6 +111,7 @@ interface Project {
   start_date: string;
   end_date: string;
   image_url: string;
+  floor_url: string;
   gallery_urls?: string[];
   Amenities: string[];
   floor_plans: FloorPlan[];
@@ -196,6 +199,7 @@ const AdminDashboard = () => {
     start_date: "",
     end_date: "",
     image_url: "",
+    floor_url: "",
     gallery_urls: [] as string[],
     floor_plans: [] as FloorPlan[],
     Amenities: [] as string[],
@@ -318,7 +322,24 @@ const AdminDashboard = () => {
     const newFloorPlan: FloorPlan = {
       id: `floor-${Date.now()}`,
       floor_number: currentFloorNumber,
+      floor_url: "",
       apartment_types: [],
+    };
+    setFloorPlans((prev) => [...prev, newFloorPlan]);
+    setCurrentFloorNumber((prev) => prev + 1);
+  };
+
+  const duplicateFloorPlan = () => {
+    if (floorPlans.length === 0) return;
+    const lastFloor = floorPlans[floorPlans.length - 1];
+    const newFloorPlan: FloorPlan = {
+      id: `floor-${Date.now()}`,
+      floor_number: currentFloorNumber,
+      floor_url: lastFloor.floor_url,
+      apartment_types: lastFloor.apartment_types.map((apt) => ({
+        ...apt,
+        id: `apt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      })),
     };
     setFloorPlans((prev) => [...prev, newFloorPlan]);
     setCurrentFloorNumber((prev) => prev + 1);
@@ -392,6 +413,18 @@ const AdminDashboard = () => {
               ),
             }
           : floor
+      )
+    );
+  };
+
+  const updateFloorPlan = (
+    floorId: string,
+    field: keyof FloorPlan,
+    value: any
+  ) => {
+    setFloorPlans((prev) =>
+      prev.map((floor) =>
+        floor.id === floorId ? { ...floor, [field]: value } : floor
       )
     );
   };
@@ -1206,6 +1239,7 @@ const AdminDashboard = () => {
       start_date: project.start_date,
       end_date: project.end_date,
       image_url: project.image_url,
+      floor_url: project.floor_url || "",
       gallery_urls: project.gallery_urls || [],
       status: project.status,
       Amenities: project.Amenities || [],
@@ -2568,6 +2602,7 @@ const AdminDashboard = () => {
                         start_date: "",
                         end_date: "",
                         image_url: "",
+                        floor_url: "",
                         gallery_urls: [],
                         status: "active",
                         Amenities: [],
@@ -2839,15 +2874,27 @@ const AdminDashboard = () => {
                             </div>
                           )}
                         </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={addFloorPlan}
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Floor Plan
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={duplicateFloorPlan}
+                            disabled={floorPlans.length === 0}
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            Duplicate Floor Plan
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={addFloorPlan}
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Floor Plan
+                          </Button>
+                        </div>
                       </div>
 
                       {floorPlans.length === 0 ? (
@@ -2888,6 +2935,72 @@ const AdminDashboard = () => {
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </div>
+                              </div>
+
+                              <div className="mb-3">
+                                <Label className="text-xs font-medium">
+                                  Floor URL
+                                </Label>
+                                <div className="flex gap-2">
+                                  <Input
+                                    value={floor.floor_url || ""}
+                                    onChange={(e) =>
+                                      updateFloorPlan(
+                                        floor.id,
+                                        "floor_url",
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="Or paste image URL"
+                                    className="text-sm"
+                                  />
+                                  <Input
+                                    type="file"
+                                    accept="image/*"
+                                    className="text-sm"
+                                    onChange={async (e) => {
+                                      console.log(
+                                        "Floor plan file selected:",
+                                        e.target.files?.[0]
+                                      );
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      console.log(
+                                        "Uploading floor plan image..."
+                                      );
+                                      const url = await uploadFileToBucket(
+                                        "project-images",
+                                        file
+                                      );
+                                      console.log("Upload result URL:", url);
+                                      if (url) {
+                                        console.log(
+                                          "Updating floor plan with URL:",
+                                          url
+                                        );
+                                        updateFloorPlan(
+                                          floor.id,
+                                          "floor_url",
+                                          url
+                                        );
+                                        console.log("Floor plan updated");
+                                      } else {
+                                        console.log(
+                                          "Upload failed, no URL returned"
+                                        );
+                                      }
+                                      // Reset the input value to allow re-uploading the same file
+                                      e.currentTarget.value = "";
+                                    }}
+                                  />
+                                </div>
+                                {floor.floor_url && (
+                                  <img
+                                    src={floor.floor_url}
+                                    alt="floor"
+                                    className="mt-2 h-20 w-full object-cover rounded"
+                                  />
+                                )}
                               </div>
 
                               {floor.apartment_types.length === 0 ? (
