@@ -329,14 +329,30 @@ const AdminDashboard = () => {
     setCurrentFloorNumber((prev) => prev + 1);
   };
 
-  const duplicateFloorPlan = () => {
-    if (floorPlans.length === 0) return;
-    const lastFloor = floorPlans[floorPlans.length - 1];
+  // const duplicateFloorPlan = () => {
+  //   if (floorPlans.length === 0) return;
+  //   const lastFloor = floorPlans[floorPlans.length - 1];
+  //   const newFloorPlan: FloorPlan = {
+  //     id: `floor-${Date.now()}`,
+  //     floor_number: currentFloorNumber,
+  //     floor_url: lastFloor.floor_url,
+  //     apartment_types: lastFloor.apartment_types.map((apt) => ({
+  //       ...apt,
+  //       id: `apt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+  //     })),
+  //   };
+  //   setFloorPlans((prev) => [...prev, newFloorPlan]);
+  //   setCurrentFloorNumber((prev) => prev + 1);
+  // };
+
+  const duplicateFloorPlanById = (floorId: string) => {
+    const floorToDuplicate = floorPlans.find((floor) => floor.id === floorId);
+    if (!floorToDuplicate) return;
     const newFloorPlan: FloorPlan = {
       id: `floor-${Date.now()}`,
       floor_number: currentFloorNumber,
-      floor_url: lastFloor.floor_url,
-      apartment_types: lastFloor.apartment_types.map((apt) => ({
+      floor_url: floorToDuplicate.floor_url,
+      apartment_types: floorToDuplicate.apartment_types.map((apt) => ({
         ...apt,
         id: `apt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       })),
@@ -2875,7 +2891,7 @@ const AdminDashboard = () => {
                           )}
                         </div>
                         <div className="flex gap-2">
-                          <Button
+                          {/* <Button
                             type="button"
                             variant="outline"
                             size="sm"
@@ -2884,7 +2900,7 @@ const AdminDashboard = () => {
                           >
                             <Copy className="w-4 h-4 mr-2" />
                             Duplicate Floor Plan
-                          </Button>
+                          </Button> */}
                           <Button
                             type="button"
                             variant="outline"
@@ -2925,6 +2941,17 @@ const AdminDashboard = () => {
                                   >
                                     <Plus className="w-4 h-4 mr-2" />
                                     Add Apartment Type
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      duplicateFloorPlanById(floor.id)
+                                    }
+                                  >
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    Duplicate Floor
                                   </Button>
                                   <Button
                                     type="button"

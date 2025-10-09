@@ -202,7 +202,7 @@ export default function ApartmentDetail() {
             </div>
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
-                Floor {"floor" in aptMeta ? (aptMeta as any).floor : "—"}
+                Total Floors {project.floor_plans?.length || 0}
               </div>
               <div className="text-lg">
                 <span className="font-medium">Size:</span> {aptMeta.size || "—"}
@@ -295,9 +295,11 @@ export default function ApartmentDetail() {
                   </div>
                 </div>
                 <div className="p-3 border rounded">
-                  <div className="text-xs text-muted-foreground">Floor</div>
+                  <div className="text-xs text-muted-foreground">
+                    Total Floors
+                  </div>
                   <div className="font-medium">
-                    {"floor" in aptMeta ? (aptMeta as any).floor : "—"}
+                    {project.floor_plans?.length || 0}
                   </div>
                 </div>
                 <div className="p-3 border rounded">
