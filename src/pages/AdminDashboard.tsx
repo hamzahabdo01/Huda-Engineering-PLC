@@ -1330,25 +1330,22 @@ const AdminDashboard = () => {
 
   // save changes
   const handleSaveAnnouncement = async () => {
+    const data = {
+      ...newAnnouncement,
+      scheduled_for: newAnnouncement.scheduled_for
+        ? new Date(newAnnouncement.scheduled_for).toISOString()
+        : null,
+    };
+
     if (editingAnnouncement) {
       const { error } = await supabase
         .from("announcements")
-        .update({
-          title: newAnnouncement.title,
-          short_description: newAnnouncement.short_description,
-          content: newAnnouncement.content,
-          category: newAnnouncement.category,
-          image_url: newAnnouncement.image_url,
-          is_published: newAnnouncement.is_published,
-          scheduled_for: newAnnouncement.scheduled_for,
-        })
+        .update(data)
         .eq("id", editingAnnouncement.id);
       if (!error)
         toast({ title: "Updated", description: "Announcement updated" });
     } else {
-      const { error } = await supabase
-        .from("announcements")
-        .insert([{ ...newAnnouncement }]);
+      const { error } = await supabase.from("announcements").insert([data]);
       if (!error) toast({ title: "Added", description: "Announcement added" });
     }
     setIsAddAnnouncementOpen(false);
