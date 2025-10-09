@@ -74,7 +74,6 @@ interface PropertyBooking {
   secondary_phone?: string;
   floor_number?: number | null;
   national_id: string;
-  move_in_date: string;
   notes: string;
   status: "pending" | "approved" | "rejected";
   rejection_reason?: string;
@@ -2041,10 +2040,6 @@ const AdminDashboard = () => {
                             <div>
                               <strong>National ID:</strong>{" "}
                               {booking.national_id}
-                            </div>
-                            <div>
-                              <strong>Move-in Date:</strong>{" "}
-                              {booking.move_in_date || "Not specified"}
                             </div>
                           </div>
                           {booking.notes && (

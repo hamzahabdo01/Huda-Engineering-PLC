@@ -72,7 +72,6 @@ export default function Booking() {
     property: "",
     unitType: "",
     preferredContact: "WhatsApp",
-    moveInDate: "",
     floorNumber: "",
     appointmentDate: "",
     notes: "",
@@ -363,7 +362,6 @@ export default function Booking() {
             phone: formData.phone,
             secondary_phone: formData.secondary_phone,
             national_id: formData.nationalId,
-            move_in_date: formData.moveInDate || null,
             notes: formData.notes || null,
             recaptcha_token: captchaToken,
           },
@@ -420,7 +418,6 @@ export default function Booking() {
       property: "",
       unitType: "",
       preferredContact: "WhatsApp",
-      moveInDate: "",
       floorNumber: "",
       appointmentDate: "",
       notes: "",
@@ -677,13 +674,6 @@ export default function Booking() {
                     )}
                   </div>
 
-                  <InputGroup
-                    label="Move In Date"
-                    name="moveInDate"
-                    type="date"
-                    value={formData.moveInDate}
-                    onChange={handleChange}
-                  />
                   <div>
                     <TextareaGroup
                       label="Notes"
