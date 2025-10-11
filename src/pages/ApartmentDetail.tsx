@@ -256,7 +256,7 @@ export default function ApartmentDetail() {
                       <img
                         src={floor.floor_url}
                         alt={`Floor ${floor.floor_number} plan`}
-                        className="w-11/12 max-h-[420px] object-cover rounded mb-4"
+                        className="w-11/12 max-h-[920px] object-cover rounded mb-4"
                       />
                     )}
                 </div>
