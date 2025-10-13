@@ -3043,11 +3043,11 @@ const AdminDashboard = () => {
                                   {floor.apartment_types.map(
                                     (apartment, aptIndex) => (
                                       <div
-                                        key={apartment.id}
-                                        className="grid grid-cols-2 lg:grid-cols-5 gap-3 p-3 bg-white rounded border"
+                                      key={apartment.id}
+                                      className="flex flex-wrap gap-4 p-3 bg-white rounded border"
                                       >
                                         <div>
-                                          <Label className="text-xs font-medium">
+                                          <Label className="w-full sm:w-[48%] md:w-[30%] lg:w-[18%]">
                                             Type
                                           </Label>
                                           <Input
