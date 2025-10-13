@@ -242,36 +242,25 @@ export default function ApartmentDetail() {
               </div>
             </div>
           </CardContent>
+        </Card>
         <Card className="md:col-span-2">
   <CardHeader>
     <CardTitle>Floor Plan</CardTitle>
   </CardHeader>
 
-  <div className="flex justify-center mb-6">
-    {aptMeta?.floor_url ? (
+  {aptMeta?.floor_url ? (
+    <div className="flex justify-center mb-6">
       <img
         src={aptMeta.floor_url}
         alt={`${aptMeta.type} floor plan`}
         className="w-11/12 max-h-[920px] object-cover rounded mb-4"
       />
-    ) : aptMeta?.gallery_urls && aptMeta.gallery_urls.length > 0 ? (
-      <img
-        src={aptMeta.gallery_urls[0]}
-        alt={`${aptMeta.type} representative`}
-        className="w-11/12 max-h-[920px] object-cover rounded mb-4"
-      />
-    ) : aptMeta?.image_url || project.image_url ? (
-      <img
-        src={aptMeta.image_url || project.image_url}
-        alt={`${aptMeta.type} representative`}
-        className="w-11/12 max-h-[920px] object-cover rounded mb-4"
-      />
-    ) : (
-      <div className="text-center text-muted-foreground py-4">
-        No floor plan image available for this apartment type.
-      </div>
-    )}
-  </div>
+    </div>
+  ) : (
+    <div className="text-center text-muted-foreground py-4">
+      No floor plan image available for this apartment type.
+    </div>
+  )}
 </Card>
 
 
