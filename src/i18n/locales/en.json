@@ -455,10 +455,10 @@
       "title": "Commercial Development",
       "description": "Professional office buildings, retail spaces, and commercial complexes designed to meet modern business requirements and standards.",
       "features": [
-        "Office buildings and complexes",
         "Retail and shopping centers",
-        "Industrial facilities",
+        "Office buildings and complexes",
         "Mixed-use developments"
+        "Industrial facilities",
       ]
     },
     "viewAll": "View All Services"
