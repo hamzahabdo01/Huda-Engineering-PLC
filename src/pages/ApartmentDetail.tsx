@@ -244,26 +244,29 @@ export default function ApartmentDetail() {
           </CardContent>
         </Card>
         <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Floor Plan</CardTitle>
-          </CardHeader>
-          {project.floor_plans && project.floor_plans.length > 0 && (
-            <div className="mb-6">
-              {project.floor_plans.map((floor) => (
-                <div key={floor.id} className="mb-4 flex justify-center">
-                  {floor.floor_number === (aptMeta as any).floor &&
-                    floor.floor_url && (
-                      <img
-                        src={floor.floor_url}
-                        alt={`Floor ${floor.floor_number} plan`}
-                        className="w-11/12 max-h-[920px] object-cover rounded mb-4"
-                      />
-                    )}
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
+  <CardHeader>
+    <CardTitle>Floor Plan</CardTitle>
+  </CardHeader>
+
+  {aptMeta && (aptMeta.image_url || aptMeta.gallery_urls?.length) ? (
+    <div className="flex justify-center mb-6">
+      <img
+        src={
+          aptMeta.gallery_urls && aptMeta.gallery_urls.length > 0
+            ? aptMeta.gallery_urls[0]
+            : aptMeta.image_url
+        }
+        alt={`${aptMeta.type} floor plan`}
+        className="w-11/12 max-h-[920px] object-cover rounded mb-4"
+      />
+    </div>
+  ) : (
+    <div className="text-center text-muted-foreground py-4">
+      No floor plan image available for this apartment type.
+    </div>
+  )}
+</Card>
+
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="md:col-span-2">

@@ -88,6 +88,7 @@ interface ApartmentType {
   availability: "available" | "sold" | "reserved";
   price?: string;
   image_url?: string;
+  floor_url?: string; // ✅ NEW field
   gallery_urls?: string[];
   description?: string;
   features?: string[];
@@ -3141,6 +3142,47 @@ const AdminDashboard = () => {
                                             className="text-sm"
                                           />
                                         </div>
+                                        <div>
+  <Label className="text-xs font-medium">
+    Floor Plan Image (for this type)
+  </Label>
+  <div className="flex gap-2">
+    <Input
+      value={apartment.floor_url || ""}
+      onChange={(e) =>
+        updateApartmentType(
+          floor.id,
+          apartment.id,
+          "floor_url",
+          e.target.value
+        )
+      }
+      placeholder="Or paste image URL"
+      className="text-sm"
+    />
+    <Input
+      type="file"
+      accept="image/*"
+      className="text-sm"
+      onChange={async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const url = await uploadFileToBucket("floor-plan-images", file);
+        if (url) {
+          updateApartmentType(floor.id, apartment.id, "floor_url", url);
+        }
+      }}
+    />
+  </div>
+  {apartment.floor_url && (
+    <img
+      src={apartment.floor_url}
+      alt="floor plan"
+      className="mt-2 h-20 w-full object-cover rounded"
+    />
+  )}
+</div>
+
                                         <div>
                                           <Label className="text-xs font-medium">
                                             Apartment Image
