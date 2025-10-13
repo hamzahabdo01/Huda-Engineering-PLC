@@ -3044,10 +3044,10 @@ const AdminDashboard = () => {
                                     (apartment, aptIndex) => (
                                       <div
                                       key={apartment.id}
-                                      className="flex flex-wrap gap-4 p-3 bg-white rounded border"
+                                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 p-3 bg-white rounded border"
                                       >
                                         <div>
-                                          <Label className="w-full sm:w-[48%] md:w-[30%] lg:w-[18%]">
+                                          <Label className="text-xs font-medium">
                                             Type
                                           </Label>
                                           <Input
