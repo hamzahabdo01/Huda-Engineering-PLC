@@ -370,19 +370,19 @@ const About = () => {
       {[
         {
           title: "Huda Luxury Apartments",
-          location: "Bole, Addis Ababa",
+          location: "Addis Ababa city, Bole sub-city around bole, bolebula",
           tag: "Delivered",
           image: hudaImg, // ✅ صورتك هنا
         },
         {
-          title: "Tokoma Office Tower",
-          location: "Kazanchis, Addis Ababa",
+          title: "MIXED-USE and OFFICE BUILDING",
+          location: "Addis Ababa City, Bole sub-city around wereda12",
           tag: "Ongoing",
           image: tokomaImg, // ✅ صورتك هنا
         },
         {
-          title: "SYS Mixed-Use",
-          location: "CMC, Addis Ababa",
+          title: " REAL ESTATE",
+          location: "Addis Ababa City, Kerkos sub- city around Uerael church ",
           tag: "Upcoming",
           image: sysImg, // ✅ صورتك هنا
         },
