@@ -370,7 +370,7 @@ const About = () => {
           title: "Huda Luxury Apartments",
           location: "Bole, Addis Ababa",
           tag: "Delivered",
-          image: "assets\Screenshot 2025-10-14 150208.png", // ✅ صورتك هنا
+          image: "src\assets\Screenshot 2025-10-14 150208.png", // ✅ صورتك هنا
         },
         {
           title: "Tokoma Office Tower",
