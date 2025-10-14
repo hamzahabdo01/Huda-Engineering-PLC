@@ -259,13 +259,12 @@ export default function ProjectDetail() {
   </CardHeader>
   <CardContent>
     {(() => {
-      // إنشاء خريطة لتجميع كل الأنواع مع مقاساتها وصورها
       const typeMap: Record<
         string,
         { sizes: Set<string>; image?: string }
       > = {};
 
-      // جمع البيانات من floor_plans
+      // نجمع الأنواع من floor_plans
       project.floor_plans?.forEach((floor) => {
         floor.apartment_types.forEach((apt) => {
           const key = apt.type;
@@ -273,7 +272,6 @@ export default function ProjectDetail() {
             typeMap[key] = { sizes: new Set<string>(), image: floor.image_url };
           }
           if (apt.size) typeMap[key].sizes.add(apt.size);
-          // لو كان فيه صورة محددة داخل apartment_type استبدلها
           if ((apt as any).image_url) {
             typeMap[key].image = (apt as any).image_url;
           }
@@ -289,86 +287,54 @@ export default function ProjectDetail() {
         );
 
       return (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {entries.map(([type, { sizes, image }]) => (
-              <div
-                key={type}
-                role="button"
-                tabIndex={0}
-                onClick={() => handleNavigateApartment(type)}
-                onKeyDown={(e: any) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleNavigateApartment(type);
-                  }
-                }}
-                className="border rounded-lg p-4 aspect-square flex flex-col items-center justify-between text-center cursor-pointer hover:shadow-md transition"
-                aria-label={`View ${type} overview`}
-              >
-                {/* اسم الشقة فوق الصورة */}
-                <div className="text-lg font-semibold mb-2">{type}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {entries.map(([type, { sizes, image }]) => (
+            <div
+              key={type}
+              role="button"
+              tabIndex={0}
+              onClick={() => handleNavigateApartment(type)}
+              onKeyDown={(e: any) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleNavigateApartment(type);
+                }
+              }}
+              className="border rounded-lg p-4 aspect-square flex flex-col items-center justify-between text-center cursor-pointer hover:shadow-md transition"
+              aria-label={`View ${type} overview`}
+            >
+              {/* اسم الشقة */}
+              <div className="text-lg font-semibold mb-2">{type}</div>
 
-                {/* الصورة من floor_plan أو النوع */}
-                {image ? (
-                  <img
-                    src={image}
-                    alt={type}
-                    className="w-full h-40 object-cover rounded-lg mb-3 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedImage(image);
-                      setIsGalleryOpen(true);
-                    }}
-                  />
-                ) : (
-                  <div
-                    className="w-full h-40 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-muted-foreground cursor-pointer"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    No Image
-                  </div>
-                )}
-
-                {/* المقاسات تحت الصورة */}
-                <div className="flex flex-wrap gap-2 justify-center text-sm text-muted-foreground">
-                  {Array.from(sizes).map((s) => (
-                    <span
-                      key={s}
-                      className="inline-block px-2 py-1 bg-yellow-400 text-black font-medium rounded"
-                    >
-                      {s}
-                    </span>
-                  ))}
+              {/* الصورة */}
+              {image ? (
+                <img
+                  src={image}
+                  alt={type}
+                  className="w-full h-40 object-cover rounded-lg mb-3"
+                />
+              ) : (
+                <div className="w-full h-40 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-muted-foreground">
+                  No Image
                 </div>
+              )}
 
-                <ArrowRight className="w-4 h-4 text-muted-foreground mt-3" />
+              {/* المقاسات */}
+              <div className="flex flex-wrap gap-2 justify-center text-sm text-muted-foreground">
+                {Array.from(sizes).map((s) => (
+                  <span
+                    key={s}
+                    className="inline-block px-2 py-1 bg-yellow-400 text-black font-medium rounded"
+                  >
+                    {s}
+                  </span>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* مودال الصورة (lightbox) */}
-          <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>Apartment Image Preview</DialogTitle>
-              </DialogHeader>
-              <div className="flex items-center justify-center">
-                {selectedImage ? (
-                  <img
-                    src={selectedImage}
-                    alt="Apartment preview"
-                    className="max-h-[70vh] rounded-lg object-contain"
-                  />
-                ) : (
-                  <div className="text-muted-foreground">
-                    No image available.
-                  </div>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
-        </>
+              <ArrowRight className="w-4 h-4 text-muted-foreground mt-3" />
+            </div>
+          ))}
+        </div>
       );
     })()}
   </CardContent>
