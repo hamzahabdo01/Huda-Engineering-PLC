@@ -87,6 +87,8 @@ export default function ProjectDetail() {
     };
     fetchProject();
   }, [id]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
 
   const fetchStock = async (projectId: string) => {
     const { data, error } = await supabase
@@ -252,63 +254,113 @@ export default function ProjectDetail() {
 
         {project.floor_plans && project.floor_plans.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle>Apartment Types</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                const typeToSizes: Record<string, Set<string>> = {};
-                project.floor_plans?.forEach((floor) => {
-                  floor.apartment_types.forEach((apt) => {
-                    const key = apt.type;
-                    if (!typeToSizes[key]) typeToSizes[key] = new Set<string>();
-                    if (apt.size) typeToSizes[key].add(apt.size);
-                  });
-                });
-                const entries = Object.entries(typeToSizes);
-                if (entries.length === 0)
-                  return (
-                    <div className="text-muted-foreground">
-                      No apartment types available.
-                    </div>
-                  );
-                return (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {entries.map(([type, sizes]) => (
-                      <div
-                        key={type}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleNavigateApartment(type)}
-                        onKeyDown={(e: any) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleNavigateApartment(type);
-                          }
-                        }}
-                        className="border rounded-lg p-4 aspect-square flex flex-col items-center justify-center text-center cursor-pointer hover:shadow-md transition"
-                        aria-label={`View ${type} overview`}
-                      >
-                        <div className="text-lg font-semibold mb-2">{type}</div>
-                        <div className="flex flex-wrap gap-2 justify-center text-sm text-muted-foreground">
-                          {Array.from(sizes).map((s) => (
-                            <span
-                              key={s}
-                              className="inline-block px-2 py-1 bg-secondary rounded"
-                            >
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-muted-foreground mt-3" />
-                      </div>
-                    ))}
+  <CardHeader>
+    <CardTitle>Apartment Types</CardTitle>
+  </CardHeader>
+  <CardContent>
+    {(() => {
+      const typeMap: Record<
+        string,
+        { sizes: Set<string>; image?: string }
+      > = {};
+
+      project.floor_plans?.forEach((floor) => {
+        floor.apartment_types.forEach((apt) => {
+          const key = apt.type;
+          if (!typeMap[key]) {
+            typeMap[key] = { sizes: new Set<string>(), image: apt.image_url || floor.floor_url };
+          }
+          if (apt.size) typeMap[key].sizes.add(apt.size);
+          if (apt.image_url) typeMap[key].image = apt.image_url;
+        });
+      });
+
+      const entries = Object.entries(typeMap);
+      if (entries.length === 0)
+        return (
+          <div className="text-muted-foreground">
+            No apartment types available.
+          </div>
+        );
+
+      return (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {entries.map(([type, { sizes, image }]) => (
+              <div
+                key={type}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleNavigateApartment(type)}
+                onKeyDown={(e: any) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleNavigateApartment(type);
+                  }
+                }}
+                className="border rounded-lg p-4 aspect-square flex flex-col items-center justify-between text-center cursor-pointer hover:shadow-md transition"
+                aria-label={`View ${type} overview`}
+              >
+                <div className="text-lg font-semibold mb-2">{type}</div>
+                {image ? (
+                  <img
+                    src={image}
+                    alt={type}
+                    className="w-full h-40 object-cover rounded-lg mb-3 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImage(image);
+                      setIsGalleryOpen(true);
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="w-full h-40 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-muted-foreground cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    No Image
                   </div>
-                );
-              })()}
-            </CardContent>
-          </Card>
-        )}
+                )}
+                <div className="flex flex-wrap gap-2 justify-center text-sm text-muted-foreground">
+                  {Array.from(sizes).map((s) => (
+                    <span
+                      key={s}
+                      className="inline-block px-2 py-1 bg-yellow-400 text-black font-medium rounded"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground mt-3" />
+              </div>
+            ))}
+          </div>
+
+          {/* Lightbox dialog for image preview */}
+          <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Apartment Image Preview</DialogTitle>
+              </DialogHeader>
+              <div className="flex items-center justify-center">
+                {selectedImage ? (
+                  <img
+                    src={selectedImage}
+                    alt="Apartment preview"
+                    className="max-h-[70vh] rounded-lg object-contain"
+                  />
+                ) : (
+                  <div className="text-muted-foreground">No image available.</div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
+      );
+    })()}
+  </CardContent>
+</Card>
+
 
         {project.latitude != null && project.longitude != null && (
           <Card>
