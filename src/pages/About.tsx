@@ -353,62 +353,73 @@ const About = () => {
       </section>
 
       {/* Portfolio Section */}
-      <section className="py-20 lg:py-32 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">
-              Our Portfolio
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              A curated selection of our delivered and ongoing projects.
-            </p>
-          </div>
+<section className="py-20 lg:py-32 bg-background">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="text-center mb-16">
+      <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">
+        Our Portfolio
+      </h2>
+      <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+        A curated selection of our delivered and ongoing projects.
+      </p>
+    </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Huda Luxury Apartments",
-                location: "Bole, Addis Ababa",
-                tag: "Delivered",
-              },
-              {
-                title: "Tokoma Office Tower",
-                location: "Kazanchis, Addis Ababa",
-                tag: "Ongoing",
-              },
-              {
-                title: "SYS Mixed-Use",
-                location: "CMC, Addis Ababa",
-                tag: "Upcoming",
-              },
-            ].map((item, idx) => (
-              <Card
-                key={idx}
-                className="relative overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="h-44 bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center">
-                  <Building2 className="w-12 h-12 text-primary" />
-                </div>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{item.title}</CardTitle>
-                    <Badge>{item.tag}</Badge>
-                  </div>
-                  <CardDescription>{item.location}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {[
+        {
+          title: "Huda Luxury Apartments",
+          location: "Bole, Addis Ababa",
+          tag: "Delivered",
+          image: "assets\Screenshot 2025-10-14 150208.png", // ✅ صورتك هنا
+        },
+        {
+          title: "Tokoma Office Tower",
+          location: "Kazanchis, Addis Ababa",
+          tag: "Ongoing",
+          image: "/images/portfolio/tokoma.jpg", // ✅ صورتك هنا
+        },
+        {
+          title: "SYS Mixed-Use",
+          location: "CMC, Addis Ababa",
+          tag: "Upcoming",
+          image: "/images/portfolio/sys.jpg", // ✅ صورتك هنا
+        },
+      ].map((item, idx) => (
+        <Card
+          key={idx}
+          className="relative overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+        >
+          {/* ✅ استبدال الأيقونة بصورة */}
+          <div className="w-full aspect-[4/3] overflow-hidden rounded-lg">
+  <img
+    src={item.image}
+    alt={item.title}
+    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+  />
+</div>
 
-          <div className="text-center mt-12">
-            <Link to="/projects">
-              <Button size="lg" variant="outline">
-                View All Projects
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">{item.title}</CardTitle>
+              <Badge>{item.tag}</Badge>
+            </div>
+            <CardDescription>{item.location}</CardDescription>
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+
+    <div className="text-center mt-12">
+      <Link to="/projects">
+        <Button size="lg" variant="outline">
+          View All Projects
+        </Button>
+      </Link>
+    </div>
+  </div>
+</section>
+
 
       {/* Call to Action */}
       <section className="py-20 lg:py-32 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
