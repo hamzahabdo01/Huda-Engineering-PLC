@@ -31,7 +31,7 @@ import Logo from "@/components/Logo";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import heroVideo from "@/assets/video_2025-09-10_12-35-58.mp4";
-
+import hudaImg from "@/assets\Screenshot 2025-10-14 150208.png";
 const About = () => {
   const { t } = useTranslation();
 
@@ -370,7 +370,7 @@ const About = () => {
           title: "Huda Luxury Apartments",
           location: "Bole, Addis Ababa",
           tag: "Delivered",
-          image: "src\assets\Screenshot 2025-10-14 150208.png", // ✅ صورتك هنا
+          image: "hudaImg", // ✅ صورتك هنا
         },
         {
           title: "Tokoma Office Tower",
