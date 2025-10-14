@@ -259,19 +259,24 @@ export default function ProjectDetail() {
   </CardHeader>
   <CardContent>
     {(() => {
+      // إنشاء خريطة لتجميع كل الأنواع مع مقاساتها وصورها
       const typeMap: Record<
         string,
         { sizes: Set<string>; image?: string }
       > = {};
 
+      // جمع البيانات من floor_plans
       project.floor_plans?.forEach((floor) => {
         floor.apartment_types.forEach((apt) => {
           const key = apt.type;
           if (!typeMap[key]) {
-            typeMap[key] = { sizes: new Set<string>(), image: apt.image_url || floor.floor_url };
+            typeMap[key] = { sizes: new Set<string>(), image: floor.image_url };
           }
           if (apt.size) typeMap[key].sizes.add(apt.size);
-          if (apt.image_url) typeMap[key].image = apt.image_url;
+          // لو كان فيه صورة محددة داخل apartment_type استبدلها
+          if ((apt as any).image_url) {
+            typeMap[key].image = (apt as any).image_url;
+          }
         });
       });
 
@@ -301,7 +306,10 @@ export default function ProjectDetail() {
                 className="border rounded-lg p-4 aspect-square flex flex-col items-center justify-between text-center cursor-pointer hover:shadow-md transition"
                 aria-label={`View ${type} overview`}
               >
+                {/* اسم الشقة فوق الصورة */}
                 <div className="text-lg font-semibold mb-2">{type}</div>
+
+                {/* الصورة من floor_plan أو النوع */}
                 {image ? (
                   <img
                     src={image}
@@ -321,6 +329,8 @@ export default function ProjectDetail() {
                     No Image
                   </div>
                 )}
+
+                {/* المقاسات تحت الصورة */}
                 <div className="flex flex-wrap gap-2 justify-center text-sm text-muted-foreground">
                   {Array.from(sizes).map((s) => (
                     <span
@@ -331,12 +341,13 @@ export default function ProjectDetail() {
                     </span>
                   ))}
                 </div>
+
                 <ArrowRight className="w-4 h-4 text-muted-foreground mt-3" />
               </div>
             ))}
           </div>
 
-          {/* Lightbox dialog for image preview */}
+          {/* مودال الصورة (lightbox) */}
           <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
             <DialogContent className="max-w-3xl">
               <DialogHeader>
@@ -350,7 +361,9 @@ export default function ProjectDetail() {
                     className="max-h-[70vh] rounded-lg object-contain"
                   />
                 ) : (
-                  <div className="text-muted-foreground">No image available.</div>
+                  <div className="text-muted-foreground">
+                    No image available.
+                  </div>
                 )}
               </div>
             </DialogContent>
@@ -361,6 +374,7 @@ export default function ProjectDetail() {
   </CardContent>
 </Card>
 
+        )}
 
         {project.latitude != null && project.longitude != null && (
           <Card>
