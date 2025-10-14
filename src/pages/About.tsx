@@ -377,13 +377,13 @@ const About = () => {
         {
           title: "MIXED-USE and OFFICE BUILDING",
           location: "Addis Ababa City, Bole sub-city around wereda12",
-          tag: "Ongoing",
+          tag: "Delivered",
           image: tokomaImg, // ✅ صورتك هنا
         },
         {
           title: " REAL ESTATE",
           location: "Addis Ababa City, Kerkos sub- city around Uerael church ",
-          tag: "Upcoming",
+          tag: "Delivered",
           image: sysImg, // ✅ صورتك هنا
         },
       ].map((item, idx) => (
