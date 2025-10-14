@@ -31,6 +31,8 @@ import Logo from "@/components/Logo";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import heroVideo from "@/assets/video_2025-09-10_12-35-58.mp4";
+import tokomaImg from "@/assets/image.png";
+import sysImg from "@/assets/Screenshot 2025-10-14 154905.png";
 import hudaImg from "@/assets/Screenshot 2025-10-14 150208.png";
 const About = () => {
   const { t } = useTranslation();
@@ -376,13 +378,13 @@ const About = () => {
           title: "Tokoma Office Tower",
           location: "Kazanchis, Addis Ababa",
           tag: "Ongoing",
-          image: "/images/portfolio/tokoma.jpg", // ✅ صورتك هنا
+          image: tokomaImg, // ✅ صورتك هنا
         },
         {
           title: "SYS Mixed-Use",
           location: "CMC, Addis Ababa",
           tag: "Upcoming",
-          image: "/images/portfolio/sys.jpg", // ✅ صورتك هنا
+          image: sysImg, // ✅ صورتك هنا
         },
       ].map((item, idx) => (
         <Card
