@@ -362,7 +362,7 @@ const About = () => {
         Our Portfolio
       </h2>
       <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-        A curated selection of our delivered and ongoing projects.
+        A curated selection of our delivered projects.
       </p>
     </div>
 
