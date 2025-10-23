@@ -126,7 +126,7 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
           floor.apartment_types.forEach((apt: any) => {
             if (!apt || !apt.type) return;
             const typeKey = String(apt.type).trim();
-            unitTypes[typeKey] = { size: apt.size, price: apt.price };
+            unitTypes[typeKey] = { size: Array.isArray (apt.size) ? apt.size : [apt.size], price: Array.isArray (apt.price) ? apt.price : [apt.price] };
 
 
             const isAvailable =
