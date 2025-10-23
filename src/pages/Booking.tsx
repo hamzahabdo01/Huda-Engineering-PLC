@@ -42,6 +42,8 @@ export default function Booking() {
   const [planAvailable, setPlanAvailable] = useState<Record<string, number>>(
     {}
   );
+  const [selectedFloor, setSelectedFloor] = useState<number | "">("");
+const [selectedSize, setSelectedSize] = useState<string | "">("");
   const [availableFloorUnits, setAvailableFloorUnits] = useState<
     Array<{
       key: string;
@@ -124,12 +126,9 @@ export default function Booking() {
           floor.apartment_types.forEach((apt: any) => {
             if (!apt || !apt.type) return;
             const typeKey = String(apt.type).trim();
-            if (!unitTypes[typeKey]) {
-              unitTypes[typeKey] = {
-                size: apt.size || undefined,
-                price: apt.price || undefined,
-              };
-            }
+            unitTypes[typeKey] = { size: apt.size, price: apt.price };
+
+
             const isAvailable =
               apt.availability === "available" || !apt.availability;
             if (isAvailable) {
@@ -356,6 +355,7 @@ export default function Booking() {
             floor_number: formData.floorNumber
               ? Number(formData.floorNumber)
               : null,
+              size: selectedSize || null,
             preferred_contact: formData.preferredContact,
             full_name: formData.fullName,
             email: formData.email,
@@ -554,6 +554,30 @@ export default function Booking() {
                   </div>
 
                   <div className="w-full">
+                    <Label>Select Floor *</Label>
+<Select
+value={selectedFloor}
+  onValueChange={(v) => {
+    setSelectedFloor(Number(v));
+    setSelectedUnitComposite("");
+    setFormData(prev => ({ ...prev, unitType: "", floorNumber: v }));
+  }}
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select floor" />
+  </SelectTrigger>
+  <SelectContent>
+    {availableFloorUnits
+      .map(unit => unit.floor)
+      .filter((v, i, a) => a.indexOf(v) === i) // remove duplicates
+      .map(floor => (
+        <SelectItem key={floor} value={floor.toString()}>
+          Floor {floor}
+        </SelectItem>
+      ))}
+  </SelectContent>
+</Select>
+
                     <Label>Select Unit Type *</Label>
                     {hasFloorPlans ? (
                       <Select
@@ -673,13 +697,13 @@ export default function Booking() {
                       </Select>
                     )}
                     {hasFloorPlans && availableFloorUnits.length > 0 && (
-  <div className="mt-6 space-y-6">
-    {Array.from(
-      new Set(availableFloorUnits.map((item) => item.floor))
-    ).sort((a, b) => b - a) // ترتيب الطوابق من الأعلى للأسفل
-    .map((floorNum) => (
-      <div key={floorNum}>
-        <h3 className="text-lg font-semibold mb-2">Floor {floorNum}</h3>
+                      <div className="mt-6 space-y-6">
+                      {Array.from(
+                       new Set(availableFloorUnits.map((item) => item.floor))
+                        ).sort((a, b) => b - a) // ترتيب الطوابق من الأعلى للأسفل
+                        .map((floorNum) => (
+                       <div key={floorNum}>
+                          <h3 className="text-lg font-semibold mb-2">Floor {floorNum}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {availableFloorUnits
             .filter((item) => item.floor === floorNum)
@@ -720,6 +744,27 @@ export default function Booking() {
     ))}
   </div>
 )}
+{selectedUnitComposite && units[formData.unitType]?.size?.length > 1 && (
+  <div className="mt-4">
+    <Label>Select Size</Label>
+    <Select
+      value={selectedSize}
+      onValueChange={(v) => setSelectedSize(v)}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select size" />
+      </SelectTrigger>
+      <SelectContent>
+        {units[formData.unitType].size.map((size, idx) => (
+          <SelectItem key={idx} value={size}>
+            {size} — {units[formData.unitType].price[idx]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+)}
+
 
                   </div>
 
