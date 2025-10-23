@@ -555,46 +555,173 @@ export default function Booking() {
 
                   <div className="w-full">
                     <Label>Select Unit Type *</Label>
-                    {hasFloorPlans &&
-  currentProject.floor_plans.map((floor: any) => {
-    if (!floor.apartment_types || floor.apartment_types.length === 0) return null;
-    return (
-      <div key={floor.floor_number} className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Floor {floor.floor_number}</h2>
+                    {hasFloorPlans ? (
+                      <Select
+                        value={selectedUnitComposite}
+                        onValueChange={(v) => {
+                          setSelectedUnitComposite(v);
+                          const [typeOnly, floorPart] = v.split("::");
+                          const floorNum = (floorPart || "").replace(
+                            "floor-",
+                            ""
+                          );
+                          const opt = availableFloorUnits.find(
+                            (item) => item.key === v
+                          );
+                          const avail = (opt?.availability || "available") as
+                            | "available"
+                            | "sold"
+                            | "reserved";
+                          setSelectedAvailability(avail);
+                          setFormData({
+                            ...formData,
+                            unitType: typeOnly || "",
+                            floorNumber: floorNum || "",
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="border border-[#088d92] focus:border-[#088d92] focus:ring-[#088d92]/30">
+                          <SelectValue placeholder="Select floor & type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableFloorUnits.length === 0 ? (
+                            <SelectItem value="__none__" disabled>
+                              No units available
+                            </SelectItem>
+                          ) : (
+                            availableFloorUnits.map((item) => {
+                              const meta =
+                                units[item.type] ||
+                                ({} as { size?: string; price?: string });
+                              const detailParts = [
+                                meta.size,
+                                meta.price,
+                              ].filter(Boolean) as string[];
+                              const detail = detailParts.length
+                                ? ` (${detailParts.join(" • ")})`
+                                : "";
+                              return (
+                                <SelectItem
+                                  key={item.key}
+                                  value={item.key}
+                                >{`Floor ${item.floor} — ${item.type}${detail}`}</SelectItem>
+                              );
+                            })
+                          )}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Select
+                        value={formData.unitType}
+                        onValueChange={(v) => {
+                          const count = stock[v] ?? 0;
+                          const avail = count > 0 ? "available" : "sold";
+                          setSelectedAvailability(avail);
+                          if (avail !== "available") {
+                            toast({
+                              title: "Not Available",
+                              description: `This unit is already ${avail}.`,
+                              variant: "destructive",
+                            });
+                          }
+                          setFormData({ ...formData, unitType: v });
+                        }}
+                      >
+                        <SelectTrigger className="border border-[#088d92] focus:border-[#088d92] focus:ring-[#088d92]/30">
+                          <SelectValue placeholder="Select unit type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {stockLoading ? (
+                            <SelectItem value="__loading__" disabled>
+                              Loading availability...
+                            </SelectItem>
+                          ) : (
+                            (() => {
+                              const allKeys = Object.keys(units);
+                              if (allKeys.length === 0) {
+                                return (
+                                  <SelectItem value="__none__" disabled>
+                                    No unit types configured
+                                  </SelectItem>
+                                );
+                              }
+                              return allKeys.map((unit) => {
+                                const meta =
+                                  units[unit] ||
+                                  ({} as { size?: string; price?: string });
+                                const detailParts = [
+                                  meta.size,
+                                  meta.price,
+                                ].filter(Boolean) as string[];
+                                const detail = detailParts.length
+                                  ? ` (${detailParts.join(" • ")})`
+                                  : "";
+                                const count = stock[unit] ?? 0;
+                                const status = count > 0 ? "Available" : "Sold";
+                                const availabilityText =
+                                  count > 0 ? `${count} available` : status;
+                                return (
+                                  <SelectItem key={unit} value={unit}>
+                                    {unit}
+                                    {detail} — {availabilityText}
+                                  </SelectItem>
+                                );
+                              });
+                            })()
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {hasFloorPlans && availableFloorUnits.length > 0 && (
+  <div className="mt-6 space-y-6">
+    {Array.from(
+      new Set(availableFloorUnits.map((item) => item.floor))
+    ).sort((a, b) => b - a) // ترتيب الطوابق من الأعلى للأسفل
+    .map((floorNum) => (
+      <div key={floorNum}>
+        <h3 className="text-lg font-semibold mb-2">Floor {floorNum}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {floor.apartment_types.map((apt: any) => {
-            if (!apt || !apt.type) return null;
-            const compositeKey = `${apt.type}::floor-${floor.floor_number}`;
-            const isSelected = selectedUnitComposite === compositeKey;
+          {availableFloorUnits
+            .filter((item) => item.floor === floorNum)
+            .map((item) => {
+              const meta = units[item.type] || {};
+              const details = [
+                meta.size ? `${meta.size}` : null,
+                meta.price ? `${meta.price}` : null,
+              ]
+                .filter(Boolean)
+                .join(" • ");
 
-            return (
-              <div
-                key={compositeKey}
-                className={`cursor-pointer border rounded-lg p-4 hover:shadow-md transition ${
-                  isSelected
-                    ? "border-primary bg-primary/10"
-                    : "border-gray-300 bg-background"
-                }`}
-                onClick={() => {
-                  setSelectedUnitComposite(compositeKey);
-                  setFormData({
-                    ...formData,
-                    unitType: apt.type,
-                    floorNumber: floor.floor_number.toString(),
-                  });
-                }}
-              >
-                <p className="font-medium">{apt.type}</p>
-                <p className="text-sm text-muted-foreground">{apt.size}</p>
-                <p className="text-sm font-semibold">{apt.price}</p>
-              </div>
-            );
-          })}
+              const isSelected = selectedUnitComposite === item.key;
+
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => {
+                    setSelectedUnitComposite(item.key);
+                    setSelectedAvailability(item.availability || "available");
+                    setFormData({
+                      ...formData,
+                      unitType: item.type,
+                      floorNumber: String(floorNum),
+                    });
+                  }}
+                  className={`border rounded-lg p-4 text-left transition-all duration-200
+                    ${isSelected ? "border-primary bg-primary/10" : "border-gray-300 hover:border-primary hover:bg-primary/5"}`}
+                >
+                  <div className="font-semibold">{item.type}</div>
+                  <div className="text-sm text-muted-foreground">{details}</div>
+                </button>
+              );
+            })}
         </div>
       </div>
-    );
-  })}
+    ))}
+  </div>
+)}
 
+                  </div>
 
                   <div>
                     <TextareaGroup
