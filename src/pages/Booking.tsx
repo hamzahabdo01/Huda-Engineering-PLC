@@ -560,13 +560,15 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 <Select
   value={selectedFloor}
   onValueChange={(v) => {
-    setSelectedFloor(Number(v));
-    setSelectedUnitComposite("");
+    const floorNum = Number(v);
+    setSelectedFloor(floorNum);
     setFormData((prev) => ({
       ...prev,
-      unitType: "",
       floorNumber: v,
+      unitType: "",
     }));
+    setSelectedUnitComposite("");
+    setSelectedSize("");
   }}
 >
   <SelectTrigger className="border border-[#088d92]">
@@ -583,66 +585,84 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
   </SelectContent>
 </Select>
 
-{/* Type Selection */}
+{/* Show units when a floor is selected */}
 {selectedFloor && (
-  <>
-    <Label className="mt-4">Select Apartment Type *</Label>
-    <Select
-      value={formData.unitType}
-      onValueChange={(v) => {
-        setFormData((prev) => ({ ...prev, unitType: v }));
-        setSelectedSize("");
-      }}
-    >
-      <SelectTrigger className="border border-[#088d92]">
-        <SelectValue placeholder="Select type" />
-      </SelectTrigger>
-      <SelectContent>
-        {availableFloorUnits
-          .filter((u) => u.floor === selectedFloor)
-          .map((u) => (
-            <SelectItem key={u.type} value={u.type}>
-              {u.type}
-            </SelectItem>
-          ))}
-      </SelectContent>
-    </Select>
-  </>
-)}
+  <div className="mt-6">
+    <h3 className="text-lg font-semibold mb-3">
+      Floor {selectedFloor} — Available Units
+    </h3>
 
-{/* Size Selection */}
-{formData.unitType && units[formData.unitType]?.size && (
-  <>
-    <Label className="mt-4">Select Size *</Label>
-    <Select
-      value={selectedSize}
-      onValueChange={(v) => setSelectedSize(v)}
-    >
-      <SelectTrigger className="border border-[#088d92]">
-        <SelectValue placeholder="Select size" />
-      </SelectTrigger>
-      <SelectContent>
-        {units[formData.unitType].size.map((size, idx) => (
-          <SelectItem key={idx} value={size}>
-            {size}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </>
-)}
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {availableFloorUnits
+        .filter((u) => u.floor === selectedFloor)
+        .map((item) => {
+          // handle array or string for size/price
+          const sizes = Array.isArray(item.size)
+            ? item.size
+            : [item.size].filter(Boolean);
+          const prices = Array.isArray(item.price)
+            ? item.price
+            : [item.price].filter(Boolean);
 
-{/* Price Display */}
-{selectedSize && (
-  <div className="mt-4">
-    <Label>Price</Label>
-    <p className="font-semibold text-primary">
-      {units[formData.unitType].price[
-        units[formData.unitType].size.indexOf(selectedSize)
-      ] || "N/A"}
-    </p>
+          return (
+            <div
+              key={item.key}
+              className={`border rounded-xl p-4 cursor-pointer transition-all ${
+                formData.unitType === item.type
+                  ? "border-primary bg-primary/10"
+                  : "border-gray-300 hover:border-primary hover:bg-primary/5"
+              }`}
+              onClick={() => {
+                setFormData((prev) => ({
+                  ...prev,
+                  unitType: item.type,
+                  floorNumber: String(selectedFloor),
+                }));
+                setSelectedSize(sizes[0] || "");
+              }}
+            >
+              <div className="font-semibold text-lg">{item.type}</div>
+              <div className="text-sm text-muted-foreground mt-1">
+                {sizes.length > 1
+                  ? sizes.map((s, i) => (
+                      <div key={i}>
+                        {s} — {prices[i] || "N/A"}
+                      </div>
+                    ))
+                  : `${sizes[0] || "N/A"} — ${prices[0] || "N/A"}`}
+              </div>
+            </div>
+          );
+        })}
+    </div>
   </div>
 )}
+
+{/* Show selected size if multiple options exist */}
+{formData.unitType &&
+  units[formData.unitType]?.size &&
+  Array.isArray(units[formData.unitType].size) &&
+  units[formData.unitType].size.length > 1 && (
+    <div className="mt-4">
+      <Label>Select Size *</Label>
+      <Select
+        value={selectedSize}
+        onValueChange={(v) => setSelectedSize(v)}
+      >
+        <SelectTrigger className="border border-[#088d92]">
+          <SelectValue placeholder="Select size" />
+        </SelectTrigger>
+        <SelectContent>
+          {units[formData.unitType].size.map((size, idx) => (
+            <SelectItem key={idx} value={size}>
+              {size} — {units[formData.unitType].price[idx] || "N/A"}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )}
+
 
 
                     <Label>Select Unit Type *</Label>
