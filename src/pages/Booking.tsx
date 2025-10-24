@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { string } from "zod";
 
 // Captcha site key is injected via env
 const SITE_KEY = SITE_RECAPTCHA_KEY;
@@ -554,29 +555,95 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
                   </div>
 
                   <div className="w-full">
-                    <Label>Select Floor *</Label>
+         {/* Floor Selection */}
+<Label>Select Floor *</Label>
 <Select
-value={selectedFloor}
+  value={selectedFloor}
   onValueChange={(v) => {
     setSelectedFloor(Number(v));
     setSelectedUnitComposite("");
-    setFormData(prev => ({ ...prev, unitType: "", floorNumber: v }));
+    setFormData((prev) => ({
+      ...prev,
+      unitType: "",
+      floorNumber: v,
+    }));
   }}
 >
-  <SelectTrigger>
+  <SelectTrigger className="border border-[#088d92]">
     <SelectValue placeholder="Select floor" />
   </SelectTrigger>
   <SelectContent>
-    {availableFloorUnits
-      .map(unit => unit.floor)
-      .filter((v, i, a) => a.indexOf(v) === i) // remove duplicates
-      .map(floor => (
-        <SelectItem key={floor} value={floor.toString()}>
+    {Array.from(new Set(availableFloorUnits.map((f) => f.floor)))
+      .sort((a, b) => a - b)
+      .map((floor) => (
+        <SelectItem key={floor} value={String(floor)}>
           Floor {floor}
         </SelectItem>
       ))}
   </SelectContent>
 </Select>
+
+{/* Type Selection */}
+{selectedFloor && (
+  <>
+    <Label className="mt-4">Select Apartment Type *</Label>
+    <Select
+      value={formData.unitType}
+      onValueChange={(v) => {
+        setFormData((prev) => ({ ...prev, unitType: v }));
+        setSelectedSize("");
+      }}
+    >
+      <SelectTrigger className="border border-[#088d92]">
+        <SelectValue placeholder="Select type" />
+      </SelectTrigger>
+      <SelectContent>
+        {availableFloorUnits
+          .filter((u) => u.floor === selectedFloor)
+          .map((u) => (
+            <SelectItem key={u.type} value={u.type}>
+              {u.type}
+            </SelectItem>
+          ))}
+      </SelectContent>
+    </Select>
+  </>
+)}
+
+{/* Size Selection */}
+{formData.unitType && units[formData.unitType]?.size && (
+  <>
+    <Label className="mt-4">Select Size *</Label>
+    <Select
+      value={selectedSize}
+      onValueChange={(v) => setSelectedSize(v)}
+    >
+      <SelectTrigger className="border border-[#088d92]">
+        <SelectValue placeholder="Select size" />
+      </SelectTrigger>
+      <SelectContent>
+        {units[formData.unitType].size.map((size, idx) => (
+          <SelectItem key={idx} value={size}>
+            {size}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </>
+)}
+
+{/* Price Display */}
+{selectedSize && (
+  <div className="mt-4">
+    <Label>Price</Label>
+    <p className="font-semibold text-primary">
+      {units[formData.unitType].price[
+        units[formData.unitType].size.indexOf(selectedSize)
+      ] || "N/A"}
+    </p>
+  </div>
+)}
+
 
                     <Label>Select Unit Type *</Label>
                     {hasFloorPlans ? (
