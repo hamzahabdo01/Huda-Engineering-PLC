@@ -115,36 +115,35 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
         // New floor plan structure
         const unitTypes: Record<string, { size?: string; price?: string }> = {};
         const counts: Record<string, number> = {};
-        const floorItems: Array<{
-          key: string;
-          type: string;
-          floor: number;
-          size?: string;
-          price?: string;
-          availability?: "available" | "sold" | "reserved";
-        }> = [];
+        const floorItems: any[] = [];
+
         project.floor_plans.forEach((floor: any) => {
           floor.apartment_types.forEach((apt: any) => {
-            if (!apt || !apt.type) return;
-            const typeKey = String(apt.type).trim();
-            unitTypes[typeKey] = { size: Array.isArray (apt.size) ? apt.size : [apt.size], price: Array.isArray (apt.price) ? apt.price : [apt.price] };
+  if (!apt || !apt.type) return;
+  const typeKey = String(apt.type).trim();
 
+  const sizes = Array.isArray(apt.size) ? apt.size : [apt.size];
+  const prices = Array.isArray(apt.price) ? apt.price : [apt.price];
 
-            const isAvailable =
-              apt.availability === "available" || !apt.availability;
-            if (isAvailable) {
-              counts[typeKey] = (counts[typeKey] || 0) + 1;
-            }
-            const composite = `${typeKey}::floor-${floor.floor_number}`;
-            floorItems.push({
-              key: composite,
-              type: typeKey,
-              floor: floor.floor_number,
-              size: apt.size || undefined,
-              price: apt.price || undefined,
-              availability: apt.availability,
-            });
-          });
+  unitTypes[typeKey] = { size: sizes, price: prices };
+
+  sizes.forEach((sz: any, idx: number) => {
+    const composite = `${typeKey}-${sz}-floor-${floor.floor_number}`;
+    const isAvailable = apt.availability === "available" || !apt.availability;
+    if (isAvailable) {
+      counts[typeKey] = (counts[typeKey] || 0) + 1;
+    }
+    floorItems.push({
+      key: composite,
+      type: typeKey,
+      floor: floor.floor_number,
+      size: sz,
+      price: prices[idx] || undefined,
+      availability: apt.availability,
+    });
+  });
+});
+
         });
         setUnits(unitTypes);
         setPlanAvailable(counts);
