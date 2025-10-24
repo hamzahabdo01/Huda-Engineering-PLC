@@ -296,17 +296,34 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
         variant: "destructive",
       });
     }
-    if (
-      type === "property" &&
-      selectedAvailability &&
-      selectedAvailability !== "available"
-    ) {
-      return toast({
-        title: "Not Available",
-        description: `This unit is already ${selectedAvailability}.`,
-        variant: "destructive",
-      });
+    if (type === "property") {
+  let isAvailable = true;
+
+  if (hasFloorPlans) {
+    // تحقق من حالة الوحدة في قائمة الطوابق
+    const unit = availableFloorUnits.find((u) => 
+      u.type === formData.unitType && String(u.floor) === String(formData.floorNumber)
+    );
+    if (unit && unit.availability !== "available") {
+      isAvailable = false;
     }
+  } else {
+    // تحقق من المخزون في الجدول unit_stock
+    const count = stock[formData.unitType] ?? 0;
+    if (count <= 0) {
+      isAvailable = false;
+    }
+  }
+
+  if (!isAvailable) {
+    return toast({
+      title: "Not Available",
+      description: "This unit is already sold or reserved.",
+      variant: "destructive",
+    });
+  }
+}
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       return toast({
         title: "Invalid Email",
@@ -783,54 +800,56 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
                         </SelectContent>
                       </Select>
                     )}
-                    {hasFloorPlans && availableFloorUnits.length > 0 && (
-                      <div className="mt-6 space-y-6">
-                      {Array.from(
-                       new Set(availableFloorUnits.map((item) => item.floor))
-                        ).sort((a, b) => b - a) // ترتيب الطوابق من الأعلى للأسفل
-                        .map((floorNum) => (
-                       <div key={floorNum}>
-                          <h3 className="text-lg font-semibold mb-2">Floor {floorNum}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {availableFloorUnits
-            .filter((item) => item.floor === floorNum)
-            .map((item) => {
-              const meta = units[item.type] || {};
-              const details = [
-                meta.size ? `${meta.size}` : null,
-                meta.price ? `${meta.price}` : null,
-              ]
-                .filter(Boolean)
-                .join(" • ");
+                    {hasFloorPlans && selectedFloor && (
+  <div className="mt-6 space-y-6">
+    <div key={selectedFloor}>
+      <h3 className="text-lg font-semibold mb-2">
+        Floor {selectedFloor} — Available Units
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {availableFloorUnits
+          .filter((item) => item.floor === selectedFloor)
+          .map((item) => {
+            const meta = units[item.type] || {};
+            const details = [
+              meta.size ? `${meta.size}` : null,
+              meta.price ? `${meta.price}` : null,
+            ]
+              .filter(Boolean)
+              .join(" • ");
 
-              const isSelected = selectedUnitComposite === item.key;
+            const isSelected = selectedUnitComposite === item.key;
 
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => {
-                    setSelectedUnitComposite(item.key);
-                    setSelectedAvailability(item.availability || "available");
-                    setFormData({
-                      ...formData,
-                      unitType: item.type,
-                      floorNumber: String(floorNum),
-                    });
-                  }}
-                  className={`border rounded-lg p-4 text-left transition-all duration-200
-                    ${isSelected ? "border-primary bg-primary/10" : "border-gray-300 hover:border-primary hover:bg-primary/5"}`}
-                >
-                  <div className="font-semibold">{item.type}</div>
-                  <div className="text-sm text-muted-foreground">{details}</div>
-                </button>
-              );
-            })}
-        </div>
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => {
+                  setSelectedUnitComposite(item.key);
+                  setSelectedAvailability(item.availability || "available");
+                  setFormData({
+                    ...formData,
+                    unitType: item.type,
+                    floorNumber: String(selectedFloor),
+                  });
+                }}
+                className={`border rounded-lg p-4 text-left transition-all duration-200
+                  ${
+                    isSelected
+                      ? "border-primary bg-primary/10"
+                      : "border-gray-300 hover:border-primary hover:bg-primary/5"
+                  }`}
+              >
+                <div className="font-semibold">{item.type}</div>
+                <div className="text-sm text-muted-foreground">{details}</div>
+              </button>
+            );
+          })}
       </div>
-    ))}
+    </div>
   </div>
 )}
+
 {selectedUnitComposite && units[formData.unitType]?.size?.length > 1 && (
   <div className="mt-4">
     <Label>Select Size</Label>
