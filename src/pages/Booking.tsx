@@ -624,18 +624,20 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
             <div
               key={item.key}
               className={`border rounded-xl p-4 cursor-pointer transition-all ${
-                formData.unitType === item.type
-                  ? "border-primary bg-primary/10"
-                  : "border-gray-300 hover:border-primary hover:bg-primary/5"
-              }`}
-              onClick={() => {
-                setFormData((prev) => ({
-                  ...prev,
-                  unitType: item.type,
-                  floorNumber: String(selectedFloor),
-                }));
-                setSelectedSize(sizes[0] || "");
-              }}
+  selectedUnitComposite === item.key
+    ? "border-primary bg-primary/10"
+    : "border-gray-300 hover:border-primary hover:bg-primary/5"
+}`}
+onClick={() => {
+  setSelectedUnitComposite(item.key);
+  setFormData((prev) => ({
+    ...prev,
+    unitType: item.type,
+    floorNumber: String(selectedFloor),
+  }));
+  setSelectedSize(item.size || sizes[0] || "");
+}}
+
             >
               <div className="font-semibold text-lg">{item.type}</div>
               <div className="text-sm text-muted-foreground mt-1">
