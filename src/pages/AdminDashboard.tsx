@@ -2078,6 +2078,12 @@ const AdminDashboard = () => {
                                 <strong>Floor:</strong> {booking.floor_number}
                               </div>
                             )}
+                            {booking.size && (
+  <div>
+    <strong>Size:</strong> {booking.size}
+  </div>
+)}
+
                             <div>
                               <strong>Preferred Contact:</strong>{" "}
                               {booking.preferred_contact || "—"}
