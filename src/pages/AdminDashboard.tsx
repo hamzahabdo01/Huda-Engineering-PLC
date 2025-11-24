@@ -1193,7 +1193,6 @@ const AdminDashboard = () => {
           ...newProject,
           floor_plans: floorPlans,
           Amenities: newProject.Amenities,
-          gallery_urls: newProject.gallery_urls,
           created_by: user?.id,
         },
       ]);
