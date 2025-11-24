@@ -42,19 +42,35 @@ const About = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-20 lg:py-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex justify-center mb-8">
-            <Logo size="lg" className="text-accent w-16 h-16 lg:w-20 lg:h-20" />
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            {t("about.hero.title")}
-          </h1>
-          <p className="text-xl lg:text-2xl text-primary-foreground/90 max-w-4xl mx-auto">
-            {t("about.hero.subtitle")}
-          </p>
-        </div>
-      </section>
+<section
+  className="relative w-full h-[350px] md:h-[420px] lg:h-[480px] flex items-center justify-center text-center overflow-hidden"
+  style={{
+    background: "linear-gradient(135deg, #0b7268 0%, #0f8a7a 55%, #127b6f 100%)",
+  }}
+>
+  {/* Logo */}
+  <div className="flex justify-center mb-6">
+    <img
+      src="/mnt/data/c92ba66d-adcf-4ae1-b8f8-9ec167308f46.png"
+      alt="Huda Logo"
+      className="w-16 h-16 md:w-20 md:h-20 opacity-90"
+    />
+  </div>
+
+  <div className="px-4">
+    <h1 className="text-white text-4xl md:text-5xl lg:text-6xl font-bold">
+      About Huda Engineering
+    </h1>
+
+    <p className="text-white/90 text-lg md:text-xl lg:text-2xl mt-4 max-w-3xl mx-auto">
+      Building Ethiopia's future with quality, integrity, and innovation since 2009 E.C
+    </p>
+  </div>
+
+  {/* Gradient Overlay */}
+  <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/20 pointer-events-none" />
+</section>
+
 
       {/* Company Story */}
       <section className="py-20 lg:py-32">
