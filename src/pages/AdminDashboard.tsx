@@ -804,6 +804,8 @@ const AdminDashboard = () => {
       .subscribe();
 
     console.log("✅ Real-time subscriptions set up");
+    console.log(newProject);
+
 
     // Cleanup subscriptions on component unmount
     return () => {
