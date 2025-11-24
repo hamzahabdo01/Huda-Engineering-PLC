@@ -2758,36 +2758,68 @@ const AdminDashboard = () => {
                       />
                     </div>
 
-                    <div>
-                      <Label htmlFor="image_url">Project Image</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id="image_url"
-                          placeholder="Or paste URL"
-                          value={newProject.image_url}
-                          onChange={(e) =>
-                            setNewProject({
-                              ...newProject,
-                              image_url: e.target.value,
-                            })
-                          }
-                        />
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const url = await uploadFileToBucket(
-                              "project-images",
-                              file
-                            );
-                            if (url)
-                              setNewProject((p) => ({ ...p, image_url: url }));
-                          }}
-                        />
-                      </div>
-                    </div>
+                    {/* --- Gallery Upload --- */}
+<div>
+  <Label>Project Gallery</Label>
+
+  <div className="flex items-center gap-2 mt-1">
+    <Input
+      type="file"
+      accept="image/*"
+      multiple
+      onChange={async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+
+        const uploadedUrls = [];
+
+        for (const file of files) {
+          const url = await uploadFileToBucket("project-gallery", file);
+          if (url) uploadedUrls.push(url);
+        }
+
+        // إضافة الصور الجديدة للمعرض الحالي
+        setNewProject((p) => ({
+          ...p,
+          gallery_urls: [...p.gallery_urls, ...uploadedUrls],
+        }));
+      }}
+    />
+  </div>
+
+  {/* Preview Grid */}
+  {newProject.gallery_urls.length > 0 && (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-3">
+      {newProject.gallery_urls.map((img, idx) => (
+        <div
+          key={idx}
+          className="relative rounded overflow-hidden border"
+        >
+          <img
+            src={img}
+            alt={`Gallery ${idx}`}
+            className="w-full h-24 object-cover"
+          />
+
+          {/* Remove button */}
+          <button
+            type="button"
+            className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-1 rounded"
+            onClick={() =>
+              setNewProject((p) => ({
+                ...p,
+                gallery_urls: p.gallery_urls.filter((_, i) => i !== idx),
+              }))
+            }
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
                     {/* 
                     <div>
                       <Label>Gallery Images</Label>
