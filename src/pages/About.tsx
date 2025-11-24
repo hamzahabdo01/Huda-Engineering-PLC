@@ -60,11 +60,7 @@ const About = () => {
   <div className="relative z-10 px-4 flex flex-col items-center">
 
     {/* Logo — الآن يظهر فعليًا */}
-    <img
-      src={"/mnt/data/c92ba66d-adcf-4ae1-b8f8-9ec167308f46.png"}
-      alt="Huda Logo"
-      className="w-20 h-20 md:w-24 md:h-24 mb-6 animate-scale-up"
-    />
+    <Logo size="lg" className="text-accent w-16 h-16 lg:w-20 lg:h-20" />
 
     <h1 className="text-white text-4xl md:text-6xl font-extrabold drop-shadow-lg">
       About Huda Engineering
