@@ -1194,6 +1194,7 @@ const AdminDashboard = () => {
         {
           ...newProject,
           floor_plans: floorPlans,
+          gallery_urls: newProject.gallery_urls,
           Amenities: newProject.Amenities,
           created_by: user?.id,
         },
@@ -1306,6 +1307,7 @@ const AdminDashboard = () => {
         .from("projects")
         .update({
           ...newProject,
+          gallery_urls: newProject.gallery_urls,
           floor_plans: floorPlans,
         })
         .eq("id", editingProjectId);
