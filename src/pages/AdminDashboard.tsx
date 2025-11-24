@@ -3646,35 +3646,30 @@ const AdminDashboard = () => {
                           </Badge>
                         </div>
                       </CardHeader>
-                      {(project.gallery_urls &&
-                        project.gallery_urls.length > 0) ||
-                      project.image_url ? (
-                        <div className="px-6 pb-4">
-                          <div className="flex gap-2 overflow-x-auto">
-                            <img
-                              src={
-                                project.gallery_urls &&
-                                project.gallery_urls.length > 0
-                                  ? project.gallery_urls[0]
-                                  : project.image_url
-                              }
-                              alt={project.title}
-                              className="w-full h-32 object-cover rounded-lg"
-                            />
-                            {project.gallery_urls &&
-                              project.gallery_urls
-                                .slice(1)
-                                .map((url, idx) => (
-                                  <img
-                                    key={idx}
-                                    src={url}
-                                    alt={`${project.title}-${idx + 2}`}
-                                    className="h-32 w-48 object-cover rounded-lg"
-                                  />
-                                ))}
-                          </div>
-                        </div>
-                      ) : null}
+                      {/* --- Project Gallery Preview --- */}
+{project.gallery_urls && project.gallery_urls.length > 0 && (
+  <div className="px-6 pb-4">
+    <div className="flex gap-2 overflow-x-auto">
+      {/* الصورة الرئيسية (الأولى) */}
+      <img
+        src={project.gallery_urls[0]}
+        alt={project.title}
+        className="w-full h-32 object-cover rounded-lg"
+      />
+
+      {/* باقي الصور */}
+      {project.gallery_urls.slice(1).map((url, idx) => (
+        <img
+          key={idx}
+          src={url}
+          alt={`${project.title}-${idx + 2}`}
+          className="h-32 w-48 object-cover rounded-lg"
+        />
+      ))}
+    </div>
+  </div>
+)}
+
                       <CardContent className="pt-0">
                         <div className="space-y-3 sm:space-y-4">
                           <div className="grid grid-cols-2 gap-4 text-xs sm:text-sm">
