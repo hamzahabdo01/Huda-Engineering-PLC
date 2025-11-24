@@ -2787,8 +2787,7 @@ const AdminDashboard = () => {
                           }}
                         />
                       </div>
-                    </div>
-                    {/* 
+                    </div> 
                     <div>
                       <Label>Gallery Images</Label>
                       <div className="flex gap-2 mb-2">
@@ -2868,7 +2867,7 @@ const AdminDashboard = () => {
                           ))}
                         </div>
                       )}
-                    </div> */}
+                    </div> 
 
                     {/* Floor Plan Management */}
                     <div className="space-y-4">
