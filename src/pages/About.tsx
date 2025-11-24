@@ -62,13 +62,14 @@ const About = () => {
     {/* Logo — الآن يظهر فعليًا */}
     <Logo size="lg" className="text-accent w-16 h-16 lg:w-20 lg:h-20" />
 
-    <h1 className="text-white text-4xl md:text-6xl font-extrabold drop-shadow-lg">
-      About Huda Engineering
-    </h1>
+    <h1 className="text-white text-4xl md:text-6xl font-extrabold drop-shadow-lg animate-fade-slide-up">
+  About Huda Engineering
+</h1>
 
-    <p className="text-white/90 text-lg md:text-2xl mt-4 max-w-3xl mx-auto drop-shadow-md">
-      Building Ethiopia's future with quality, integrity, and innovation since 2009 E.C
-    </p>
+<p className="text-white/90 text-lg md:text-2xl mt-4 max-w-3xl mx-auto drop-shadow-md animate-fade-slide-up">
+  Building Ethiopia's future with quality, integrity, and innovation since 2009 E.C
+</p>
+
   </div>
 </section>
 
@@ -108,6 +109,20 @@ const About = () => {
   .animate-scale-up {
     animation: scale-up 0.8s ease-out forwards;
   }
+    @keyframes fade-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-slide-up {
+  animation: fade-slide-up 1s ease-out forwards;
+}
+
 `}
 </style>
 
