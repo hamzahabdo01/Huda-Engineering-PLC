@@ -195,61 +195,73 @@ export default function ProjectDetail() {
             <CardTitle>Overview</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* --- Gallery Instead of Single Image --- */}
-{project.gallery_urls && project.gallery_urls.length > 0 && (
-  <div className="space-y-3">
-    
-    {/* Main Image */}
-    <img
-      src={project.gallery_urls[0]}
-      alt={project.title}
-      className="w-full max-h-[420px] object-cover rounded cursor-pointer"
-      onClick={() => {
-        setSelectedImage(project.gallery_urls[0]);
-        setIsGalleryOpen(true);
-      }}
-    />
 
-    {/* Thumbnails */}
-    {project.gallery_urls.length > 1 && (
-      <div className="flex gap-3 overflow-x-auto py-2">
-        {project.gallery_urls.slice(1).map((url, idx) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    {/* LEFT: GALLERY */}
+    <div className="space-y-3">
+      {project.gallery_urls && project.gallery_urls.length > 0 && (
+        <>
+          {/* Main Image */}
           <img
-            key={idx}
-            src={url}
-            alt={`${project.title}-${idx + 1}`}
-            className="w-32 h-24 object-cover rounded cursor-pointer"
+            src={project.gallery_urls[0]}
+            alt={project.title}
+            className="w-full max-h-[420px] object-cover rounded cursor-pointer"
             onClick={() => {
-              setSelectedImage(url);
+              setSelectedImage(project.gallery_urls[0]);
               setIsGalleryOpen(true);
             }}
           />
-        ))}
-      </div>
-    )}
-  </div>
-)}
 
-            <p className="text-muted-foreground">
-              {project.description || project.short_description}
-            </p>
-            {project.Amenities && project.Amenities.length > 0 && (
-              <div>
-                <div className="font-medium mb-2">Amenities</div>
-                <div className="flex flex-wrap gap-2">
-                  {project.Amenities.map((a, i) => (
-                    <Badge
-                      key={i}
-                      variant="secondary"
-                      className="bg-primary/10 text-primary"
-                    >
-                      {a}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
+          {/* Thumbnails */}
+          {project.gallery_urls.length > 1 && (
+            <div className="flex gap-3 overflow-x-auto py-2">
+              {project.gallery_urls.slice(1).map((url, idx) => (
+                <img
+                  key={idx}
+                  src={url}
+                  alt={`${project.title}-${idx + 1}`}
+                  className="w-32 h-24 object-cover rounded cursor-pointer"
+                  onClick={() => {
+                    setSelectedImage(url);
+                    setIsGalleryOpen(true);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+
+    {/* RIGHT: DESCRIPTION + AMENITIES */}
+    <div className="space-y-4">
+      <p className="text-muted-foreground leading-relaxed">
+        {project.description || project.short_description}
+      </p>
+
+      {project.Amenities && project.Amenities.length > 0 && (
+        <div>
+          <div className="font-medium mb-2 text-lg">Amenities</div>
+          <div className="flex flex-wrap gap-2">
+            {project.Amenities.map((a, i) => (
+              <Badge
+                key={i}
+                variant="secondary"
+                className="bg-primary/10 text-primary"
+              >
+                {a}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+
+  </div>
+
+</CardContent>
+
         </Card>
 
         {project.units && Object.keys(project.units).length > 0 && (
