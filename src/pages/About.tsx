@@ -42,34 +42,78 @@ const About = () => {
       <Navbar />
 
       {/* Hero Section */}
-<section
-  className="relative w-full h-[350px] md:h-[420px] lg:h-[480px] flex items-center justify-center text-center overflow-hidden"
-  style={{
-    background: "linear-gradient(135deg, #0b7268 0%, #0f8a7a 55%, #127b6f 100%)",
-  }}
->
-  {/* Logo */}
-  <div className="flex justify-center mb-6">
-    <img
-      src="/mnt/data/c92ba66d-adcf-4ae1-b8f8-9ec167308f46.png"
-      alt="Huda Logo"
-      className="w-16 h-16 md:w-20 md:h-20 opacity-90"
-    />
+<section className="relative w-full h-[400px] md:h-[500px] flex items-center justify-center text-center overflow-hidden">
+
+  {/* Animated Gradient Background */}
+  <div className="absolute inset-0 bg-gradient-to-r from-[#0A5E55] via-[#0F8A7A] to-[#0A5E55] animate-gradient-x"></div>
+
+  {/* Light Glow Effect */}
+  <div className="absolute inset-0 bg-white/5 mix-blend-overlay"></div>
+
+  {/* Floating Particles */}
+  <div className="absolute inset-0 pointer-events-none">
+    <div className="absolute w-48 h-48 bg-white/10 rounded-full blur-3xl animate-float-slow left-10 top-10"></div>
+    <div className="absolute w-32 h-32 bg-accent/20 rounded-full blur-2xl animate-float-reverse right-16 bottom-14"></div>
   </div>
 
-  <div className="px-4">
-    <h1 className="text-white text-4xl md:text-5xl lg:text-6xl font-bold">
+  {/* Content */}
+  <div className="relative z-10 px-4 flex flex-col items-center">
+
+    {/* Logo — الآن يظهر فعليًا */}
+    <img
+      src={"/mnt/data/c92ba66d-adcf-4ae1-b8f8-9ec167308f46.png"}
+      alt="Huda Logo"
+      className="w-20 h-20 md:w-24 md:h-24 mb-6 animate-scale-up"
+    />
+
+    <h1 className="text-white text-4xl md:text-6xl font-extrabold drop-shadow-lg">
       About Huda Engineering
     </h1>
 
-    <p className="text-white/90 text-lg md:text-xl lg:text-2xl mt-4 max-w-3xl mx-auto">
+    <p className="text-white/90 text-lg md:text-2xl mt-4 max-w-3xl mx-auto drop-shadow-md">
       Building Ethiopia's future with quality, integrity, and innovation since 2009 E.C
     </p>
   </div>
-
-  {/* Gradient Overlay */}
-  <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/20 pointer-events-none" />
 </section>
+
+
+{/* Add these animations to your Tailwind CSS */}
+<style>
+{`
+  @keyframes gradient-x {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .animate-gradient-x {
+    background-size: 200% 200%;
+    animation: gradient-x 8s ease infinite;
+  }
+
+  @keyframes float-slow {
+    0%,100% { transform: translateY(0px); }
+    50% { transform: translateY(-25px); }
+  }
+  .animate-float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+
+  @keyframes float-reverse {
+    0%,100% { transform: translateY(0px); }
+    50% { transform: translateY(20px); }
+  }
+  .animate-float-reverse {
+    animation: float-reverse 7s ease-in-out infinite;
+  }
+
+  @keyframes scale-up {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .animate-scale-up {
+    animation: scale-up 0.8s ease-out forwards;
+  }
+`}
+</style>
 
 
       {/* Company Story */}
