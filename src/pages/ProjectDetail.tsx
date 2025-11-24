@@ -195,13 +195,41 @@ export default function ProjectDetail() {
             <CardTitle>Overview</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {project.image_url && (
-              <img
-                src={project.image_url}
-                alt={project.title}
-                className="w-full max-h-[420px] object-cover rounded"
-              />
-            )}
+            {/* --- Gallery Instead of Single Image --- */}
+{project.gallery_urls && project.gallery_urls.length > 0 && (
+  <div className="space-y-3">
+    
+    {/* Main Image */}
+    <img
+      src={project.gallery_urls[0]}
+      alt={project.title}
+      className="w-full max-h-[420px] object-cover rounded cursor-pointer"
+      onClick={() => {
+        setSelectedImage(project.gallery_urls[0]);
+        setIsGalleryOpen(true);
+      }}
+    />
+
+    {/* Thumbnails */}
+    {project.gallery_urls.length > 1 && (
+      <div className="flex gap-3 overflow-x-auto py-2">
+        {project.gallery_urls.slice(1).map((url, idx) => (
+          <img
+            key={idx}
+            src={url}
+            alt={`${project.title}-${idx + 1}`}
+            className="w-32 h-24 object-cover rounded cursor-pointer"
+            onClick={() => {
+              setSelectedImage(url);
+              setIsGalleryOpen(true);
+            }}
+          />
+        ))}
+      </div>
+    )}
+  </div>
+)}
+
             <p className="text-muted-foreground">
               {project.description || project.short_description}
             </p>
