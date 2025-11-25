@@ -46,7 +46,7 @@ const About = () => {
   h-[280px]    /* ارتفاع صغير للجوال */
   sm:h-[330px] /* للشاشات الصغيرة */
   md:h-[450px] /* للتابلت */
-  lg:h-[500px] /* للديسكتوب */
+  lg:h-[400px] /* للديسكتوب */
   flex items-center justify-center text-center overflow-hidden">
 
 
