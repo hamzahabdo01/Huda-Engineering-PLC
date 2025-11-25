@@ -68,6 +68,7 @@ const About = () => {
     bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200
     bg-clip-text text-transparent
     drop-shadow-[0_3px_12px_rgba(255,200,80,0.45)]
+    animate-fade-slide-up
   "
 >
   About Huda Engineering
