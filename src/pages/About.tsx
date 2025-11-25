@@ -42,7 +42,13 @@ const About = () => {
       <Navbar />
 
       {/* Hero Section */}
-<section className="relative w-full h-[280px] md:h-[380px] flex items-center justify-center text-center overflow-hidden">
+<section className="relative w-full 
+  h-[280px]    /* ارتفاع صغير للجوال */
+  sm:h-[330px] /* للشاشات الصغيرة */
+  md:h-[450px] /* للتابلت */
+  lg:h-[500px] /* للديسكتوب */
+  flex items-center justify-center text-center overflow-hidden">
+
 
   {/* Animated Gradient Background */}
   <div className="absolute inset-0 bg-gradient-to-r from-[#0A5E55] via-[#0F8A7A] to-[#0A5E55] animate-gradient-x"></div>
@@ -60,9 +66,9 @@ const About = () => {
   <div className="relative z-10 px-4 flex flex-col items-center">
 
     {/* Logo — الآن يظهر فعليًا */}
-    <Logo size="lg" className="text-accent w-16 h-16 lg:w-20 lg:h-20" />
+    <Logo size="lg" className="text-accent w-12 h-12 sm:w-14 sm:h-14 lg:w-20 lg:h-20" />
 
-    <h1 className="relative text-6xl font-bold leading-[1.35] overflow-visible">
+<h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.35] overflow-visible">
   {/* النص الأصفر */}
   <span className="absolute inset-0 text-yellow-400 pendulum-mask">
     About Huda Engineering
