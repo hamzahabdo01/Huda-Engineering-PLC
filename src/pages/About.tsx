@@ -42,7 +42,7 @@ const About = () => {
       <Navbar />
 
       {/* Hero Section */}
-<section className="relative w-full h-[400px] md:h-[500px] flex items-center justify-center text-center overflow-hidden">
+<section className="relative w-full h-[280px] md:h-[380px] flex items-center justify-center text-center overflow-hidden">
 
   {/* Animated Gradient Background */}
   <div className="absolute inset-0 bg-gradient-to-r from-[#0A5E55] via-[#0F8A7A] to-[#0A5E55] animate-gradient-x"></div>
@@ -62,7 +62,7 @@ const About = () => {
     {/* Logo — الآن يظهر فعليًا */}
     <Logo size="lg" className="text-accent w-16 h-16 lg:w-20 lg:h-20" />
 
-    <h1 className="relative text-6xl font-bold">
+    <h1 className="relative text-6xl font-bold leading-[1.35] overflow-visible">
   {/* النص الأصفر */}
   <span className="absolute inset-0 text-yellow-400 pendulum-mask">
     About Huda Engineering
