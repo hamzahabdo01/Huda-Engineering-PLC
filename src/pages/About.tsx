@@ -66,16 +66,16 @@ const About = () => {
   <div className="relative z-10 px-4 flex flex-col items-center">
 
     {/* Logo — الآن يظهر فعليًا */}
-    <Logo size="lg" className="text-accent w-12 h-12 sm:w-14 sm:h-14 lg:w-20 lg:h-20" />
+    <Logo size="lg" className="text-accent w-12 h-12 sm:w-14 sm:h-14 lg:w-20 lg:h-20 animate-scale-up" />
 
-<h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.35] overflow-visible">
-  {/* النص الأصفر */}
-  <span className="absolute inset-0 text-yellow-400 pendulum-mask">
+<h1 className="relative text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.35] overflow-visible">
+  {/* النص الأبيض الأساسي */}
+  <span className="text-white animate-fade-slide-up">
     About Huda Engineering
   </span>
 
-  {/* النص الأبيض */}
-  <span className="text-white">
+  {/* النص الأصفر فوقه */}
+  <span className="absolute inset-0 text-yellow-400 pendulum-mask">
     About Huda Engineering
   </span>
 </h1>
