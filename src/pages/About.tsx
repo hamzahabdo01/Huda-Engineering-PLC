@@ -68,14 +68,14 @@ const About = () => {
     {/* Logo — الآن يظهر فعليًا */}
     <Logo size="lg" className="text-accent w-12 h-12 sm:w-14 sm:h-14 lg:w-20 lg:h-20 animate-scale-up" />
 
-<h1 className="relative text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.35] overflow-visible">
+<h1 className="relative text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight lg:leading-[1.2] overflow-visible">
   {/* النص الأبيض الأساسي */}
-  <span className="text-white">
+  <span className="text-white animate-fade-slide-up">
     About Huda Engineering
   </span>
 
   {/* النص الأصفر فوقه */}
-  <span className="absolute inset-0 text-yellow-400 pendulum-mask">
+  <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
     About Huda Engineering
   </span>
 </h1>
