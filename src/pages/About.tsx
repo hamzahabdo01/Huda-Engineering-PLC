@@ -70,7 +70,7 @@ const About = () => {
 
 <h1 className="relative text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.35] overflow-visible">
   {/* النص الأبيض الأساسي */}
-  <span className="text-white animate-fade-slide-up">
+  <span className="text-white">
     About Huda Engineering
   </span>
 
