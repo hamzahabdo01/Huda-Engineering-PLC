@@ -62,15 +62,17 @@ const About = () => {
     {/* Logo — الآن يظهر فعليًا */}
     <Logo size="lg" className="text-accent w-16 h-16 lg:w-20 lg:h-20" />
 
-    <h1 className="
-  text-4xl md:text-6xl font-extrabold 
-  bg-gradient-to-r from-white via-accent to-white 
-  bg-clip-text text-transparent 
-  drop-shadow-[0_3px_12px_rgba(0,255,200,0.45)] 
-  animate-fade-slide-up
-">
+    <h1
+  className="
+    text-4xl md:text-6xl font-extrabold leading-[1.25]
+    bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200
+    bg-clip-text text-transparent
+    drop-shadow-[0_3px_12px_rgba(255,200,80,0.45)]
+  "
+>
   About Huda Engineering
 </h1>
+
 
 
 <p className="
