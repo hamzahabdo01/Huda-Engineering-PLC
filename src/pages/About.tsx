@@ -38,7 +38,7 @@ const About = () => {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="text-center overflow-visible">
       <Navbar />
 
       {/* Hero Section */}
