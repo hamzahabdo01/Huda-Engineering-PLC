@@ -256,8 +256,13 @@ const Projects = () => {
   <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
 
     {/* Title */}
-    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight lg:leading-[1.1] overflow-visible text-white animate-fade-slide-up pendulum-mask">
-      {t("projectsPage.hero.title")}
+    <h1 className="relative text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight lg:leading-[1.2] overflow-visible">
+      <span className="text-white animate-fade-slide-up">
+        {t("projectsPage.hero.title")}
+      </span>
+      <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
+        {t("projectsPage.hero.title")}
+      </span>
     </h1>
 
     {/* Subtitle */}
@@ -312,7 +317,6 @@ const Projects = () => {
   mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
   mask-size: 200% 100%;
   animation: pendulum 3s ease-in-out infinite alternate;
-  mix-blend-mode: screen;
 }
 @keyframes pendulum {
   0% { mask-position: left; }
