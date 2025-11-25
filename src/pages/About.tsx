@@ -75,7 +75,7 @@ const About = () => {
   </span>
 
   {/* النص الأصفر فوقه */}
-  <span className="absolute inset-0 text-yellow-400 pendulum-mask">
+  <span className="text-yellow-400 pendulum-mask ml-2 animate-fade-slide-up">
     About Huda Engineering
   </span>
 </h1>
