@@ -26,16 +26,92 @@ const Services = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            {t("servicesPage.hero.title")}
-          </h1>
-          <p className="text-xl text-primary-foreground/90 max-w-3xl mx-auto">
-            {t("servicesPage.hero.subtitle")}
-          </p>
-        </div>
-      </section>
+<section className="relative w-full py-20 bg-gradient-to-r from-[#0A5E55] via-[#0F8A7A] to-[#0A5E55] overflow-hidden">
+
+  {/* Animated Gradient Background */}
+  <div className="absolute inset-0 bg-gradient-to-r from-[#0A5E55] via-[#0F8A7A] to-[#0A5E55] animate-gradient-x"></div>
+
+  {/* Light Glow Effect */}
+  <div className="absolute inset-0 bg-white/5 mix-blend-overlay"></div>
+
+  {/* Floating Particles */}
+  <div className="absolute inset-0 pointer-events-none">
+    <div className="absolute w-48 h-48 bg-white/10 rounded-full blur-3xl animate-float-slow left-10 top-10"></div>
+    <div className="absolute w-32 h-32 bg-accent/20 rounded-full blur-2xl animate-float-reverse right-16 bottom-14"></div>
+  </div>
+
+  {/* Content */}
+  <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
+
+    {/* Title */}
+    <h1 className="relative text-4xl md:text-5xl font-bold leading-tight overflow-visible">
+      <span className="text-white animate-fade-slide-up">
+        {t("servicesPage.hero.title")}
+      </span>
+      <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
+        {t("servicesPage.hero.title")}
+      </span>
+    </h1>
+
+    {/* Subtitle */}
+    <p className="text-xl text-white/90 max-w-3xl mx-auto mt-4 animate-fade-slide-up">
+      {t("servicesPage.hero.subtitle")}
+    </p>
+  </div>
+</section>
+<style>
+{`@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 8s ease infinite;
+}
+
+@keyframes float-slow {
+  0%,100% { transform: translateY(0px); }
+  50% { transform: translateY(-25px); }
+}
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+@keyframes float-reverse {
+  0%,100% { transform: translateY(0px); }
+  50% { transform: translateY(20px); }
+}
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
+}
+
+@keyframes scale-up {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-scale-up {
+  animation: scale-up 0.8s ease-out forwards;
+}
+
+@keyframes fade-slide-up {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide-up {
+  animation: fade-slide-up 1s ease-out forwards;
+}
+
+.pendulum-mask {
+  mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
+  mask-size: 200% 100%;
+  animation: pendulum 3s ease-in-out infinite alternate;
+}
+@keyframes pendulum {
+  0% { mask-position: left; }
+  100% { mask-position: right; }
+}
+`}
+</style>
 
       {/* Services Overview */}
       <section className="py-20">
