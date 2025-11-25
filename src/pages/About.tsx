@@ -62,11 +62,25 @@ const About = () => {
     {/* Logo — الآن يظهر فعليًا */}
     <Logo size="lg" className="text-accent w-16 h-16 lg:w-20 lg:h-20" />
 
-    <h1 className="text-white text-4xl md:text-6xl font-extrabold drop-shadow-lg animate-fade-slide-up">
+    <h1 className="
+  text-4xl md:text-6xl font-extrabold 
+  bg-gradient-to-r from-white via-accent to-white 
+  bg-clip-text text-transparent 
+  drop-shadow-[0_3px_12px_rgba(0,255,200,0.45)] 
+  animate-fade-slide-up
+">
   About Huda Engineering
 </h1>
 
-<p className="text-white/90 text-lg md:text-2xl mt-4 max-w-3xl mx-auto drop-shadow-md animate-fade-slide-up">
+
+<p className="
+  text-lg md:text-2xl mt-4 max-w-3xl mx-auto 
+  text-white/95
+  bg-gradient-to-r from-white/95 via-accent/80 to-white/95 
+  bg-clip-text text-transparent
+  drop-shadow-[0_2px_8px_rgba(0,200,150,0.35)]
+  animate-fade-slide-up
+">
   Building Ethiopia's future with quality, integrity, and innovation since 2009 E.C
 </p>
 
