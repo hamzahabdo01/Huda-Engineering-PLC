@@ -62,20 +62,17 @@ const About = () => {
     {/* Logo — الآن يظهر فعليًا */}
     <Logo size="lg" className="text-accent w-16 h-16 lg:w-20 lg:h-20" />
 
-    <h1
-  className="
-    text-4xl md:text-6xl font-extrabold leading-[1.25]
-    bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200
-    bg-clip-text text-transparent
-    drop-shadow-[0_3px_12px_rgba(255,200,80,0.45)]
-    animate-fade-slide-up
-  "
->
-  About Huda Engineering
+    <h1 className="relative text-6xl font-bold">
+  {/* النص الأصفر */}
+  <span className="absolute inset-0 text-yellow-400 pendulum-mask">
+    About Huda Engineering
+  </span>
+
+  {/* النص الأبيض */}
+  <span className="text-white">
+    About Huda Engineering
+  </span>
 </h1>
-
-
-
 <p className="
   text-lg md:text-2xl mt-4 max-w-3xl mx-auto 
   text-white/95
@@ -139,6 +136,26 @@ const About = () => {
 .animate-fade-slide-up {
   animation: fade-slide-up 1s ease-out forwards;
 }
+  .pendulum-mask {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 50%,
+    transparent 100%
+  );
+  mask-size: 200% 100%;
+  animation: pendulum 3s ease-in-out infinite alternate;
+}
+
+@keyframes pendulum {
+  0% {
+    mask-position: left;
+  }
+  100% {
+    mask-position: right;
+  }
+}
+
 
 `}
 </style>
