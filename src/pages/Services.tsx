@@ -111,7 +111,7 @@ const Services = () => {
   100% { mask-position: right; }
 }
 `}
-</style>
+</style>`
 
       {/* Services Overview */}
       <section className="py-20">

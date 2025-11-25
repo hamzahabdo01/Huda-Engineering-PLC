@@ -256,7 +256,7 @@ const Projects = () => {
   <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
 
     {/* Title */}
-    <h1 className="relative text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight lg:leading-[1.2] overflow-visible">
+    <h1 className="relative text-4xl md:text-5xl font-bold mb-6 leading-tight overflow-visible">
       <span className="text-white animate-fade-slide-up">
         {t("projectsPage.hero.title")}
       </span>
@@ -266,7 +266,7 @@ const Projects = () => {
     </h1>
 
     {/* Subtitle */}
-    <p className="text-xl text-white/90 max-w-3xl mx-auto mt-4 animate-fade-slide-up">
+    <p className="text-xl text-white/90 max-w-3xl mx-auto animate-fade-slide-up">
       {t("projectsPage.hero.subtitle")}
     </p>
   </div>
