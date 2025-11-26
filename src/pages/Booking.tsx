@@ -516,28 +516,19 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
   animation: fade-slide-up 1s ease-out forwards;
 }
 
+/* Wipe animation using clip-path -- 100% stable on iOS */
+@keyframes wipe-left-right {
+  0%   { clip-path: inset(0 100% 0 0); }
+  50%  { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 100% 0 0); }
+}
+
 .pendulum-mask {
-  mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
-
-  mask-size: 200% 100%;
-  -webkit-mask-size: 200% 100%;
-
-  animation: pendulum 3s ease-in-out infinite alternate;
-  mix-blend-mode: screen;
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 100% 0 0);
+  animation: wipe-left-right 3s ease-in-out infinite;
 }
-
-@keyframes pendulum {
-  0% {
-    mask-position: left;
-    -webkit-mask-position: left;
-  }
-  100% {
-    mask-position: right;
-    -webkit-mask-position: right;
-  }
-}
-
 `}
 </style>
         <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
@@ -633,28 +624,19 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
   animation: fade-slide-up 1s ease-out forwards;
 }
 
+/* Wipe animation using clip-path -- 100% stable on iOS */
+@keyframes wipe-left-right {
+  0%   { clip-path: inset(0 100% 0 0); }
+  50%  { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 100% 0 0); }
+}
+
 .pendulum-mask {
-  mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
-
-  mask-size: 200% 100%;
-  -webkit-mask-size: 200% 100%;
-
-  animation: pendulum 3s ease-in-out infinite alternate;
-  mix-blend-mode: screen;
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 100% 0 0);
+  animation: wipe-left-right 3s ease-in-out infinite;
 }
-
-@keyframes pendulum {
-  0% {
-    mask-position: left;
-    -webkit-mask-position: left;
-  }
-  100% {
-    mask-position: right;
-    -webkit-mask-position: right;
-  }
-}
-
 `}
 </style>
       <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
