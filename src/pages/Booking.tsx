@@ -450,8 +450,8 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        {/* Booking Hero Section */}
-<section className="relative w-full py-12 text-center overflow-hidden animate-fade-in">
+        {/* Booking Hero Section — EXACT Copy of Projects Hero Styling */}
+<section className="relative w-full py-20 overflow-hidden">
 
   {/* Animated Gradient Background */}
   <div className="absolute inset-0 bg-gradient-to-r from-[#0A5E55] via-[#0F8A7A] to-[#0A5E55] animate-gradient-x"></div>
@@ -461,26 +461,32 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
   {/* Floating Particles */}
   <div className="absolute inset-0 pointer-events-none">
-    <div className="absolute w-40 h-40 bg-white/10 rounded-full blur-3xl animate-float-slow left-8 top-8"></div>
-    <div className="absolute w-28 h-28 bg-accent/20 rounded-full blur-2xl animate-float-reverse right-12 bottom-10"></div>
+    <div className="absolute w-48 h-48 bg-white/10 rounded-full blur-3xl animate-float-slow left-10 top-10"></div>
+    <div className="absolute w-32 h-32 bg-accent/20 rounded-full blur-2xl animate-float-reverse right-16 bottom-14"></div>
   </div>
 
   {/* Content */}
-  <div className="relative z-10 max-w-4xl mx-auto px-4">
-    <h1 className="relative text-3xl md:text-5xl font-bold overflow-visible leading-tight">
-  <span className="text-white animate-fade-slide-up">
-    Book Your Appointment or Property
-  </span>
+  <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
 
-  <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
-    Book Your Appointment or Property
-  </span>
-</h1>
-    <p className="text-lg md:text-xl text-white/90 mt-2 animate-fade-slide-up">
+    {/* Title */}
+    <h1 className="relative text-4xl md:text-5xl font-bold mb-6 leading-tight lg:leading-[1.2] overflow-visible">
+      <span className="text-white animate-fade-slide-up">
+        Book Your Appointment or Property
+      </span>
+      <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
+        Book Your Appointment or Property
+      </span>
+    </h1>
+
+    {/* Subtitle */}
+    <p className="text-xl text-white/90 max-w-3xl mx-auto animate-fade-slide-up">
       Secure a viewing or reserve your preferred unit in minutes.
     </p>
+
   </div>
 </section>
+
+{/* SAME CSS as Projects Hero */}
 <style>
 {`
 @keyframes gradient-x {
@@ -494,7 +500,7 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
 @keyframes float-slow {
   0%,100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  50% { transform: translateY(-25px); }
 }
 .animate-float-slow {
   animation: float-slow 6s ease-in-out infinite;
@@ -502,7 +508,7 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
 @keyframes float-reverse {
   0%,100% { transform: translateY(0px); }
-  50% { transform: translateY(15px); }
+  50% { transform: translateY(20px); }
 }
 .animate-float-reverse {
   animation: float-reverse 7s ease-in-out infinite;
@@ -516,29 +522,15 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
   animation: fade-slide-up 1s ease-out forwards;
 }
 
-/* Wipe animation using clip-path -- 100% stable on iOS */
-@keyframes wipe-left-right {
-  0%   { clip-path: inset(0 100% 0 0); }
-  50%  { clip-path: inset(0 0 0 0); }
-  100% { clip-path: inset(0 100% 0 0); }
-}
-
-/* iOS-safe pendulum wipe effect */
 .pendulum-mask {
-  position: absolute;
-  inset: 0;
-  color: inherit;
-  clip-path: inset(0 100% 0 0);
-  animation: pendulum-wipe 3s ease-in-out infinite alternate;
+  mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
+  mask-size: 200% 100%;
+  animation: pendulum 3s ease-in-out infinite alternate;
 }
-
-/* From right → left then back */
-@keyframes pendulum-wipe {
-  0% { clip-path: inset(0 100% 0 0); }   /* Fully hidden (white shown) */
-  50% { clip-path: inset(0 0 0 0); }     /* Fully revealed (yellow shown) */
-  100% { clip-path: inset(0 100% 0 0); } /* Back to hidden */
+@keyframes pendulum {
+  0% { mask-position: left; }
+  100% { mask-position: right; }
 }
-
 `}
 </style>
         <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
@@ -568,8 +560,8 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      {/* Booking Hero Section */}
-<section className="relative w-full py-12 text-center overflow-hidden animate-fade-in">
+      {/* Booking Hero Section — EXACT Copy of Projects Hero Styling */}
+<section className="relative w-full py-20 overflow-hidden">
 
   {/* Animated Gradient Background */}
   <div className="absolute inset-0 bg-gradient-to-r from-[#0A5E55] via-[#0F8A7A] to-[#0A5E55] animate-gradient-x"></div>
@@ -579,26 +571,32 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
   {/* Floating Particles */}
   <div className="absolute inset-0 pointer-events-none">
-    <div className="absolute w-40 h-40 bg-white/10 rounded-full blur-3xl animate-float-slow left-8 top-8"></div>
-    <div className="absolute w-28 h-28 bg-accent/20 rounded-full blur-2xl animate-float-reverse right-12 bottom-10"></div>
+    <div className="absolute w-48 h-48 bg-white/10 rounded-full blur-3xl animate-float-slow left-10 top-10"></div>
+    <div className="absolute w-32 h-32 bg-accent/20 rounded-full blur-2xl animate-float-reverse right-16 bottom-14"></div>
   </div>
 
   {/* Content */}
-  <div className="relative z-10 max-w-4xl mx-auto px-4">
-    <h1 className="relative text-3xl md:text-5xl font-bold overflow-visible leading-tight">
-  <span className="text-white animate-fade-slide-up">
-    Book Your Appointment or Property
-  </span>
+  <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
 
-  <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
-    Book Your Appointment or Property
-  </span>
-</h1>
-    <p className="text-lg md:text-xl text-white/90 mt-2 animate-fade-slide-up">
+    {/* Title */}
+    <h1 className="relative text-4xl md:text-5xl font-bold mb-6 leading-tight lg:leading-[1.2] overflow-visible">
+      <span className="text-white animate-fade-slide-up">
+        Book Your Appointment or Property
+      </span>
+      <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
+        Book Your Appointment or Property
+      </span>
+    </h1>
+
+    {/* Subtitle */}
+    <p className="text-xl text-white/90 max-w-3xl mx-auto animate-fade-slide-up">
       Secure a viewing or reserve your preferred unit in minutes.
     </p>
+
   </div>
 </section>
+
+{/* SAME CSS as Projects Hero */}
 <style>
 {`
 @keyframes gradient-x {
@@ -612,7 +610,7 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
 @keyframes float-slow {
   0%,100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  50% { transform: translateY(-25px); }
 }
 .animate-float-slow {
   animation: float-slow 6s ease-in-out infinite;
@@ -620,7 +618,7 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
 @keyframes float-reverse {
   0%,100% { transform: translateY(0px); }
-  50% { transform: translateY(15px); }
+  50% { transform: translateY(20px); }
 }
 .animate-float-reverse {
   animation: float-reverse 7s ease-in-out infinite;
@@ -634,29 +632,15 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
   animation: fade-slide-up 1s ease-out forwards;
 }
 
-/* Wipe animation using clip-path -- 100% stable on iOS */
-@keyframes wipe-left-right {
-  0%   { clip-path: inset(0 100% 0 0); }
-  50%  { clip-path: inset(0 0 0 0); }
-  100% { clip-path: inset(0 100% 0 0); }
-}
-
-/* iOS-safe pendulum wipe effect */
 .pendulum-mask {
-  position: absolute;
-  inset: 0;
-  color: inherit;
-  clip-path: inset(0 100% 0 0);
-  animation: pendulum-wipe 3s ease-in-out infinite alternate;
+  mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
+  mask-size: 200% 100%;
+  animation: pendulum 3s ease-in-out infinite alternate;
 }
-
-/* From right → left then back */
-@keyframes pendulum-wipe {
-  0% { clip-path: inset(0 100% 0 0); }   /* Fully hidden (white shown) */
-  50% { clip-path: inset(0 0 0 0); }     /* Fully revealed (yellow shown) */
-  100% { clip-path: inset(0 100% 0 0); } /* Back to hidden */
+@keyframes pendulum {
+  0% { mask-position: left; }
+  100% { mask-position: right; }
 }
-
 `}
 </style>
       <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
