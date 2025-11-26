@@ -450,16 +450,84 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <section className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-12 text-center animate-fade-in">
-          <div className="max-w-4xl mx-auto px-4">
-            <h1 className="text-3xl md:text-5xl font-bold">
-              Book Your Appointment or Property
-            </h1>
-            <p className="text-lg md:text-xl text-primary-foreground/90 mt-2">
-              Secure a viewing or reserve your preferred unit in minutes.
-            </p>
-          </div>
-        </section>
+        {/* Booking Hero Section */}
+<section className="relative w-full py-12 text-center overflow-hidden animate-fade-in">
+
+  {/* Animated Gradient Background */}
+  <div className="absolute inset-0 bg-gradient-to-r from-[#0A5E55] via-[#0F8A7A] to-[#0A5E55] animate-gradient-x"></div>
+
+  {/* Light Glow Effect */}
+  <div className="absolute inset-0 bg-white/5 mix-blend-overlay"></div>
+
+  {/* Floating Particles */}
+  <div className="absolute inset-0 pointer-events-none">
+    <div className="absolute w-40 h-40 bg-white/10 rounded-full blur-3xl animate-float-slow left-8 top-8"></div>
+    <div className="absolute w-28 h-28 bg-accent/20 rounded-full blur-2xl animate-float-reverse right-12 bottom-10"></div>
+  </div>
+
+  {/* Content */}
+  <div className="relative z-10 max-w-4xl mx-auto px-4">
+    <h1 className="text-3xl md:text-5xl font-bold animate-fade-slide-up relative">
+      <span className="text-white">
+        Book Your Appointment or Property
+      </span>
+      <span className="absolute inset-0 text-yellow-400 pendulum-mask">
+        Book Your Appointment or Property
+      </span>
+    </h1>
+
+    <p className="text-lg md:text-xl text-white/90 mt-2 animate-fade-slide-up">
+      Secure a viewing or reserve your preferred unit in minutes.
+    </p>
+  </div>
+</section>
+<style>
+  {`
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 8s ease infinite;
+}
+
+@keyframes float-slow {
+  0%,100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+@keyframes float-reverse {
+  0%,100% { transform: translateY(0px); }
+  50% { transform: translateY(15px); }
+}
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
+}
+
+@keyframes fade-slide-up {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide-up {
+  animation: fade-slide-up 1s ease-out forwards;
+}
+
+.pendulum-mask {
+  mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
+  mask-size: 200% 100%;
+  animation: pendulum 3s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+}
+@keyframes pendulum {
+  0% { mask-position: left; }
+  100% { mask-position: right; }
+}
+`}
+<style/>
         <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
           <div className="flex justify-center items-center py-20">
             <div className="text-center space-y-4">
