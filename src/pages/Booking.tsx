@@ -518,14 +518,26 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
 .pendulum-mask {
   mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
+
   mask-size: 200% 100%;
+  -webkit-mask-size: 200% 100%;
+
   animation: pendulum 3s ease-in-out infinite alternate;
   mix-blend-mode: screen;
 }
+
 @keyframes pendulum {
-  0% { mask-position: left; }
-  100% { mask-position: right; }
+  0% {
+    mask-position: left;
+    -webkit-mask-position: left;
+  }
+  100% {
+    mask-position: right;
+    -webkit-mask-position: right;
+  }
 }
+
 `}
 </style>
         <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
@@ -623,14 +635,26 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
 .pendulum-mask {
   mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
+
   mask-size: 200% 100%;
+  -webkit-mask-size: 200% 100%;
+
   animation: pendulum 3s ease-in-out infinite alternate;
   mix-blend-mode: screen;
 }
+
 @keyframes pendulum {
-  0% { mask-position: left; }
-  100% { mask-position: right; }
+  0% {
+    mask-position: left;
+    -webkit-mask-position: left;
+  }
+  100% {
+    mask-position: right;
+    -webkit-mask-position: right;
+  }
 }
+
 `}
 </style>
       <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
