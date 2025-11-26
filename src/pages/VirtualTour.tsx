@@ -146,20 +146,91 @@ const VirtualTour = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="py-20 lg:py-32 bg-gradient-to-br from-primary/10 to-accent/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6">
-            {t("virtualTour.title")}
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            {t("virtualTour.description")}
-          </p>
-          <Badge className="mb-8">
-            <Play className="h-4 w-4 mr-2" />
-            Interactive 3D Experience
-          </Badge>
-        </div>
-      </section>
+<section className="relative w-full py-20 lg:py-32 overflow-hidden">
+
+  {/* Animated Gradient Background */}
+  <div className="absolute inset-0 bg-gradient-to-r from-[#0A5E55] via-[#0F8A7A] to-[#0A5E55] animate-gradient-x"></div>
+
+  {/* Light Glow Overlay */}
+  <div className="absolute inset-0 bg-white/5 mix-blend-overlay"></div>
+
+  {/* Floating Particles */}
+  <div className="absolute inset-0 pointer-events-none">
+    <div className="absolute w-40 h-40 bg-white/10 rounded-full blur-3xl animate-float-slow left-10 top-10"></div>
+    <div className="absolute w-28 h-28 bg-accent/20 rounded-full blur-2xl animate-float-reverse right-14 bottom-14"></div>
+  </div>
+
+  {/* Content */}
+  <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+
+    <h1 className="relative text-4xl lg:text-6xl font-bold mb-6 leading-tight overflow-visible">
+      <span className="text-white animate-fade-slide-up">
+        {t("virtualTour.title")}
+      </span>
+      <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
+        {t("virtualTour.title")}
+      </span>
+    </h1>
+
+    <p className="text-xl text-white/90 max-w-3xl mx-auto mb-8 animate-fade-slide-up">
+      {t("virtualTour.description")}
+    </p>
+
+    <Badge className="mb-8 animate-fade-slide-up">
+      <Play className="h-4 w-4 mr-2" />
+      Interactive 3D Experience
+    </Badge>
+
+  </div>
+</section>
+
+<style>
+{`
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 8s ease infinite;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-25px); }
+}
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+@keyframes float-reverse {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(25px); }
+}
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
+}
+
+@keyframes fade-slide-up {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide-up {
+  animation: fade-slide-up 1s ease-out forwards;
+}
+
+.pendulum-mask {
+  mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
+  mask-size: 200% 100%;
+  animation: pendulum 3s ease-in-out infinite alternate;
+}
+
+@keyframes pendulum {
+  0% { mask-position: left; }
+  100% { mask-position: right; }
+}
+`}
+</style>
 
       {/* Tours Selection */}
       <section className="py-20 lg:py-32 bg-background">
