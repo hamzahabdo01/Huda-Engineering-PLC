@@ -468,14 +468,14 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
   {/* Content */}
   <div className="relative z-10 max-w-4xl mx-auto px-4">
     <h1 className="relative text-3xl md:text-5xl font-bold overflow-visible leading-tight">
-      <span className="text-white animate-fade-slide-up">
-        Book Your Appointment or Property
-      </span>
-      <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
-        Book Your Appointment or Property
-      </span>
-    </h1>
+  <span className="text-white animate-fade-slide-up">
+    Book Your Appointment or Property
+  </span>
 
+  <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
+    Book Your Appointment or Property
+  </span>
+</h1>
     <p className="text-lg md:text-xl text-white/90 mt-2 animate-fade-slide-up">
       Secure a viewing or reserve your preferred unit in minutes.
     </p>
@@ -523,12 +523,22 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
   100% { clip-path: inset(0 100% 0 0); }
 }
 
+/* iOS-safe pendulum wipe effect */
 .pendulum-mask {
   position: absolute;
   inset: 0;
+  color: inherit;
   clip-path: inset(0 100% 0 0);
-  animation: wipe-left-right 3s ease-in-out infinite;
+  animation: pendulum-wipe 3s ease-in-out infinite alternate;
 }
+
+/* From right → left then back */
+@keyframes pendulum-wipe {
+  0% { clip-path: inset(0 100% 0 0); }   /* Fully hidden (white shown) */
+  50% { clip-path: inset(0 0 0 0); }     /* Fully revealed (yellow shown) */
+  100% { clip-path: inset(0 100% 0 0); } /* Back to hidden */
+}
+
 `}
 </style>
         <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
@@ -576,14 +586,14 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
   {/* Content */}
   <div className="relative z-10 max-w-4xl mx-auto px-4">
     <h1 className="relative text-3xl md:text-5xl font-bold overflow-visible leading-tight">
-      <span className="text-white animate-fade-slide-up">
-        Book Your Appointment or Property
-      </span>
-      <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
-        Book Your Appointment or Property
-      </span>
-    </h1>
+  <span className="text-white animate-fade-slide-up">
+    Book Your Appointment or Property
+  </span>
 
+  <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
+    Book Your Appointment or Property
+  </span>
+</h1>
     <p className="text-lg md:text-xl text-white/90 mt-2 animate-fade-slide-up">
       Secure a viewing or reserve your preferred unit in minutes.
     </p>
@@ -631,12 +641,22 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
   100% { clip-path: inset(0 100% 0 0); }
 }
 
+/* iOS-safe pendulum wipe effect */
 .pendulum-mask {
   position: absolute;
   inset: 0;
+  color: inherit;
   clip-path: inset(0 100% 0 0);
-  animation: wipe-left-right 3s ease-in-out infinite;
+  animation: pendulum-wipe 3s ease-in-out infinite alternate;
 }
+
+/* From right → left then back */
+@keyframes pendulum-wipe {
+  0% { clip-path: inset(0 100% 0 0); }   /* Fully hidden (white shown) */
+  50% { clip-path: inset(0 0 0 0); }     /* Fully revealed (yellow shown) */
+  100% { clip-path: inset(0 100% 0 0); } /* Back to hidden */
+}
+
 `}
 </style>
       <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
