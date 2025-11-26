@@ -450,8 +450,7 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        {/* Booking Hero Section — EXACT Copy of Projects Hero Styling */}
-<section className="relative w-full py-20 overflow-hidden">
+        <section className="relative w-full py-12 overflow-hidden">
 
   {/* Animated Gradient Background */}
   <div className="absolute inset-0 bg-gradient-to-r from-[#0A5E55] via-[#0F8A7A] to-[#0A5E55] animate-gradient-x"></div>
@@ -461,15 +460,13 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
   {/* Floating Particles */}
   <div className="absolute inset-0 pointer-events-none">
-    <div className="absolute w-48 h-48 bg-white/10 rounded-full blur-3xl animate-float-slow left-10 top-10"></div>
-    <div className="absolute w-32 h-32 bg-accent/20 rounded-full blur-2xl animate-float-reverse right-16 bottom-14"></div>
+    <div className="absolute w-32 h-32 bg-white/10 rounded-full blur-3xl animate-float-slow left-6 top-6"></div>
+    <div className="absolute w-24 h-24 bg-accent/20 rounded-full blur-2xl animate-float-reverse right-10 bottom-10"></div>
   </div>
 
   {/* Content */}
-  <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
-
-    {/* Title */}
-    <h1 className="relative text-4xl md:text-5xl font-bold mb-6 leading-tight lg:leading-[1.2] overflow-visible">
+  <div className="relative z-10 max-w-4xl mx-auto px-4 text-center flex flex-col items-center">
+    <h1 className="relative text-3xl md:text-5xl font-bold leading-tight overflow-visible">
       <span className="text-white animate-fade-slide-up">
         Book Your Appointment or Property
       </span>
@@ -477,16 +474,11 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
         Book Your Appointment or Property
       </span>
     </h1>
-
-    {/* Subtitle */}
-    <p className="text-xl text-white/90 max-w-3xl mx-auto animate-fade-slide-up">
+    <p className="text-lg md:text-xl text-white/90 mt-2 animate-fade-slide-up">
       Secure a viewing or reserve your preferred unit in minutes.
     </p>
-
   </div>
 </section>
-
-{/* SAME CSS as Projects Hero */}
 <style>
 {`
 @keyframes gradient-x {
@@ -500,7 +492,7 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
 @keyframes float-slow {
   0%,100% { transform: translateY(0px); }
-  50% { transform: translateY(-25px); }
+  50% { transform: translateY(-20px); }
 }
 .animate-float-slow {
   animation: float-slow 6s ease-in-out infinite;
@@ -508,7 +500,7 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
 @keyframes float-reverse {
   0%,100% { transform: translateY(0px); }
-  50% { transform: translateY(20px); }
+  50% { transform: translateY(15px); }
 }
 .animate-float-reverse {
   animation: float-reverse 7s ease-in-out infinite;
