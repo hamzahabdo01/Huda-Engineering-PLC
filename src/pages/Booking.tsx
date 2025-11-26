@@ -467,11 +467,11 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
   {/* Content */}
   <div className="relative z-10 max-w-4xl mx-auto px-4">
-    <h1 className="text-3xl md:text-5xl font-bold animate-fade-slide-up relative">
-      <span className="text-white">
+    <h1 className="relative text-3xl md:text-5xl font-bold overflow-visible leading-tight">
+      <span className="text-white animate-fade-slide-up">
         Book Your Appointment or Property
       </span>
-      <span className="absolute inset-0 text-yellow-400 pendulum-mask">
+      <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
         Book Your Appointment or Property
       </span>
     </h1>
@@ -572,11 +572,11 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
 
   {/* Content */}
   <div className="relative z-10 max-w-4xl mx-auto px-4">
-    <h1 className="text-3xl md:text-5xl font-bold animate-fade-slide-up relative">
-      <span className="text-white">
+    <h1 className="relative text-3xl md:text-5xl font-bold overflow-visible leading-tight">
+      <span className="text-white animate-fade-slide-up">
         Book Your Appointment or Property
       </span>
-      <span className="absolute inset-0 text-yellow-400 pendulum-mask">
+      <span className="absolute inset-0 text-yellow-400 pendulum-mask animate-fade-slide-up">
         Book Your Appointment or Property
       </span>
     </h1>
