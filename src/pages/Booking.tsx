@@ -481,8 +481,8 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
     </p>
   </div>
 </section>
-{`
 <style>
+{`
 @keyframes gradient-x {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -527,7 +527,7 @@ const [selectedSize, setSelectedSize] = useState<string | "">("");
   100% { mask-position: right; }
 }
 `}
-<style/>
+</style>
         <main className="max-w-7xl mx-auto px-4 py-8 animate-slide-up">
           <div className="flex justify-center items-center py-20">
             <div className="text-center space-y-4">
