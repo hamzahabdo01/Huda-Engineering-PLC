@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lead } from './types';
+import { Lead } from "./types";
 
 export const MarketerDashboard: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
