@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Apartment, Lead } from './types';
 
-export const AdminDashboard: React.FC = () => {
+export const AdminDashboardd: React.FC = () => {
   // بيانات افتراضية للشقق
   const [apartments] = useState<Apartment[]>([
     { id: '1', unitNumber: '101', floor: 1, rooms: 3, price: 450000, status: 'available' },
@@ -68,3 +68,4 @@ export const AdminDashboard: React.FC = () => {
     </div>
   );
 };
+export default AdminDashboardd;

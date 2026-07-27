@@ -121,3 +121,4 @@ export const MarketerDashboard: React.FC = () => {
     </div>
   );
 };
+export default MarketerDashboard;

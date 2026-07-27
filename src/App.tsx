@@ -18,6 +18,8 @@ const ApartmentDetail = lazyLoad(() => import("./pages/ApartmentDetail"));
 const Contact = lazyLoad(() => import("./pages/Contact"));
 const Auth = lazyLoad(() => import("./pages/Auth"));
 const AdminDashboard = lazyLoad(() => import("./pages/AdminDashboard"));
+const AdminDashboardd = lazyLoad(() => import("./pages/AdminDashboardd"));// 👈 إضافة واجهة الإدارة
+const MarketerDashboard = lazyLoad(() => import("./pages/MarketerDashboard")); // 👈 إضافة واجهة المسوق
 const Booking = lazyLoad(() => import("./pages/Booking"));
 const Announcements = lazyLoad(() => import("./pages/Announcements"));
 const AnnouncementDetail = lazyLoad(() => import("./pages/AnnouncementDetail"));
@@ -55,6 +57,8 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/admin-dashboardd" element={<AdminDashboardd />} /> {/* 👈 إضافة واجهة الإدارة */}
+            <Route path="/marketer-dashboard" element={<MarketerDashboard />} /> {/* 👈 إضافة واجهة المسوق */ }
             <Route path="/booking" element={<Booking />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/announcements/:id" element={<AnnouncementDetail />} />
