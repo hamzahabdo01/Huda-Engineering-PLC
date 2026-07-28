@@ -1,357 +1,516 @@
 import React, { useState } from 'react';
-import { Apartment, ApartmentStatus } from "./types";
+
+// --- Types & Interfaces ---
+export type UnitStatus = 'available' | 'reserved' | 'unavailable';
+
+export interface UnitType {
+  id: string;
+  title: string; // e.g., "One bed room"
+  area: number;  // e.g., 90
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  subtitle: string; // e.g., "BOLE 24 AROUND IMPERIAL FEB,2026"
+  floors: string[];
+  unitTypes: UnitType[];
+  matrix: Record<string, UnitStatus>; // Key: "FloorName-UnitTypeId"
+  remarks?: Record<string, string>;
+}
 
 export function AdminDashboardd() {
-  // 1. Initial Default Apartments List
-  const [apartments, setApartments] = useState<Apartment[]>([
+  // 1. Initial Projects Inventory State
+  const [projects, setProjects] = useState<Project[]>([
     {
-      id: '1',
-      unitNumber: '101',
-      floor: 1,
-      rooms: 3,
-      price: 450000,
-      apartmentType: 'Residential Apartment',
-      view: 'Front Facade - Main Street',
-      paymentPlan: '3-Year Installments (15% Down Payment)',
-      status: 'available',
-    },
-    {
-      id: '2',
-      unitNumber: '102',
-      floor: 1,
-      rooms: 4,
-      price: 580000,
-      apartmentType: 'Duplex',
-      view: 'Garden View',
-      paymentPlan: 'Cash Only',
-      status: 'reserved',
+      id: 'proj-1',
+      name: 'Bole 24 Imperial Project',
+      subtitle: 'BOLE 24 AROUND IMPERIAL FEB,2026',
+      unitTypes: [
+        { id: '1b-90', title: 'One bed room', area: 90 },
+        { id: '2b-105', title: 'Two bed room', area: 105 },
+        { id: '2b-110', title: 'Two bed room', area: 110 },
+        { id: '3b-140', title: 'Three bed room', area: 140 },
+        { id: '3b-145', title: 'Three bed room', area: 145 },
+      ],
+      floors: [
+        'Tenth',
+        'Eleventh',
+        'Twelfth',
+        'Thirteenth',
+        'Fourteenth',
+        'Fifteenth',
+      ],
+      matrix: {
+        'Tenth-1b-90': 'available',
+        'Eleventh-2b-105': 'reserved',
+        'Twelfth-3b-140': 'unavailable',
+      },
+      remarks: {
+        'Tenth': 'Main Road View',
+      },
     },
   ]);
 
-  // 2. Add Form State
-  const [unitNumber, setUnitNumber] = useState('');
-  const [floor, setFloor] = useState<number | ''>('');
-  const [rooms, setRooms] = useState<number | ''>('');
-  const [price, setPrice] = useState<number | ''>('');
-  const [apartmentType, setApartmentType] = useState('Residential Apartment');
-  const [view, setView] = useState('');
-  const [paymentPlan, setPaymentPlan] = useState('Cash');
-  const [status, setStatus] = useState<ApartmentStatus>('available');
+  // Selected Active Project
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
+  const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
 
-  // 3. Add New Apartment Handler
-  const handleAddApartment = (e: React.FormEvent) => {
+  // Forms Input States
+  // A. Create New Project
+  const [newProjName, setNewProjName] = useState('');
+  const [newProjSubtitle, setNewProjSubtitle] = useState('');
+
+  // B. Add Floor
+  const [newFloorName, setNewFloorName] = useState('');
+
+  // C. Add House Type
+  const [newUnitTitle, setNewUnitTitle] = useState('');
+  const [newUnitArea, setNewUnitArea] = useState<number | ''>('');
+
+  // D. Selected Cell Status Controller
+  const [activeCellKey, setActiveCellKey] = useState<string | null>(null);
+
+  // --- Handlers ---
+
+  // 1. Create Project
+  const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newProjName.trim()) return alert('Please enter project name');
 
-    if (!unitNumber || floor === '' || rooms === '' || price === '') {
-      alert('Please fill in all required fields!');
+    const created: Project = {
+      id: `proj-${Date.now()}`,
+      name: newProjName,
+      subtitle: newProjSubtitle || 'PROJECT RELEASE 2026',
+      floors: ['First', 'Second', 'Third'],
+      unitTypes: [
+        { id: '1b-80', title: 'One bed room', area: 80 },
+        { id: '2b-120', title: 'Two bed room', area: 120 },
+      ],
+      matrix: {},
+      remarks: {},
+    };
+
+    setProjects([...projects, created]);
+    setSelectedProjectId(created.id);
+    setNewProjName('');
+    setNewProjSubtitle('');
+    alert('✅ New Project created successfully!');
+  };
+
+  // 2. Add Floor to Selected Project
+  const handleAddFloor = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFloorName.trim() || !selectedProject) return;
+
+    if (selectedProject.floors.includes(newFloorName.trim())) {
+      alert('Floor already exists in this project!');
       return;
     }
 
-    const newApartment: Apartment = {
-      id: Date.now().toString(),
-      unitNumber,
-      floor: Number(floor),
-      rooms: Number(rooms),
-      price: Number(price),
-      apartmentType,
-      view,
-      paymentPlan,
-      status,
-    };
-
-    setApartments([newApartment, ...apartments]);
-
-    // Reset Form
-    setUnitNumber('');
-    setFloor('');
-    setRooms('');
-    setPrice('');
-    setView('');
-    alert('Apartment successfully added to inventory!');
+    setProjects(
+      projects.map((proj) =>
+        proj.id === selectedProjectId
+          ? { ...proj, floors: [...proj.floors, newFloorName.trim()] }
+          : proj
+      )
+    );
+    setNewFloorName('');
   };
 
-  // 4. Quick Status Change Handler
-  const handleStatusChange = (id: string, newStatus: ApartmentStatus) => {
-    setApartments(
-      apartments.map((apt) =>
-        apt.id === id ? { ...apt, status: newStatus } : apt
+  // 3. Add Type of House (Unit Type) to Selected Project
+  const handleAddUnitType = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUnitTitle.trim() || !newUnitArea || !selectedProject) return;
+
+    const newUnit: UnitType = {
+      id: `ut-${Date.now()}`,
+      title: newUnitTitle,
+      area: Number(newUnitArea),
+    };
+
+    setProjects(
+      projects.map((proj) =>
+        proj.id === selectedProjectId
+          ? { ...proj, unitTypes: [...proj.unitTypes, newUnit] }
+          : proj
       )
+    );
+    setNewUnitTitle('');
+    setNewUnitArea('');
+  };
+
+  // 4. Toggle/Change Cell Status in Table Matrix
+  const handleCellClick = (floor: string, unitTypeId: string) => {
+    const key = `${floor}-${unitTypeId}`;
+    const currentStatus = selectedProject.matrix[key] || 'unavailable';
+
+    // Cycle Status: available (Green) -> reserved (Yellow) -> unavailable (Red) -> available
+    let nextStatus: UnitStatus = 'available';
+    if (currentStatus === 'available') nextStatus = 'reserved';
+    else if (currentStatus === 'reserved') nextStatus = 'unavailable';
+    else if (currentStatus === 'unavailable') nextStatus = 'available';
+
+    setProjects(
+      projects.map((proj) => {
+        if (proj.id === selectedProjectId) {
+          return {
+            ...proj,
+            matrix: {
+              ...proj.matrix,
+              [key]: nextStatus,
+            },
+          };
+        }
+        return proj;
+      })
     );
   };
 
-  // 5. Delete Apartment Handler
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this apartment?')) {
-      setApartments(apartments.filter((apt) => apt.id !== id));
-    }
+  // Explicitly Set Status for Active Cell
+  const handleExplicitStatusChange = (status: UnitStatus) => {
+    if (!activeCellKey) return;
+    setProjects(
+      projects.map((proj) => {
+        if (proj.id === selectedProjectId) {
+          return {
+            ...proj,
+            matrix: {
+              ...proj.matrix,
+              [activeCellKey]: status,
+            },
+          };
+        }
+        return proj;
+      })
+    );
   };
 
-  const getStatusBadge = (status: ApartmentStatus) => {
-    switch (status) {
-      case 'available':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'reserved':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'sold':
-        return 'bg-red-100 text-red-800 border-red-300';
-    }
-  };
+  // Helper Stats Calculation
+  const totalCells = selectedProject
+    ? selectedProject.floors.length * selectedProject.unitTypes.length
+    : 0;
+
+  let availableCount = 0;
+  let reservedCount = 0;
+  let unavailableCount = 0;
+
+  if (selectedProject) {
+    selectedProject.floors.forEach((f) => {
+      selectedProject.unitTypes.forEach((ut) => {
+        const key = `${f}-${ut.id}`;
+        const st = selectedProject.matrix[key] || 'unavailable';
+        if (st === 'available') availableCount++;
+        else if (st === 'reserved') reservedCount++;
+        else unavailableCount++;
+      });
+    });
+  }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen text-left" dir="ltr">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">
-        🏢 Real Estate Admin Dashboard - Add & Edit Apartments
-      </h1>
+    <div className="p-6 bg-gray-100 min-h-screen text-left" dir="ltr">
+      {/* Title Bar */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">⚙️ Admin Portal - Inventory & Matrix Manager</h1>
+          <p className="text-xs text-gray-500">
+            Manage projects, add floors and house types, and click matrix cells to toggle status (🟢 Available / 🟡 Reserved / 🔴 Sold)
+          </p>
+        </div>
 
-      {/* 📊 Inventory Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
-          <p className="text-gray-500 text-xs font-medium">Total Apartments</p>
-          <p className="text-2xl font-bold">{apartments.length}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
-          <p className="text-gray-500 text-xs font-medium">🟢 Available for Sale</p>
-          <p className="text-2xl font-bold">
-            {apartments.filter((a) => a.status === 'available').length}
-          </p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
-          <p className="text-gray-500 text-xs font-medium">🟡 Temporarily Reserved</p>
-          <p className="text-2xl font-bold">
-            {apartments.filter((a) => a.status === 'reserved').length}
-          </p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
-          <p className="text-gray-500 text-xs font-medium">🔴 Sold</p>
-          <p className="text-2xl font-bold">
-            {apartments.filter((a) => a.status === 'sold').length}
-          </p>
+        {/* Project Selector Switcher */}
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Active Project:</label>
+          <select
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+            className="p-2 bg-blue-50 border border-blue-300 font-bold text-blue-900 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* 📝 Add New Apartment Form */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
-          <h2 className="text-lg font-bold mb-4 text-blue-900 flex items-center gap-2">
-            ➕ Add New Apartment to Inventory
-          </h2>
+      {/* Stats Widget */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
+          <p className="text-gray-500 text-xs font-semibold">Total Matrix Units</p>
+          <p className="text-2xl font-bold text-gray-800">{totalCells}</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-emerald-500">
+          <p className="text-emerald-600 text-xs font-semibold">🟢 Available (Mataha)</p>
+          <p className="text-2xl font-bold text-emerald-700">{availableCount}</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
+          <p className="text-amber-600 text-xs font-semibold">🟡 Reserved (Mahjouza)</p>
+          <p className="text-2xl font-bold text-amber-700">{reservedCount}</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500">
+          <p className="text-red-600 text-xs font-semibold">🔴 Sold / Unavailable (Mubaa)</p>
+          <p className="text-2xl font-bold text-red-700">{unavailableCount}</p>
+        </div>
+      </div>
 
-          <form onSubmit={handleAddApartment} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Apartment / Unit Number *
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 101 or A-12"
-                value={unitNumber}
-                onChange={(e) => setUnitNumber(e.target.value)}
-                className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* LEFT COLUMN: Controls & Form Inputs */}
+        <div className="lg:col-span-1 space-y-6">
+          
+          {/* 1. Create New Project Form */}
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+            <h2 className="font-bold text-blue-900 text-sm mb-3 flex items-center gap-1">
+              🏢 1. Add New Project
+            </h2>
+            <form onSubmit={handleCreateProject} className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Floor *
-                </label>
+                <label className="block text-[11px] font-medium text-gray-700 mb-1">Project Name *</label>
                 <input
-                  type="number"
-                  placeholder="e.g. 2"
-                  value={floor}
-                  onChange={(e) => setFloor(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                  type="text"
+                  placeholder="e.g. Imperial Plaza"
+                  value={newProjName}
+                  onChange={(e) => setNewProjName(e.target.value)}
+                  className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Rooms *
-                </label>
+                <label className="block text-[11px] font-medium text-gray-700 mb-1">Subtitle / Sub-Header *</label>
                 <input
-                  type="number"
-                  placeholder="e.g. 3"
-                  value={rooms}
-                  onChange={(e) => setRooms(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                  type="text"
+                  placeholder="e.g. BOLE 24 AROUND IMPERIAL FEB,2026"
+                  value={newProjSubtitle}
+                  onChange={(e) => setNewProjSubtitle(e.target.value)}
+                  className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs transition"
+              >
+                + Create Project
+              </button>
+            </form>
+          </div>
+
+          {/* 2. Add Floor to Current Project */}
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+            <h2 className="font-bold text-gray-800 text-sm mb-3 flex items-center gap-1">
+              📐 2. Add Floor to [{selectedProject?.name}]
+            </h2>
+            <form onSubmit={handleAddFloor} className="flex gap-2">
+              <input
+                type="text"
+                placeholder="e.g. Eighteenth"
+                value={newFloorName}
+                onChange={(e) => setNewFloorName(e.target.value)}
+                className="flex-1 p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
+                required
+              />
+              <button
+                type="submit"
+                className="bg-gray-800 hover:bg-black text-white font-bold px-4 py-2 rounded-lg text-xs transition"
+              >
+                + Add Floor
+              </button>
+            </form>
+            <div className="mt-3 flex flex-wrap gap-1">
+              {selectedProject?.floors.map((fl) => (
+                <span key={fl} className="bg-amber-100 text-amber-900 text-[10px] px-2 py-0.5 rounded font-bold">
+                  {fl}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* 3. Add Type of Houses (Unit Type) */}
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+            <h2 className="font-bold text-gray-800 text-sm mb-3 flex items-center gap-1">
+              🏠 3. Add Type of House to [{selectedProject?.name}]
+            </h2>
+            <form onSubmit={handleAddUnitType} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-medium text-gray-700 mb-1">House Title *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Four bed room / Studio"
+                  value={newUnitTitle}
+                  onChange={(e) => setNewUnitTitle(e.target.value)}
+                  className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
                   required
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Price *
-              </label>
-              <input
-                type="number"
-                placeholder="e.g. 500000"
-                value={price}
-                onChange={(e) => setPrice(e.target.value ? Number(e.target.value) : '')}
-                className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Apartment Type
-              </label>
-              <select
-                value={apartmentType}
-                onChange={(e) => setApartmentType(e.target.value)}
-                className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+              <div>
+                <label className="block text-[11px] font-medium text-gray-700 mb-1">Area (m²) *</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 150"
+                  value={newUnitArea}
+                  onChange={(e) => setNewUnitArea(e.target.value ? Number(e.target.value) : '')}
+                  className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs transition"
               >
-                <option value="Residential Apartment">Standard Residential Apartment</option>
-                <option value="Duplex">Duplex</option>
-                <option value="Penthouse">Penthouse / Roof</option>
-                <option value="Apartment with Garden">Apartment with Garden (Ground)</option>
-              </select>
-            </div>
+                + Add House Type Column
+              </button>
+            </form>
+          </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                View & Facade
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Front view - Main street"
-                value={view}
-                onChange={(e) => setView(e.target.value)}
-                className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+          {/* 4. Quick Cell Status Switcher Panel */}
+          {activeCellKey && (
+            <div className="bg-amber-50 p-4 rounded-xl border border-amber-300 shadow-sm">
+              <p className="text-xs font-bold text-amber-900 mb-2">
+                Selected Cell: <span className="underline">{activeCellKey}</span>
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => handleExplicitStatusChange('available')}
+                  className="bg-[#00b050] text-white py-1.5 rounded text-[11px] font-bold shadow-sm"
+                >
+                  🟢 Available
+                </button>
+                <button
+                  onClick={() => handleExplicitStatusChange('reserved')}
+                  className="bg-[#f2b827] text-black py-1.5 rounded text-[11px] font-bold shadow-sm"
+                >
+                  🟡 Reserved
+                </button>
+                <button
+                  onClick={() => handleExplicitStatusChange('unavailable')}
+                  className="bg-[#ff0000] text-white py-1.5 rounded text-[11px] font-bold shadow-sm"
+                >
+                  🔴 Sold/Off
+                </button>
+              </div>
             </div>
+          )}
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Payment Plan
-              </label>
-              <select
-                value={paymentPlan}
-                onChange={(e) => setPaymentPlan(e.target.value)}
-                className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-              >
-                <option value="Cash">Cash Only</option>
-                <option value="3-Year Installments (10% DP)">3-Year Installments (10% DP)</option>
-                <option value="5-Year Installments (15% DP)">5-Year Installments (15% DP)</option>
-                <option value="Bank Mortgage">Bank Mortgage Supported</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Availability Status
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as ApartmentStatus)}
-                className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-              >
-                <option value="available">🟢 Available</option>
-                <option value="reserved">🟡 Reserved</option>
-                <option value="sold">🔴 Sold</option>
-              </select>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition shadow-md"
-            >
-              Save Apartment
-            </button>
-          </form>
         </div>
 
-        {/* 🏬 Display Inventory List */}
-        <div className="lg:col-span-2">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-bold mb-4 text-gray-800">
-              Registered Apartments ({apartments.length})
-            </h2>
-
-            {apartments.length === 0 ? (
-              <p className="text-gray-400 text-center py-8">
-                No apartments in inventory currently. Add your first apartment using the form.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {apartments.map((apt) => (
-                  <div
-                    key={apt.id}
-                    className="p-4 rounded-xl border border-gray-200 bg-white hover:shadow-md transition flex flex-col justify-between"
-                  >
-                    <div>
-                      {/* Header: Unit Number + Status */}
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-bold text-gray-900 text-base">
-                          Apt {apt.unitNumber}
-                        </span>
-                        <span
-                          className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${getStatusBadge(
-                            apt.status
-                          )}`}
-                        >
-                          {apt.status === 'available' && '🟢 Available'}
-                          {apt.status === 'reserved' && '🟡 Reserved'}
-                          {apt.status === 'sold' && '🔴 Sold'}
-                        </span>
-                      </div>
-
-                      {/* Display Details */}
-                      <div className="space-y-1 text-xs text-gray-600 mb-3">
-                        <p>
-                          <strong>Type & Floor:</strong> {apt.apartmentType} - Floor {apt.floor}
-                        </p>
-                        <p>
-                          <strong>Rooms:</strong> {apt.rooms} Rooms
-                        </p>
-                        <p>
-                          <strong>Price:</strong>{' '}
-                          <span className="text-blue-700 font-bold text-sm">
-                            ${apt.price.toLocaleString()}
-                          </span>
-                        </p>
-                        <p>
-                          <strong>View:</strong> {apt.view || 'Not specified'}
-                        </p>
-                        <p>
-                          <strong>Payment Plan:</strong> {apt.paymentPlan}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Quick Status Controls */}
-                    <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                      <select
-                        value={apt.status}
-                        onChange={(e) =>
-                          handleStatusChange(apt.id, e.target.value as ApartmentStatus)
-                        }
-                        className="text-xs p-1.5 border rounded bg-gray-50 focus:outline-none"
-                      >
-                        <option value="available">Set to: Available</option>
-                        <option value="reserved">Set to: Reserved</option>
-                        <option value="sold">Set to: Sold</option>
-                      </select>
-
-                      <button
-                        onClick={() => handleDelete(apt.id)}
-                        className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* RIGHT COLUMN: Interactive Stock Grid Matrix Table */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
+          
+          {/* Header Badges matching matrix layout */}
+          <div className="flex flex-col items-center justify-center mb-6">
+            <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
+              AVAILABLE STOCKS (ADMIN MATRIX)
+            </div>
+            <div className="bg-[#00474b] text-white text-xs sm:text-sm font-semibold uppercase px-6 py-1.5 rounded-md mt-2 shadow-sm">
+              {selectedProject?.subtitle}
+            </div>
+            <p className="text-[11px] text-gray-500 mt-2 font-medium">
+              💡 Tip: Click on any matrix cell to cycle its status (Green 🟢 Available ➔ Yellow 🟡 Reserved ➔ Red 🔴 Sold)
+            </p>
           </div>
+
+          {/* Matrix Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-center text-xs font-sans">
+              <thead>
+                {/* House Types Header */}
+                <tr className="bg-[#00474b] text-white">
+                  <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[90px]">
+                    Floor
+                  </th>
+                  <th
+                    colSpan={selectedProject?.unitTypes.length || 1}
+                    className="border border-gray-400 p-1.5 font-bold italic text-sm"
+                  >
+                    Type of Houses
+                  </th>
+                  <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[80px]">
+                    Remark
+                  </th>
+                </tr>
+
+                {/* Sub-headers for Room Types */}
+                <tr className="bg-[#00474b] text-white">
+                  {selectedProject?.unitTypes.map((ut) => (
+                    <th key={ut.id} className="border border-gray-400 p-2 font-semibold">
+                      {ut.title} <br />
+                      <span className="font-normal text-[11px]">[area={ut.area}]</span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              <tbody>
+                {selectedProject?.floors.map((floor) => {
+                  const remark = selectedProject.remarks?.[floor] || '';
+
+                  return (
+                    <tr key={floor}>
+                      {/* Floor Column (Yellow) */}
+                      <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
+                        {floor}
+                      </td>
+
+                      {/* Matrix Status Cells */}
+                      {selectedProject.unitTypes.map((ut) => {
+                        const key = `${floor}-${ut.id}`;
+                        const status = selectedProject.matrix[key] || 'unavailable';
+                        const isActive = activeCellKey === key;
+
+                        let bgClass = 'bg-[#ff0000]'; // Unavailable / Sold (Red)
+                        if (status === 'available') {
+                          bgClass = 'bg-[#00b050]'; // Available (Green)
+                        } else if (status === 'reserved') {
+                          bgClass = 'bg-[#f2b827]'; // Reserved (Yellow)
+                        }
+
+                        return (
+                          <td
+                            key={ut.id}
+                            onClick={() => {
+                              setActiveCellKey(key);
+                              handleCellClick(floor, ut.id);
+                            }}
+                            className={`border border-black p-3 font-bold transition-all cursor-pointer hover:opacity-80 select-none ${bgClass} ${
+                              isActive ? 'ring-4 ring-blue-600 scale-95' : ''
+                            }`}
+                            title={`Click to change status for Floor ${floor} - ${ut.title}`}
+                          >
+                            <span className="text-[10px] uppercase font-extrabold text-black drop-shadow-sm">
+                              {status === 'available' && '🟢'}
+                              {status === 'reserved' && '🟡'}
+                              {status === 'unavailable' && '🔴'}
+                            </span>
+                          </td>
+                        );
+                      })}
+
+                      {/* Remark Column */}
+                      <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">
+                        {remark}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Legend Footer */}
+          <div className="flex justify-center mt-6">
+            <div className="border-2 border-black rounded-3xl py-2 px-8 text-center text-xs font-bold text-black bg-white shadow-sm flex flex-wrap justify-center gap-4">
+              <span>NB:-</span>
+              <span className="text-red-600 font-extrabold">RED = NOT Available / Sold</span>
+              <span className="text-emerald-600 font-extrabold">GREEN = Available</span>
+              <span className="text-amber-500 font-extrabold">YELLOW = Reserved</span>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
   );
 }
 
-// 👈 Default export to resolve lazyLoad import issues
+// Export Component
 export default AdminDashboardd;
