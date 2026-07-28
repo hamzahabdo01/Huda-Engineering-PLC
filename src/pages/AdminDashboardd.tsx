@@ -1,210 +1,301 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+// ⚠️ تأكد من ضبط مسار استيراد supabase حسب مجلد مشروعك
+import { supabase } from '../integrations/supabase/client'; 
 
 // --- Types & Interfaces ---
 export type UnitStatus = 'available' | 'reserved' | 'unavailable';
 
 export interface UnitType {
   id: string;
-  title: string; // e.g., "One bed room"
-  area: number;  // e.g., 90
+  project_id: string;
+  title: string;
+  area: number;
+}
+
+export interface Floor {
+  id: string;
+  project_id: string;
+  floor_name: string;
 }
 
 export interface Project {
   id: string;
-  name: string;
-  subtitle: string; // e.g., "BOLE 24 AROUND IMPERIAL FEB,2026"
-  floors: string[];
-  unitTypes: UnitType[];
-  matrix: Record<string, UnitStatus>; // Key: "FloorName-UnitTypeId"
-  remarks?: Record<string, string>;
+  name?: string;
+  title?: string;
+  subtitle?: string;
 }
 
 export function AdminDashboardd() {
-  // 1. Initial Projects Inventory State
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: 'proj-1',
-      name: 'Bole 24 Imperial Project',
-      subtitle: 'BOLE 24 AROUND IMPERIAL FEB,2026',
-      unitTypes: [
-        { id: '1b-90', title: 'One bed room', area: 90 },
-        { id: '2b-105', title: 'Two bed room', area: 105 },
-        { id: '2b-110', title: 'Two bed room', area: 110 },
-        { id: '3b-140', title: 'Three bed room', area: 140 },
-        { id: '3b-145', title: 'Three bed room', area: 145 },
-      ],
-      floors: [
-        'Tenth',
-        'Eleventh',
-        'Twelfth',
-        'Thirteenth',
-        'Fourteenth',
-        'Fifteenth',
-      ],
-      matrix: {
-        'Tenth-1b-90': 'available',
-        'Eleventh-2b-105': 'reserved',
-        'Twelfth-3b-140': 'unavailable',
-      },
-      remarks: {
-        'Tenth': 'Main Road View',
-      },
-    },
-  ]);
+  // --- States ---
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  
+  const [floors, setFloors] = useState<Floor[]>([]);
+  const [unitTypes, setUnitTypes] = useState<UnitType[]>([]);
+  const [matrix, setMatrix] = useState<Record<string, UnitStatus>>({}); // Key: "floorName-unitTypeId"
 
-  // Selected Active Project
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
+  const [loading, setLoading] = useState<boolean>(true);
 
   // Forms Input States
-  // A. Create New Project
   const [newProjName, setNewProjName] = useState('');
   const [newProjSubtitle, setNewProjSubtitle] = useState('');
 
-  // B. Add Floor
   const [newFloorName, setNewFloorName] = useState('');
 
-  // C. Add House Type
   const [newUnitTitle, setNewUnitTitle] = useState('');
   const [newUnitArea, setNewUnitArea] = useState<number | ''>('');
 
-  // D. Selected Cell Status Controller
   const [activeCellKey, setActiveCellKey] = useState<string | null>(null);
 
-  // --- Handlers ---
+  // Selected Active Project Object
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
+
+  // 1. Fetch All Projects on Mount
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  // 2. Fetch Project Specific Data (Floors, Unit Types, Matrix)
+  useEffect(() => {
+    if (!selectedProjectId) return;
+
+    fetchProjectDetails(selectedProjectId);
+
+    // ⚡ Realtime Listener for matrix updates
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'srm_matrix_cells',
+          filter: `project_id=eq.${selectedProjectId}`,
+        },
+        () => {
+          fetchMatrixData(selectedProjectId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedProjectId]);
+
+  // --- Supabase API Calls ---
+
+  const fetchProjects = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('projects').select('*');
+    if (error) {
+      console.error('Error fetching projects:', error);
+    } else if (data && data.length > 0) {
+      setProjects(data);
+      setSelectedProjectId(data[0].id);
+    }
+    setLoading(false);
+  };
+
+  const fetchProjectDetails = async (projectId: string) => {
+    setLoading(true);
+    await Promise.all([
+      fetchFloors(projectId),
+      fetchUnitTypes(projectId),
+      fetchMatrixData(projectId),
+    ]);
+    setLoading(false);
+  };
+
+  const fetchFloors = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from('srm_floors')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    if (!error && data) {
+      setFloors(data);
+    }
+  };
+
+  const fetchUnitTypes = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from('srm_unit_types')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    if (!error && data) {
+      setUnitTypes(data);
+    }
+  };
+
+  const fetchMatrixData = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from('srm_matrix_cells')
+      .select('*')
+      .eq('project_id', projectId);
+
+    if (!error && data) {
+      const matrixMap: Record<string, UnitStatus> = {};
+      data.forEach((item) => {
+        const key = `${item.floor_name}-${item.unit_type_id}`;
+        matrixMap[key] = item.status as UnitStatus;
+      });
+      setMatrix(matrixMap);
+    }
+  };
+
+  // --- Form Handlers ---
 
   // 1. Create Project
-  const handleCreateProject = (e: React.FormEvent) => {
+  const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjName.trim()) return alert('Please enter project name');
 
-    const created: Project = {
-      id: `proj-${Date.now()}`,
-      name: newProjName,
-      subtitle: newProjSubtitle || 'PROJECT RELEASE 2026',
-      floors: ['First', 'Second', 'Third'],
-      unitTypes: [
-        { id: '1b-80', title: 'One bed room', area: 80 },
-        { id: '2b-120', title: 'Two bed room', area: 120 },
-      ],
-      matrix: {},
-      remarks: {},
-    };
+    const { data, error } = await supabase
+      .from('projects')
+      .insert([
+        {
+          name: newProjName, // استخدم title إذا كان اسم العمود في جدولك القديم كذلك
+          title: newProjName,
+          subtitle: newProjSubtitle || 'PROJECT RELEASE 2026',
+        },
+      ])
+      .select();
 
-    setProjects([...projects, created]);
-    setSelectedProjectId(created.id);
-    setNewProjName('');
-    setNewProjSubtitle('');
-    alert('✅ New Project created successfully!');
+    if (error) {
+      alert('Error creating project: ' + error.message);
+    } else if (data && data.length > 0) {
+      setProjects([...projects, data[0]]);
+      setSelectedProjectId(data[0].id);
+      setNewProjName('');
+      setNewProjSubtitle('');
+      alert('✅ New Project created successfully!');
+    }
   };
 
   // 2. Add Floor to Selected Project
-  const handleAddFloor = (e: React.FormEvent) => {
+  const handleAddFloor = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFloorName.trim() || !selectedProject) return;
+    if (!newFloorName.trim() || !selectedProjectId) return;
 
-    if (selectedProject.floors.includes(newFloorName.trim())) {
+    if (floors.some((f) => f.floor_name.toLowerCase() === newFloorName.trim().toLowerCase())) {
       alert('Floor already exists in this project!');
       return;
     }
 
-    setProjects(
-      projects.map((proj) =>
-        proj.id === selectedProjectId
-          ? { ...proj, floors: [...proj.floors, newFloorName.trim()] }
-          : proj
-      )
-    );
-    setNewFloorName('');
+    const { data, error } = await supabase
+      .from('srm_floors')
+      .insert([
+        {
+          project_id: selectedProjectId,
+          floor_name: newFloorName.trim(),
+        },
+      ])
+      .select();
+
+    if (error) {
+      alert('Error adding floor: ' + error.message);
+    } else if (data) {
+      setFloors([...floors, data[0]]);
+      setNewFloorName('');
+    }
   };
 
-  // 3. Add Type of House (Unit Type) to Selected Project
-  const handleAddUnitType = (e: React.FormEvent) => {
+  // 3. Add House Type (Unit Type)
+  const handleAddUnitType = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUnitTitle.trim() || !newUnitArea || !selectedProject) return;
+    if (!newUnitTitle.trim() || !newUnitArea || !selectedProjectId) return;
 
-    const newUnit: UnitType = {
-      id: `ut-${Date.now()}`,
-      title: newUnitTitle,
-      area: Number(newUnitArea),
-    };
+    const { data, error } = await supabase
+      .from('srm_unit_types')
+      .insert([
+        {
+          project_id: selectedProjectId,
+          title: newUnitTitle.trim(),
+          area: Number(newUnitArea),
+        },
+      ])
+      .select();
 
-    setProjects(
-      projects.map((proj) =>
-        proj.id === selectedProjectId
-          ? { ...proj, unitTypes: [...proj.unitTypes, newUnit] }
-          : proj
-      )
-    );
-    setNewUnitTitle('');
-    setNewUnitArea('');
+    if (error) {
+      alert('Error adding unit type: ' + error.message);
+    } else if (data) {
+      setUnitTypes([...unitTypes, data[0]]);
+      setNewUnitTitle('');
+      setNewUnitArea('');
+    }
   };
 
-  // 4. Toggle/Change Cell Status in Table Matrix
-  const handleCellClick = (floor: string, unitTypeId: string) => {
-    const key = `${floor}-${unitTypeId}`;
-    const currentStatus = selectedProject.matrix[key] || 'unavailable';
+  // 4. Update Status in Supabase Matrix
+  const saveStatusToSupabase = async (floorName: string, unitTypeId: string, newStatus: UnitStatus) => {
+    const key = `${floorName}-${unitTypeId}`;
 
-    // Cycle Status: available (Green) -> reserved (Yellow) -> unavailable (Red) -> available
+    // Optimistic UI update
+    setMatrix((prev) => ({ ...prev, [key]: newStatus }));
+
+    const { error } = await supabase.from('srm_matrix_cells').upsert(
+      {
+        project_id: selectedProjectId,
+        floor_name: floorName,
+        unit_type_id: unitTypeId,
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'project_id,floor_name,unit_type_id' }
+    );
+
+    if (error) {
+      console.error('Failed to update matrix status:', error);
+      alert('Could not update status on server.');
+      fetchMatrixData(selectedProjectId); // Rollback on fail
+    }
+  };
+
+  // Toggle Status via Cell Click
+  const handleCellClick = (floorName: string, unitTypeId: string) => {
+    const key = `${floorName}-${unitTypeId}`;
+    const currentStatus = matrix[key] || 'unavailable';
+
     let nextStatus: UnitStatus = 'available';
     if (currentStatus === 'available') nextStatus = 'reserved';
     else if (currentStatus === 'reserved') nextStatus = 'unavailable';
     else if (currentStatus === 'unavailable') nextStatus = 'available';
 
-    setProjects(
-      projects.map((proj) => {
-        if (proj.id === selectedProjectId) {
-          return {
-            ...proj,
-            matrix: {
-              ...proj.matrix,
-              [key]: nextStatus,
-            },
-          };
-        }
-        return proj;
-      })
-    );
+    setActiveCellKey(key);
+    saveStatusToSupabase(floorName, unitTypeId, nextStatus);
   };
 
-  // Explicitly Set Status for Active Cell
+  // Explicit Change via Panel Buttons
   const handleExplicitStatusChange = (status: UnitStatus) => {
     if (!activeCellKey) return;
-    setProjects(
-      projects.map((proj) => {
-        if (proj.id === selectedProjectId) {
-          return {
-            ...proj,
-            matrix: {
-              ...proj.matrix,
-              [activeCellKey]: status,
-            },
-          };
-        }
-        return proj;
-      })
-    );
+    const [floorName, unitTypeId] = activeCellKey.split('-');
+    if (floorName && unitTypeId) {
+      saveStatusToSupabase(floorName, unitTypeId, status);
+    }
   };
 
   // Helper Stats Calculation
-  const totalCells = selectedProject
-    ? selectedProject.floors.length * selectedProject.unitTypes.length
-    : 0;
+  const totalCells = floors.length * unitTypes.length;
 
   let availableCount = 0;
   let reservedCount = 0;
   let unavailableCount = 0;
 
-  if (selectedProject) {
-    selectedProject.floors.forEach((f) => {
-      selectedProject.unitTypes.forEach((ut) => {
-        const key = `${f}-${ut.id}`;
-        const st = selectedProject.matrix[key] || 'unavailable';
-        if (st === 'available') availableCount++;
-        else if (st === 'reserved') reservedCount++;
-        else unavailableCount++;
-      });
+  floors.forEach((f) => {
+    unitTypes.forEach((ut) => {
+      const key = `${f.floor_name}-${ut.id}`;
+      const st = matrix[key] || 'unavailable';
+      if (st === 'available') availableCount++;
+      else if (st === 'reserved') reservedCount++;
+      else unavailableCount++;
     });
+  });
+
+  if (loading && projects.length === 0) {
+    return <div className="p-10 text-center font-bold text-gray-600">⏳ Loading Matrix Data...</div>;
   }
 
   return (
@@ -228,7 +319,7 @@ export function AdminDashboardd() {
           >
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name}
+                {p.name || p.title || 'Untitled Project'}
               </option>
             ))}
           </select>
@@ -298,7 +389,7 @@ export function AdminDashboardd() {
           {/* 2. Add Floor to Current Project */}
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
             <h2 className="font-bold text-gray-800 text-sm mb-3 flex items-center gap-1">
-              📐 2. Add Floor to [{selectedProject?.name}]
+              📐 2. Add Floor to [{selectedProject?.name || selectedProject?.title}]
             </h2>
             <form onSubmit={handleAddFloor} className="flex gap-2">
               <input
@@ -317,9 +408,9 @@ export function AdminDashboardd() {
               </button>
             </form>
             <div className="mt-3 flex flex-wrap gap-1">
-              {selectedProject?.floors.map((fl) => (
-                <span key={fl} className="bg-amber-100 text-amber-900 text-[10px] px-2 py-0.5 rounded font-bold">
-                  {fl}
+              {floors.map((fl) => (
+                <span key={fl.id} className="bg-amber-100 text-amber-900 text-[10px] px-2 py-0.5 rounded font-bold">
+                  {fl.floor_name}
                 </span>
               ))}
             </div>
@@ -328,7 +419,7 @@ export function AdminDashboardd() {
           {/* 3. Add Type of Houses (Unit Type) */}
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
             <h2 className="font-bold text-gray-800 text-sm mb-3 flex items-center gap-1">
-              🏠 3. Add Type of House to [{selectedProject?.name}]
+              🏠 3. Add Type of House to [{selectedProject?.name || selectedProject?.title}]
             </h2>
             <form onSubmit={handleAddUnitType} className="space-y-3">
               <div>
@@ -402,7 +493,7 @@ export function AdminDashboardd() {
               AVAILABLE STOCKS (ADMIN MATRIX)
             </div>
             <div className="bg-[#00474b] text-white text-xs sm:text-sm font-semibold uppercase px-6 py-1.5 rounded-md mt-2 shadow-sm">
-              {selectedProject?.subtitle}
+              {selectedProject?.subtitle || 'PROJECT DETAILS'}
             </div>
             <p className="text-[11px] text-gray-500 mt-2 font-medium">
               💡 Tip: Click on any matrix cell to cycle its status (Green 🟢 Available ➔ Yellow 🟡 Reserved ➔ Red 🔴 Sold)
@@ -419,7 +510,7 @@ export function AdminDashboardd() {
                     Floor
                   </th>
                   <th
-                    colSpan={selectedProject?.unitTypes.length || 1}
+                    colSpan={unitTypes.length || 1}
                     className="border border-gray-400 p-1.5 font-bold italic text-sm"
                   >
                     Type of Houses
@@ -431,7 +522,7 @@ export function AdminDashboardd() {
 
                 {/* Sub-headers for Room Types */}
                 <tr className="bg-[#00474b] text-white">
-                  {selectedProject?.unitTypes.map((ut) => (
+                  {unitTypes.map((ut) => (
                     <th key={ut.id} className="border border-gray-400 p-2 font-semibold">
                       {ut.title} <br />
                       <span className="font-normal text-[11px]">[area={ut.area}]</span>
@@ -441,20 +532,18 @@ export function AdminDashboardd() {
               </thead>
 
               <tbody>
-                {selectedProject?.floors.map((floor) => {
-                  const remark = selectedProject.remarks?.[floor] || '';
-
+                {floors.map((f) => {
                   return (
-                    <tr key={floor}>
+                    <tr key={f.id}>
                       {/* Floor Column (Yellow) */}
                       <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
-                        {floor}
+                        {f.floor_name}
                       </td>
 
                       {/* Matrix Status Cells */}
-                      {selectedProject.unitTypes.map((ut) => {
-                        const key = `${floor}-${ut.id}`;
-                        const status = selectedProject.matrix[key] || 'unavailable';
+                      {unitTypes.map((ut) => {
+                        const key = `${f.floor_name}-${ut.id}`;
+                        const status = matrix[key] || 'unavailable';
                         const isActive = activeCellKey === key;
 
                         let bgClass = 'bg-[#ff0000]'; // Unavailable / Sold (Red)
@@ -467,14 +556,11 @@ export function AdminDashboardd() {
                         return (
                           <td
                             key={ut.id}
-                            onClick={() => {
-                              setActiveCellKey(key);
-                              handleCellClick(floor, ut.id);
-                            }}
+                            onClick={() => handleCellClick(f.floor_name, ut.id)}
                             className={`border border-black p-3 font-bold transition-all cursor-pointer hover:opacity-80 select-none ${bgClass} ${
                               isActive ? 'ring-4 ring-blue-600 scale-95' : ''
                             }`}
-                            title={`Click to change status for Floor ${floor} - ${ut.title}`}
+                            title={`Click to change status for Floor ${f.floor_name} - ${ut.title}`}
                           >
                             <span className="text-[10px] uppercase font-extrabold text-black drop-shadow-sm">
                               {status === 'available' && '🟢'}
@@ -487,7 +573,7 @@ export function AdminDashboardd() {
 
                       {/* Remark Column */}
                       <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">
-                        {remark}
+                        -
                       </td>
                     </tr>
                   );
@@ -512,5 +598,4 @@ export function AdminDashboardd() {
   );
 }
 
-// Export Component
 export default AdminDashboardd;
