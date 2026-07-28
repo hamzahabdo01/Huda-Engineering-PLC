@@ -9,23 +9,14 @@ export interface UnitType {
 
 export type UnitStatus = 'available' | 'unavailable' | 'reserved';
 
-export interface MatrixCell {
-  floor: string;
-  unitTypeId: string;
-  status: UnitStatus;
-  unitNumber?: string;
-  price?: number;
-  remark?: string;
-}
-
 export interface Project {
   id: string;
   name: string;
   subtitle: string; // e.g., "BOLE 24 AROUND IMPERIAL FEB,2026"
-  floors: string[]; // ["Third", "Fourth", ..., "Seventeenth"]
+  floors: string[];
   unitTypes: UnitType[];
   matrix: Record<string, UnitStatus>; // Key: "FloorName-UnitTypeId", Value: status
-  remarks?: Record<string, string>;   // Key: "FloorName", Value: Remark text
+  remarks?: Record<string, string>;
 }
 
 export interface Lead {
@@ -33,14 +24,16 @@ export interface Lead {
   name: string;
   phone: string;
   apartmentId: string;
+  unitKey: string; // Floor-UnitTypeId
+  projectId: string;
   marketerName: string;
   status: string;
   createdAt: string;
 }
 
 export function MarketerDashboard() {
-  // 1. Projects Data (Added by Admin in System)
-  const [projects] = useState<Project[]>([
+  // 1. Projects Data State
+  const [projects, setProjects] = useState<Project[]>([
     {
       id: 'proj-1',
       name: 'Bole 24 Imperial Project',
@@ -69,9 +62,9 @@ export function MarketerDashboard() {
         'Sixteenth',
         'Seventeenth',
       ],
-      // Matrix status map: defaults to 'unavailable' (RED) except floor Tenth 1b-90 which is 'available' (GREEN)
       matrix: {
-        'Tenth-1b-90': 'available', // The green cell matching your reference image
+        'Tenth-1b-90': 'available', // Green cell
+        'Eleventh-2b-105': 'reserved', // Example reserved cell
       },
       remarks: {},
     },
@@ -88,17 +81,18 @@ export function MarketerDashboard() {
       matrix: {
         'First-dt-1b-80': 'available',
         'Second-dt-2b-120': 'available',
-        'Fifth-dt-3b-160': 'available',
       },
-      remarks: {
-        First: 'Commercial Discount',
-      },
+      remarks: {},
     },
   ]);
 
-  // Selected Project State
+  // Active Project & Selection State
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0].id);
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
+
+  // Selected Unit State for Reservation Form
+  const [selectedUnitKey, setSelectedUnitKey] = useState<string>(''); // Key: "Floor-UnitTypeId"
+  const [selectedUnitLabel, setSelectedUnitLabel] = useState<string>('');
 
   // Lead Protection & Data State
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -107,50 +101,49 @@ export function MarketerDashboard() {
       id: '99',
       name: 'Abdullah Al-Salman',
       phone: '0501234567',
-      apartmentId: 'Tenth - 1 Bed (90m²)',
+      apartmentId: 'Tenth Floor [One bed room (90m²)]',
+      unitKey: 'Tenth-1b-90',
+      projectId: 'proj-1',
       marketerName: 'Khaled (Other Marketer)',
-      status: 'Registered',
+      status: 'Reserved',
       createdAt: '09:30 AM',
     },
   ]);
 
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
-  const [selectedUnitInfo, setSelectedUnitInfo] = useState('');
 
-  // Cell click handler
+  // Cell Click Handler (Directly selects unit for reservation)
   const handleCellClick = (floor: string, unitType: UnitType, status: UnitStatus) => {
-    const unitLabel = `${selectedProject.name} - ${floor} Floor [${unitType.title} (${unitType.area}m²)]`;
-    
+    const key = `${floor}-${unitType.id}`;
+    const label = `${floor} Floor [${unitType.title} (${unitType.area}m²)]`;
+
     if (status === 'available') {
-      setSelectedUnitInfo(unitLabel);
-      
-      const confirmSend = window.confirm(
-        `🟢 Unit Selected: ${unitLabel}\nStatus: Available\n\nWould you like to send this unit offer via WhatsApp?`
-      );
-      
-      if (confirmSend) {
-        const phone = prompt('Enter WhatsApp Phone Number (e.g., 05xxxxxxxx):');
-        if (phone) {
-          const message = `Hello! 🏢\nDetails for available stock in ${selectedProject.subtitle}:\n\n• Floor: ${floor}\n• Unit Type: ${unitType.title}\n• Area: ${unitType.area} m²\n• Status: Available 🟢\n\nPlease reply if you would like to reserve or visit the site!`;
-          window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
-        }
-      }
+      setSelectedUnitKey(key);
+      setSelectedUnitLabel(label);
+    } else if (status === 'reserved') {
+      alert(`🟡 Unit on ${floor} floor (${unitType.title}) is already RESERVED.`);
     } else {
-      alert(`🔴 This unit on ${floor} floor (${unitType.title}) is NOT available.`);
+      alert(`🔴 Unit on ${floor} floor (${unitType.title}) is NOT available.`);
     }
   };
 
-  // Add Lead Logic
-  const handleAddLead = (e: React.FormEvent) => {
+  // Reserve Unit & Save Lead Logic
+  const handleReserveAndSaveLead = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
 
-    if (!clientName || !cleanPhone) {
-      alert('Please fill in client name and phone number.');
+    if (!selectedUnitKey) {
+      alert('Please click on an available GREEN unit in the matrix first.');
       return;
     }
 
+    if (!clientName || !cleanPhone) {
+      alert('Please fill in both client name and phone number.');
+      return;
+    }
+
+    // 1. Duplication & Protection Check
     const existingLead = allSystemLeads.find((l) => l.phone === cleanPhone);
     if (existingLead) {
       alert(
@@ -159,22 +152,45 @@ export function MarketerDashboard() {
       return;
     }
 
+    // 2. Update Project Matrix Status to 'reserved' (Yellow)
+    setProjects((prevProjects) =>
+      prevProjects.map((proj) => {
+        if (proj.id === selectedProjectId) {
+          return {
+            ...proj,
+            matrix: {
+              ...proj.matrix,
+              [selectedUnitKey]: 'reserved', // Changes cell status to reserved!
+            },
+          };
+        }
+        return proj;
+      })
+    );
+
+    // 3. Register New Lead
     const newLead: Lead = {
       id: Date.now().toString(),
       name: clientName,
       phone: cleanPhone,
-      apartmentId: selectedUnitInfo || 'General Inquiry',
+      apartmentId: selectedUnitLabel,
+      unitKey: selectedUnitKey,
+      projectId: selectedProjectId,
       marketerName: 'My Account',
-      status: 'New',
+      status: 'Reserved',
       createdAt: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
     };
 
     setLeads([newLead, ...leads]);
     setAllSystemLeads([newLead, ...allSystemLeads]);
+
+    // Reset Form
     setClientName('');
     setClientPhone('');
-    setSelectedUnitInfo('');
-    alert('🟢 Lead successfully registered and protected under your name!');
+    setSelectedUnitKey('');
+    setSelectedUnitLabel('');
+
+    alert('🟡 Unit status updated to RESERVED (Yellow) and client protected under your name!');
   };
 
   return (
@@ -184,14 +200,18 @@ export function MarketerDashboard() {
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-gray-800">🏢 Marketer Portal - Real Estate Inventory</h1>
-          <p className="text-xs text-gray-500">Select a project to view stock matrix and available units</p>
+          <p className="text-xs text-gray-500">Select a project, click a green unit to reserve it for your client</p>
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">Select Project:</label>
           <select
             value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
+            onChange={(e) => {
+              setSelectedProjectId(e.target.value);
+              setSelectedUnitKey('');
+              setSelectedUnitLabel('');
+            }}
             className="p-2.5 bg-blue-50 border border-blue-300 font-semibold text-blue-900 text-sm rounded-lg outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64"
           >
             {projects.map((p) => (
@@ -205,10 +225,10 @@ export function MarketerDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* 2. AVAILABLE STOCKS GRID (Replicating Image visual design) */}
+        {/* 2. AVAILABLE STOCKS GRID */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
           
-          {/* Header Badges matching the image */}
+          {/* Header Badges matching image design */}
           <div className="flex flex-col items-center justify-center mb-6">
             <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
               AVAILABLE STOCKS
@@ -222,7 +242,7 @@ export function MarketerDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-center text-xs font-sans">
               <thead>
-                {/* House Types Main Header */}
+                {/* House Types Header */}
                 <tr className="bg-[#00474b] text-white">
                   <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[90px]">
                     Floor
@@ -238,7 +258,7 @@ export function MarketerDashboard() {
                   </th>
                 </tr>
 
-                {/* Sub-headers for Bed Rooms & Areas */}
+                {/* Sub-headers for Room Types */}
                 <tr className="bg-[#00474b] text-white">
                   {selectedProject.unitTypes.map((ut) => (
                     <th key={ut.id} className="border border-gray-400 p-2 font-semibold">
@@ -255,7 +275,7 @@ export function MarketerDashboard() {
 
                   return (
                     <tr key={floor}>
-                      {/* Floor Name Column (Yellow background like reference image) */}
+                      {/* Floor Name Column (Yellow) */}
                       <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
                         {floor}
                       </td>
@@ -264,24 +284,30 @@ export function MarketerDashboard() {
                       {selectedProject.unitTypes.map((ut) => {
                         const key = `${floor}-${ut.id}`;
                         const status = selectedProject.matrix[key] || 'unavailable';
-                        const isAvailable = status === 'available';
+                        const isSelected = selectedUnitKey === key;
+
+                        // Dynamic styling based on status
+                        let bgClass = 'bg-[#ff0000] cursor-not-allowed'; // Unavailable (Red)
+                        if (status === 'available') {
+                          bgClass = 'bg-[#00b050] hover:bg-green-600 cursor-pointer'; // Available (Green)
+                        } else if (status === 'reserved') {
+                          bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer'; // Reserved (Yellow)
+                        }
 
                         return (
                           <td
                             key={ut.id}
                             onClick={() => handleCellClick(floor, ut, status)}
-                            className={`border border-black p-3 font-bold transition-all cursor-pointer ${
-                              isAvailable
-                                ? 'bg-[#00b050] hover:bg-green-500 text-white shadow-inner' // Bright Green (Available)
-                                : 'bg-[#ff0000] hover:bg-red-700'                            // Bright Red (Unavailable)
+                            className={`border border-black p-3 font-bold transition-all ${bgClass} ${
+                              isSelected ? 'ring-4 ring-blue-600 scale-95' : ''
                             }`}
-                            title={
-                              isAvailable
-                                ? `Click to choose Floor ${floor} - ${ut.title}`
-                                : `Floor ${floor} - ${ut.title} (Not Available)`
-                            }
+                            title={`Floor ${floor} - ${ut.title} (${status.toUpperCase()})`}
                           >
-                            {/* Empty inside like reference image, or click indicator */}
+                            {isSelected && (
+                              <span className="text-[10px] bg-black text-white px-1 py-0.5 rounded">
+                                Selected
+                              </span>
+                            )}
                           </td>
                         );
                       })}
@@ -297,38 +323,37 @@ export function MarketerDashboard() {
             </table>
           </div>
 
-          {/* Footer Legend Box (NB: RED = NOT Available, GREEN = Available) */}
+          {/* Footer Legend Box (Includes RED, GREEN, and YELLOW) */}
           <div className="flex justify-center mt-6">
-            <div className="border-2 border-black rounded-3xl py-2 px-8 text-center text-xs font-bold text-black bg-white shadow-sm">
-              NB:- &nbsp;&nbsp;&nbsp;
-              <span className="text-red-600 font-extrabold">RED</span> = NOT Available Stocks
-              <br />
-              <span className="text-emerald-600 font-extrabold">GREEN</span> = Available Stocks
+            <div className="border-2 border-black rounded-3xl py-2 px-8 text-center text-xs font-bold text-black bg-white shadow-sm flex flex-wrap justify-center gap-4">
+              <span>NB:-</span>
+              <span className="text-red-600 font-extrabold">RED = NOT Available</span>
+              <span className="text-emerald-600 font-extrabold">GREEN = Available</span>
+              <span className="text-amber-500 font-extrabold">YELLOW = Reserved</span>
             </div>
           </div>
         </div>
 
-        {/* 3. Lead Registration & WhatsApp Panel */}
+        {/* 3. Direct Unit Reservation & Lead Form */}
         <div className="lg:col-span-1 space-y-6">
-          
-          {/* Quick Lead Form */}
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <h2 className="font-bold text-gray-800 mb-2 text-md">⚡ Lead Protection Entry</h2>
+            <h2 className="font-bold text-gray-800 mb-2 text-md">📌 Reserve Unit & Claim Lead</h2>
             <p className="text-xs text-gray-500 mb-4">
-              Click any green cell in the matrix to auto-fill unit details, then submit to reserve lead ownership.
+              Click any green cell in the matrix to select it. Upon saving, the cell color will change to <span className="font-bold text-amber-600">YELLOW (Reserved)</span>.
             </p>
 
-            <form onSubmit={handleAddLead} className="space-y-3">
+            <form onSubmit={handleReserveAndSaveLead} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Selected Unit / Interest
+                  Selected Unit *
                 </label>
                 <input
                   type="text"
                   readOnly
-                  placeholder="Click green cell in table..."
-                  value={selectedUnitInfo}
-                  className="w-full p-2.5 border rounded-lg text-xs bg-gray-50 text-blue-900 font-semibold border-gray-300 focus:outline-none"
+                  placeholder="← Click a GREEN cell in table"
+                  value={selectedUnitLabel}
+                  className="w-full p-2.5 border rounded-lg text-xs bg-amber-50 text-amber-900 font-bold border-amber-300 focus:outline-none"
+                  required
                 />
               </div>
 
@@ -338,7 +363,7 @@ export function MarketerDashboard() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Abebe Bikila"
+                  placeholder="e.g. John Doe"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
                   className="w-full p-2.5 border rounded-lg text-xs border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -352,7 +377,7 @@ export function MarketerDashboard() {
                 </label>
                 <input
                   type="tel"
-                  placeholder="09xxxxxxxx / 05xxxxxxxx"
+                  placeholder="05xxxxxxxx / 09xxxxxxxx"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
                   className="w-full p-2.5 border rounded-lg text-xs border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -362,34 +387,34 @@ export function MarketerDashboard() {
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm"
+                className="w-full bg-amber-500 hover:bg-amber-600 text-black font-extrabold py-2.5 rounded-lg text-xs transition shadow-sm"
               >
-                Claim & Protect Lead
+                🔒 Save & Mark as Reserved (Yellow)
               </button>
             </form>
           </div>
 
-          {/* Registered Leads */}
+          {/* List of Marketer's Reserved Leads */}
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
             <h2 className="font-bold text-gray-800 mb-3 text-md">
-              Your Protected Leads ({leads.length})
+              Your Reserved Units ({leads.length})
             </h2>
             {leads.length === 0 ? (
-              <p className="text-gray-400 text-xs">No leads registered for this session yet.</p>
+              <p className="text-gray-400 text-xs">No reserved units yet.</p>
             ) : (
               <div className="space-y-3">
                 {leads.map((lead) => (
                   <div
                     key={lead.id}
-                    className="p-3 border rounded-lg bg-gray-50 flex justify-between items-center text-xs"
+                    className="p-3 border rounded-lg bg-amber-50/50 border-amber-200 flex justify-between items-center text-xs"
                   >
                     <div>
                       <p className="font-bold text-gray-800">{lead.name}</p>
                       <p className="text-gray-500">{lead.phone}</p>
-                      <p className="text-[11px] text-blue-700 mt-0.5">{lead.apartmentId}</p>
+                      <p className="text-[11px] text-amber-800 font-medium mt-0.5">{lead.apartmentId}</p>
                     </div>
-                    <span className="text-[10px] bg-green-100 text-green-800 font-semibold px-2 py-1 rounded-full">
-                      Protected
+                    <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-2 py-1 rounded-full">
+                      RESERVED
                     </span>
                   </div>
                 ))}
