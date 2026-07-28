@@ -44,7 +44,21 @@ export function MarketerDashboard() {
   const [searchRooms, setSearchRooms] = useState<string>('all');
 
   // 3. حالة إدخال عميل جديد
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]); // عملاء المسوق الحالي
+  
+  // 🔍 قاعدة بيانات النظام ككل (تحتوي على عملاء جميع المسوقين لفحص التكرار)
+  const [allSystemLeads, setAllSystemLeads] = useState<Lead[]>([
+    {
+      id: '99',
+      name: 'عبدالله السلمان',
+      phone: '0501234567', // رقم تجريبي مسجل مسبقاً لاختبار التنبيه
+      apartmentId: '101',
+      marketerName: 'خالد (مسوّق آخر)',
+      status: 'جديد',
+      createdAt: '09:30 AM',
+    }
+  ]);
+
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('');
@@ -58,15 +72,32 @@ export function MarketerDashboard() {
     return matchesStatus && matchesRooms;
   });
 
-  // إضافة عميل جديد وتسجيل ملكيته
+  // 🛡️ إضافة عميل جديد مع فحص الملكية ومنع التكرار
   const handleAddLead = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientName || !clientPhone) return;
 
+    const cleanPhone = clientPhone.trim();
+
+    if (!clientName || !cleanPhone) {
+      alert('يرجى إدخال اسم العميل ورقم الجوال');
+      return;
+    }
+
+    // 🔍 1. الفحص الشامل: هل الرقم مسجل مسبقاً في النظام باسم أي مسوّق؟
+    const existingLead = allSystemLeads.find((lead) => lead.phone === cleanPhone);
+
+    if (existingLead) {
+      alert(
+        `⚠️ تنبيه حماية الملكية:\nالعميل صاحب الرقم (${cleanPhone}) مسجل مسبقاً بالنظام باسم المسوّق: [ ${existingLead.marketerName} ]!\n\nلا يمكنك تسجيل هذا العميل باسمك.`
+      );
+      return;
+    }
+
+    // ✅ 2. إذا كان الرقم جديداً، يُسجّل باسم المسوّق الحالي فوراً
     const newLead: Lead = {
       id: Date.now().toString(),
       name: clientName,
-      phone: clientPhone,
+      phone: cleanPhone,
       apartmentId: selectedUnit,
       marketerName: 'حسابي المسوّق',
       status: 'جديد',
@@ -77,13 +108,17 @@ export function MarketerDashboard() {
     };
 
     setLeads([newLead, ...leads]);
+    setAllSystemLeads([newLead, ...allSystemLeads]); // حجز الرقم في النظام فوراً لمنع المسوقين الآخرين من إدخاله
+
+    // إعادة ضبط الحقول
     setClientName('');
     setClientPhone('');
     setSelectedUnit('');
-    alert('تم تسجيل العميل وحمايته باسمك في النظام!');
+
+    alert('🟢 تم تسجيل العميل وحمايته باسمك بنجاح في النظام!');
   };
 
-  // 💬 توليد وأرسال عرض سعر شامل للتفاصيل عبر الواتساب
+  // 💬 توليد وإرسال عرض سعر شامل للتفاصيل عبر الواتساب
   const sendWhatsAppOffer = (phone: string, apt: Apartment) => {
     const statusText =
       apt.status === 'available'
@@ -245,7 +280,7 @@ export function MarketerDashboard() {
           </div>
         </div>
 
-        {/* ⚡ 3. نموذج الإدخال السريع للعميل الذي اتصل هاتفياً */}
+        {/* ⚡ 3. نموذج الإدخال السريع للعميل الذي اتصل هاتفياً (مع حماية الملكية) */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
             <h2 className="font-bold text-gray-800 mb-3 text-md">⚡ إدخال سريع لمتصل جديد</h2>
@@ -302,9 +337,9 @@ export function MarketerDashboard() {
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-sm"
               >
-                حفظ وتأكيد ملكية العميل
+                فحص وحفظ ملكية العميل
               </button>
             </form>
           </div>
