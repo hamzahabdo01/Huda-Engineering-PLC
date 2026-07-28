@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Apartment, Lead, ApartmentStatus } from './types';
 
 export function MarketerDashboard() {
-  // 1. مخزون الشقق (يمثل الشقق المعروضة من الإدارة بتفاصيلها الكاملة)
+  // 1. Apartment Inventory (Represents available properties provided by management)
   const [apartments] = useState<Apartment[]>([
     {
       id: '1',
@@ -10,9 +10,9 @@ export function MarketerDashboard() {
       floor: 1,
       rooms: 3,
       price: 450000,
-      apartmentType: 'شقة سكنية',
-      view: 'واجهة أمامية - شارع رئيسي',
-      paymentPlan: 'تقسيط على 3 سنوات (15% مقدم)',
+      apartmentType: 'Residential Apartment',
+      view: 'Front View - Main Street',
+      paymentPlan: '3-Year Installments (15% down payment)',
       status: 'available',
     },
     {
@@ -21,9 +21,9 @@ export function MarketerDashboard() {
       floor: 1,
       rooms: 4,
       price: 580000,
-      apartmentType: 'دوبلكس',
-      view: 'إطلالة على حديقة',
-      paymentPlan: 'كاش فقط',
+      apartmentType: 'Duplex',
+      view: 'Garden View',
+      paymentPlan: 'Cash Only',
       status: 'reserved',
     },
     {
@@ -32,29 +32,29 @@ export function MarketerDashboard() {
       floor: 2,
       rooms: 5,
       price: 720000,
-      apartmentType: 'بنتهاوس / روف',
-      view: 'إطلالة بانورامية علوية',
-      paymentPlan: 'تقسيط على 5 سنوات (15% مقدم)',
+      apartmentType: 'Penthouse / Roof',
+      view: 'Panoramic City View',
+      paymentPlan: '5-Year Installments (15% down payment)',
       status: 'available',
     },
   ]);
 
-  // 2. حالة الفلترة والبحث لشاشة المسوق
+  // 2. Search & Filter States
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchRooms, setSearchRooms] = useState<string>('all');
 
-  // 3. حالة إدخال عميل جديد
-  const [leads, setLeads] = useState<Lead[]>([]); // عملاء المسوق الحالي
+  // 3. New Lead Input States
+  const [leads, setLeads] = useState<Lead[]>([]); // Current marketer's leads
   
-  // 🔍 قاعدة بيانات النظام ككل (تحتوي على عملاء جميع المسوقين لفحص التكرار)
+  // 🔍 System-wide database (contains leads from all marketers for duplication check)
   const [allSystemLeads, setAllSystemLeads] = useState<Lead[]>([
     {
       id: '99',
-      name: 'عبدالله السلمان',
-      phone: '0501234567', // رقم تجريبي مسجل مسبقاً لاختبار التنبيه
+      name: 'Abdullah Al-Salman',
+      phone: '0501234567', // Sample pre-registered phone to test protection alert
       apartmentId: '101',
-      marketerName: 'خالد (مسوّق آخر)',
-      status: 'جديد',
+      marketerName: 'Khaled (Other Marketer)',
+      status: 'New',
       createdAt: '09:30 AM',
     }
   ]);
@@ -63,7 +63,7 @@ export function MarketerDashboard() {
   const [clientPhone, setClientPhone] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('');
 
-  // أتمتة الفلترة للشقق المتاحة والمطلوبة
+  // Filter apartments automatically
   const filteredApartments = apartments.filter((apt) => {
     const matchesStatus =
       filterStatus === 'all' || apt.status === filterStatus;
@@ -72,74 +72,74 @@ export function MarketerDashboard() {
     return matchesStatus && matchesRooms;
   });
 
-  // 🛡️ إضافة عميل جديد مع فحص الملكية ومنع التكرار
+  // 🛡️ Add new lead with Lead Protection & Duplication Check
   const handleAddLead = (e: React.FormEvent) => {
     e.preventDefault();
 
     const cleanPhone = clientPhone.trim();
 
     if (!clientName || !cleanPhone) {
-      alert('يرجى إدخال اسم العميل ورقم الجوال');
+      alert('Please enter both client name and phone number.');
       return;
     }
 
-    // 🔍 1. الفحص الشامل: هل الرقم مسجل مسبقاً في النظام باسم أي مسوّق؟
+    // 🔍 1. System Check: Is this phone number registered under any marketer?
     const existingLead = allSystemLeads.find((lead) => lead.phone === cleanPhone);
 
     if (existingLead) {
       alert(
-        `⚠️ تنبيه حماية الملكية:\nالعميل صاحب الرقم (${cleanPhone}) مسجل مسبقاً بالنظام باسم المسوّق: [ ${existingLead.marketerName} ]!\n\nلا يمكنك تسجيل هذا العميل باسمك.`
+        `⚠️ Lead Protection Alert:\nClient with phone number (${cleanPhone}) is already registered in the system under marketer: [ ${existingLead.marketerName} ]!\n\nYou cannot register this client under your account.`
       );
       return;
     }
 
-    // ✅ 2. إذا كان الرقم جديداً، يُسجّل باسم المسوّق الحالي فوراً
+    // ✅ 2. If phone is new, register under current marketer
     const newLead: Lead = {
       id: Date.now().toString(),
       name: clientName,
       phone: cleanPhone,
       apartmentId: selectedUnit,
-      marketerName: 'حسابي المسوّق',
-      status: 'جديد',
-      createdAt: new Date().toLocaleTimeString('ar-SA', {
+      marketerName: 'My Account',
+      status: 'New',
+      createdAt: new Date().toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
       }),
     };
 
     setLeads([newLead, ...leads]);
-    setAllSystemLeads([newLead, ...allSystemLeads]); // حجز الرقم في النظام فوراً لمنع المسوقين الآخرين من إدخاله
+    setAllSystemLeads([newLead, ...allSystemLeads]); // Reserve in system database immediately
 
-    // إعادة ضبط الحقول
+    // Reset Form Fields
     setClientName('');
     setClientPhone('');
     setSelectedUnit('');
 
-    alert('🟢 تم تسجيل العميل وحمايته باسمك بنجاح في النظام!');
+    alert('🟢 Lead successfully registered and protected under your name!');
   };
 
-  // 💬 توليد وإرسال عرض سعر شامل للتفاصيل عبر الواتساب
+  // 💬 Generate and send WhatsApp offer
   const sendWhatsAppOffer = (phone: string, apt: Apartment) => {
     const statusText =
       apt.status === 'available'
-        ? '🟢 متاحة للبيع'
+        ? '🟢 Available'
         : apt.status === 'reserved'
-        ? '🟡 محجوزة مؤقتاً'
-        : '🔴 مباعة';
+        ? '🟡 Reserved'
+        : '🔴 Sold';
 
-    const message = `أهلاً بك! 🏢
-تفاصيل الشقة التي استفسرت عنها:
+    const message = `Hello! 🏢
+Here are the details for the apartment you inquired about:
 
-• رقم الشقة: ${apt.unitNumber}
-• نوع الشقة: ${apt.apartmentType}
-• الدور: ${apt.floor}
-• عدد الغرف: ${apt.rooms} غرف
-• الإطلالة والواجهة: ${apt.view || 'غير محددة'}
-• السعر المطلوب: ${apt.price.toLocaleString()} ريال
-• خطة الدفع: ${apt.paymentPlan}
-• حالة التوفر: ${statusText}
+• Unit Number: ${apt.unitNumber}
+• Apartment Type: ${apt.apartmentType}
+• Floor: ${apt.floor}
+• Rooms: ${apt.rooms}
+• View: ${apt.view || 'Not specified'}
+• Asking Price: $${apt.price.toLocaleString()}
+• Payment Plan: ${apt.paymentPlan}
+• Status: ${statusText}
 
-للمزيد من الصور والمعاينة الميدانية يسعدني تواصلك معي مباشرة!`;
+For more photos or to schedule an on-site visit, feel free to contact me directly!`;
 
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
@@ -156,44 +156,44 @@ export function MarketerDashboard() {
   };
 
   return (
-    <div className="p-4 bg-gray-100 min-h-screen text-right" dir="rtl">
-      {/* 🔗 1. رابط البايو الخاص بالمسوق */}
+    <div className="p-4 bg-gray-100 min-h-screen text-left" dir="ltr">
+      {/* 🔗 1. Personal Marketing Link (Bio Link) */}
       <div className="bg-blue-900 text-white p-4 rounded-xl shadow mb-6">
-        <h2 className="font-bold text-lg mb-1">رابط التسويق الشخصي (Bio Link)</h2>
+        <h2 className="font-bold text-lg mb-1">Personal Marketing Link (Bio Link)</h2>
         <p className="text-xs text-blue-200 mb-2">
-          ضع هذا الرابط في بايو حساباتك (تيك توك / انستغرام) لتسجيل العملاء القادمين من فيديوهاتك تلقائياً باسمك:
+          Place this link in your social media bio (TikTok / Instagram) to attribute leads from your videos automatically to your account:
         </p>
-        <div className="bg-blue-800 p-2.5 rounded-lg text-sm font-mono flex justify-between items-center dir-ltr">
+        <div className="bg-blue-800 p-2.5 rounded-lg text-sm font-mono flex justify-between items-center">
+          <span className="text-blue-100 text-xs">https://yoursite.com/m/ahmed</span>
           <button
-            onClick={() => alert('تم نسخ الرابط!')}
+            onClick={() => alert('Link copied to clipboard!')}
             className="bg-blue-600 text-xs text-white px-3 py-1.5 rounded-md hover:bg-blue-500 transition"
           >
-            نسخ
+            Copy
           </button>
-          <span className="text-blue-100 text-xs">https://yoursite.com/m/ahmed</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 🏢 2. عرض الشقق والمخزون والتفاصيل المتاحة للمسوق */}
+        {/* 🏢 2. Inventory Display */}
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
               <h2 className="font-bold text-gray-800 text-lg">
-                🏬 شقق المخزون المتاحة للبيع ({filteredApartments.length})
+                🏬 Available Inventory Apartments ({filteredApartments.length})
               </h2>
 
-              {/* أدوات البحث والفلترة السريعة للمسوق */}
+              {/* Quick Filters */}
               <div className="flex gap-2">
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="text-xs p-2 border rounded-lg bg-gray-50 focus:outline-none"
                 >
-                  <option value="all">كل الحالات</option>
-                  <option value="available">🟢 المتاحة فقط</option>
-                  <option value="reserved">🟡 المحجوزة</option>
-                  <option value="sold">🔴 المباعة</option>
+                  <option value="all">All Statuses</option>
+                  <option value="available">🟢 Available Only</option>
+                  <option value="reserved">🟡 Reserved</option>
+                  <option value="sold">🔴 Sold</option>
                 </select>
 
                 <select
@@ -201,15 +201,15 @@ export function MarketerDashboard() {
                   onChange={(e) => setSearchRooms(e.target.value)}
                   className="text-xs p-2 border rounded-lg bg-gray-50 focus:outline-none"
                 >
-                  <option value="all">كل عدد الغرف</option>
-                  <option value="3">3 غرف</option>
-                  <option value="4">4 غرف</option>
-                  <option value="5">5 غرف</option>
+                  <option value="all">All Room Counts</option>
+                  <option value="3">3 Rooms</option>
+                  <option value="4">4 Rooms</option>
+                  <option value="5">5 Rooms</option>
                 </select>
               </div>
             </div>
 
-            {/* بطاقات عرض تفاصيل الشقق */}
+            {/* Apartment Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredApartments.map((apt) => (
                 <div
@@ -217,62 +217,62 @@ export function MarketerDashboard() {
                   className="p-4 rounded-xl border border-gray-200 bg-white hover:border-blue-400 transition flex flex-col justify-between"
                 >
                   <div>
-                    {/* العنوان والحالة */}
+                    {/* Header & Status */}
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-bold text-gray-900 text-base">
-                        شقة {apt.unitNumber}
+                        Unit {apt.unitNumber}
                       </span>
                       <span
                         className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${getStatusBadge(
                           apt.status
                         )}`}
                       >
-                        {apt.status === 'available' && '🟢 متاحة'}
-                        {apt.status === 'reserved' && '🟡 محجوزة'}
-                        {apt.status === 'sold' && '🔴 مباعة'}
+                        {apt.status === 'available' && '🟢 Available'}
+                        {apt.status === 'reserved' && '🟡 Reserved'}
+                        {apt.status === 'sold' && '🔴 Sold'}
                       </span>
                     </div>
 
-                    {/* التفاصيل المضافة حديثاً */}
+                    {/* Apartment Details */}
                     <div className="space-y-1.5 text-xs text-gray-600 mb-4">
                       <div className="flex justify-between border-b border-gray-100 pb-1">
-                        <span>نوع الشقة والدور:</span>
+                        <span>Type & Floor:</span>
                         <span className="font-semibold text-gray-800">
-                          {apt.apartmentType} (الدور {apt.floor})
+                          {apt.apartmentType} (Floor {apt.floor})
                         </span>
                       </div>
                       <div className="flex justify-between border-b border-gray-100 pb-1">
-                        <span>عدد الغرف:</span>
-                        <span className="font-semibold text-gray-800">{apt.rooms} غرف</span>
+                        <span>Rooms:</span>
+                        <span className="font-semibold text-gray-800">{apt.rooms} Rooms</span>
                       </div>
                       <div className="flex justify-between border-b border-gray-100 pb-1">
-                        <span>الإطلالة:</span>
+                        <span>View:</span>
                         <span className="font-semibold text-gray-800">
-                          {apt.view || 'غير محددة'}
+                          {apt.view || 'Not specified'}
                         </span>
                       </div>
                       <div className="flex justify-between border-b border-gray-100 pb-1">
-                        <span>خطة الدفع:</span>
+                        <span>Payment Plan:</span>
                         <span className="font-semibold text-gray-800">{apt.paymentPlan}</span>
                       </div>
                       <div className="flex justify-between pt-1">
-                        <span>السعر:</span>
+                        <span>Price:</span>
                         <span className="font-bold text-blue-700 text-sm">
-                          {apt.price.toLocaleString()} ريال
+                          ${apt.price.toLocaleString()}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* إرسال عرض سريع ببيانات هذه الشقة للعميل */}
+                  {/* WhatsApp Offer Button */}
                   <button
                     onClick={() => {
-                      const phone = prompt('أدخل رقم جوال العميل للواتساب (مثال: 05xxxx):');
+                      const phone = prompt('Enter client phone number for WhatsApp (e.g., 05xxxx):');
                       if (phone) sendWhatsAppOffer(phone, apt);
                     }}
                     className="w-full bg-green-600 hover:bg-green-700 text-white text-xs py-2 rounded-lg font-bold flex items-center justify-center gap-1 shadow-sm transition"
                   >
-                    💬 إرسال تفاصيل الشقة عبر الواتساب
+                    💬 Send Details via WhatsApp
                   </button>
                 </div>
               ))}
@@ -280,22 +280,22 @@ export function MarketerDashboard() {
           </div>
         </div>
 
-        {/* ⚡ 3. نموذج الإدخال السريع للعميل الذي اتصل هاتفياً (مع حماية الملكية) */}
+        {/* ⚡ 3. Quick Lead Entry Form (With Lead Protection) */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <h2 className="font-bold text-gray-800 mb-3 text-md">⚡ إدخال سريع لمتصل جديد</h2>
+            <h2 className="font-bold text-gray-800 mb-3 text-md">⚡ Quick Entry for New Caller</h2>
             <p className="text-xs text-gray-500 mb-4">
-              سجل بيانات المتصل فوراً بعد المكالمة لحماية ملكيتك للعميل في النظام.
+              Register caller details right after the call to claim and protect your lead ownership in the system.
             </p>
 
             <form onSubmit={handleAddLead} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  اسم العميل *
+                  Client Name *
                 </label>
                 <input
                   type="text"
-                  placeholder="مثال: عبد الله محمد"
+                  placeholder="e.g., John Doe"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
                   className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -305,31 +305,31 @@ export function MarketerDashboard() {
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  رقم الجوال *
+                  Phone Number *
                 </label>
                 <input
                   type="tel"
                   placeholder="05xxxxxxxx"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
-                  className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none dir-ltr text-left"
+                  className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  الشقة المهتم بها (اختر من الشقق المتاحة)
+                  Interested Unit (Select Available)
                 </label>
                 <select
                   value={selectedUnit}
                   onChange={(e) => setSelectedUnit(e.target.value)}
                   className="w-full p-2.5 border rounded-lg text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                 >
-                  <option value="">-- اختر رقم الشقة --</option>
+                  <option value="">-- Select Unit Number --</option>
                   {apartments.map((apt) => (
                     <option key={apt.id} value={apt.unitNumber}>
-                      شقة {apt.unitNumber} - {apt.apartmentType} ({apt.price.toLocaleString()} ريال)
+                      Unit {apt.unitNumber} - {apt.apartmentType} (${apt.price.toLocaleString()})
                     </option>
                   ))}
                 </select>
@@ -339,18 +339,18 @@ export function MarketerDashboard() {
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-sm"
               >
-                فحص وحفظ ملكية العميل
+                Check & Claim Lead Ownership
               </button>
             </form>
           </div>
 
-          {/* قائمة العملاء المسجلين مؤخراً للمسوق */}
+          {/* List of Registered Leads */}
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
             <h2 className="font-bold text-gray-800 mb-3 text-md">
-              عملاؤك المسجلون ({leads.length})
+              Your Registered Leads ({leads.length})
             </h2>
             {leads.length === 0 ? (
-              <p className="text-gray-400 text-xs">لم تسجل عملاء اليوم حتى الآن.</p>
+              <p className="text-gray-400 text-xs">No leads registered today yet.</p>
             ) : (
               <div className="space-y-3">
                 {leads.map((lead) => (
@@ -361,7 +361,7 @@ export function MarketerDashboard() {
                     <div>
                       <p className="font-bold text-sm text-gray-800">{lead.name}</p>
                       <p className="text-xs text-gray-500">
-                        {lead.phone} | الشقة: {lead.apartmentId || 'غير محددة'}
+                        {lead.phone} | Unit: {lead.apartmentId || 'Not specified'}
                       </p>
                       <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full mt-1 inline-block">
                         {lead.status} ({lead.createdAt})
@@ -378,5 +378,4 @@ export function MarketerDashboard() {
   );
 }
 
-// 👈 تصدير افتراضي للتوافق مع lazyLoad
 export default MarketerDashboard;
