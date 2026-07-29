@@ -14,7 +14,7 @@ export function SignUp() {
     setLoading(true);
     setMessage('');
 
-    // 1️⃣ إنشاء حساب في Supabase Auth
+    // 1️⃣ Create user account in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -24,12 +24,12 @@ export function SignUp() {
     });
 
     if (authError) {
-      setMessage(`❌ خطأ: ${authError.message}`);
+      setMessage(`❌ Error: ${authError.message}`);
       setLoading(false);
       return;
     }
 
-    // 2️⃣ حفظ المسوق في جدول marketers لتظهر للأدمن بحالة 'pending'
+    // 2️⃣ Save marketer details to 'marketers' table with 'pending' status for admin review
     if (authData.user) {
       const { error: dbError } = await supabase.from('marketers').insert([
         {
@@ -37,15 +37,15 @@ export function SignUp() {
           name: name,
           email: email,
           phone: phone,
-          status: 'pending', // حالة الانتظار حتى يوافق الأدمن
+          status: 'pending', // Awaiting admin approval
         },
       ]);
 
       if (dbError) {
         console.error('Error inserting marketer:', dbError);
-        setMessage(`⚠️ تم إنشاء الحساب لكن فشل إرساله للأدمن: ${dbError.message}`);
+        setMessage(`⚠️ Account created, but failed to notify admin: ${dbError.message}`);
       } else {
-        setMessage('✅ تم تقديم الطلب بنجاح! حسابك الآن بانتظار موافقة الأدمن.');
+        setMessage('✅ Request submitted successfully! Your account is currently awaiting admin approval.');
         setName('');
         setEmail('');
         setPassword('');
@@ -57,8 +57,8 @@ export function SignUp() {
   };
 
   return (
-    <div className="max-w-md mx-auto my-10 p-6 bg-white rounded-xl shadow-md border" dir="rtl">
-      <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">إنشاء حساب مسوق جديد</h2>
+    <div className="max-w-md mx-auto my-10 p-6 bg-white rounded-xl shadow-md border" dir="ltr">
+      <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">Create Marketer Account</h2>
       
       {message && (
         <div className="mb-4 p-3 rounded text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
@@ -66,21 +66,21 @@ export function SignUp() {
         </div>
       )}
 
-      <form onSubmit={handleSignUp} className="space-y-4 text-right">
+      <form onSubmit={handleSignUp} className="space-y-4 text-left">
         <div>
-          <label className="block text-xs font-bold mb-1">الاسم الكامل *</label>
+          <label className="block text-xs font-bold mb-1">Full Name *</label>
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full p-2 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
-            placeholder="أدخل اسمك"
+            placeholder="John Doe"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold mb-1">البريد الإلكتروني *</label>
+          <label className="block text-xs font-bold mb-1">Email Address *</label>
           <input
             type="email"
             required
@@ -92,19 +92,19 @@ export function SignUp() {
         </div>
 
         <div>
-          <label className="block text-xs font-bold mb-1">رقم الهاتف *</label>
+          <label className="block text-xs font-bold mb-1">Phone Number *</label>
           <input
             type="tel"
             required
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="w-full p-2 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
-            placeholder="0912345678"
+            placeholder="+1234567890"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold mb-1">كلمة المرور *</label>
+          <label className="block text-xs font-bold mb-1">Password *</label>
           <input
             type="password"
             required
@@ -118,9 +118,9 @@ export function SignUp() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded transition"
+          className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded transition disabled:opacity-50"
         >
-          {loading ? 'جاري التسجيل...' : 'إرسال طلب التسجيل'}
+          {loading ? 'Submitting...' : 'Submit Registration Request'}
         </button>
       </form>
     </div>
