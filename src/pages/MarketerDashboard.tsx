@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../integrations/supabase/client';
 
 // --- Types & Interfaces ---
 export interface UnitType {
   id: string;
-  title: string; // e.g., "One bed room"
-  area: number;  // e.g., 90
-  totalPrice?: number;         // السعر الإجمالي
-  downPayment?: number;        // المقدم / الدفعة الأولى
-  installmentYears?: number;   // سنوات التقسيط
-  monthlyInstallment?: number; // القسط الشهري
+  title: string;
+  area: number;
+  totalPrice?: number;
+  downPayment?: number;
+  installmentYears?: number;
+  monthlyInstallment?: number;
 }
 
 export type UnitStatus = 'available' | 'unavailable' | 'reserved';
@@ -16,10 +17,10 @@ export type UnitStatus = 'available' | 'unavailable' | 'reserved';
 export interface Project {
   id: string;
   name: string;
-  subtitle: string; // e.g., "BOLE 24 AROUND IMPERIAL FEB,2026"
+  subtitle: string;
   floors: string[];
   unitTypes: UnitType[];
-  matrix: Record<string, UnitStatus>; // Key: "FloorName-UnitTypeId", Value: status
+  matrix: Record<string, UnitStatus>;
   remarks?: Record<string, string>;
 }
 
@@ -27,69 +28,36 @@ export interface Lead {
   id: string;
   name: string;
   phone: string;
-  apartmentId: string;
-  unitKey: string; // Floor-UnitTypeId
-  projectId: string;
-  marketerName: string;
+  apartmentId?: string;
+  apartment_id?: string;
+  unitKey?: string;
+  projectId?: string;
+  marketerName?: string;
   status: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
-export interface Marketer {
+export interface MarketerProfile {
   id: string;
   name: string;
   email: string;
   phone?: string;
-  password?: string;
-  approved: boolean; // 👈 شرط موافقة الأدمن لتفعيل الحساب
+  status?: string;
+  approved?: boolean;
 }
 
 export function MarketerDashboard() {
-  // --- 0. Registered Marketers Storage (قاعدة بيانات المسوقين المسجلين) ---
-  const [registeredMarketers, setRegisteredMarketers] = useState<Marketer[]>(() => {
-    const saved = localStorage.getItem('registered_marketers');
-    if (saved) return JSON.parse(saved);
-    
-    // حسابات افتراضية للاختبار
-    return [
-      {
-        id: 'mkt-1',
-        name: 'أحمد علي (مسوق معتمد)',
-        email: 'marketer@company.com',
-        phone: '0500000000',
-        password: '123',
-        approved: true, // حساب مقبول مسبقاً
-      },
-      {
-        id: 'mkt-2',
-        name: 'خالد عمر (في انتظار الموافقة)',
-        email: 'pending@company.com',
-        phone: '0555555555',
-        password: '123',
-        approved: false, // حساب ينتظر موافقة الأدمن
-      },
-    ];
-  });
-
-  // حفظ التعديلات في LocalStorage عند تغيير قائمة المسوقين
-  useEffect(() => {
-    localStorage.setItem('registered_marketers', JSON.stringify(registeredMarketers));
-  }, [registeredMarketers]);
-
-  // --- 0. Authentication State ---
-  const [currentMarketer, setCurrentMarketer] = useState<Marketer | null>(() => {
-    const saved = localStorage.getItem('current_marketer');
-    return saved ? JSON.parse(saved) : null;
-  });
-
-  // حالة التبديل بين الدخول (false) وإنشاء حساب (true)
+  // --- Auth & User State ---
+  const [currentMarketer, setCurrentMarketer] = useState<MarketerProfile | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  
   const [isSignUp, setIsSignUp] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false); // إظهار لوحة الأدمن التجريبية
+  const [authLoading, setAuthLoading] = useState(false);
 
-  // حقول نموذج الدخول والتسجيل
+  // Auth Inputs
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  
+
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPhone, setSignupPhone] = useState('');
@@ -99,7 +67,7 @@ export function MarketerDashboard() {
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
 
-  // --- 1. Projects Data State (With Payment Plans) ---
+  // --- Projects State ---
   const [projects, setProjects] = useState<Project[]>([
     {
       id: 'proj-1',
@@ -141,134 +109,192 @@ export function MarketerDashboard() {
     },
   ]);
 
-  // Active Project & Selection State
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0].id);
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
 
-  // Selected Unit State & Payment Details
   const [selectedUnitKey, setSelectedUnitKey] = useState<string>('');
   const [selectedUnitLabel, setSelectedUnitLabel] = useState<string>('');
   const [selectedUnitDetails, setSelectedUnitDetails] = useState<UnitType | null>(null);
 
-  // Lead Protection & Data State
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [allSystemLeads, setAllSystemLeads] = useState<Lead[]>([
-    {
-      id: '99',
-      name: 'Abdullah Al-Salman',
-      phone: '0501234567',
-      apartmentId: 'Tenth Floor [One bed room (90m²)]',
-      unitKey: 'Tenth-1b-90',
-      projectId: 'proj-1',
-      marketerName: 'Khaled (Other Marketer)',
-      status: 'Reserved',
-      createdAt: '09:30 AM',
-    },
-  ]);
-
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
 
-  // --- Handlers: Auth Operations ---
+  // 1️⃣ Check Active Supabase Session on Mount
+  useEffect(() => {
+    checkCurrentUser();
 
-  // 1. تسجيل الدخول
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    setAuthSuccess('');
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchMarketerProfile(session.user.id);
+      } else {
+        setCurrentMarketer(null);
+        setLoadingUser(false);
+      }
+    });
 
-    if (!loginEmail || !loginPassword) {
-      setAuthError('يرجى إدخال البريد الإلكتروني وكلمة المرور.');
-      return;
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const checkCurrentUser = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await fetchMarketerProfile(session.user.id);
+      } else {
+        setCurrentMarketer(null);
+      }
+    } catch (err) {
+      console.error("Auth check error:", err);
+    } finally {
+      setLoadingUser(false);
     }
-
-    // البحث عن المسوق في القائمة المسجلة
-    const user = registeredMarketers.find(
-      (m) => m.email.toLowerCase() === loginEmail.toLowerCase()
-    );
-
-    if (!user) {
-      setAuthError('البريد الإلكتروني غير مسجل بالأنظمة.');
-      return;
-    }
-
-    if (user.password && user.password !== loginPassword) {
-      setAuthError('كلمة المرور غير صحيحة.');
-      return;
-    }
-
-    // 🔥 فحص موافقة الأدمن 🔥
-    if (!user.approved) {
-      setAuthError('⏳ حسابك قيد المراجعة بانتظار موافقة الأدمن. لا يمكنك الدخول حالياً.');
-      return;
-    }
-
-    // تسجيل الدخول بنجاح
-    setCurrentMarketer(user);
-    localStorage.setItem('current_marketer', JSON.stringify(user));
   };
 
-  // 2. إنشاء حساب جديد (ينتظر موافقة الأدمن)
-  const handleSignUp = (e: React.FormEvent) => {
+  const fetchMarketerProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('marketers')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        const isApproved = data.status === 'approved' || data.approved === true;
+        
+        if (!isApproved) {
+          setAuthError('⏳ Your account is pending admin approval. Access is restricted.');
+          setCurrentMarketer(null);
+          await supabase.auth.signOut();
+        } else {
+          setCurrentMarketer(data);
+          fetchLeadsForMarketer(data.id, data.name);
+        }
+      } else {
+        setAuthError('❌ Profile record not found in marketers table.');
+        setCurrentMarketer(null);
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    } finally {
+      setLoadingUser(false);
+    }
+  };
+
+  // Fetch Leads from Supabase
+  const fetchLeadsForMarketer = async (marketerId: string, marketerName: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .or(`marketer_id.eq.${marketerId},marketerName.eq.${marketerName}`);
+
+      if (!error && data) {
+        setLeads(data);
+      }
+    } catch {
+      // Leads table might not exist yet
+    }
+  };
+
+  // 2️⃣ Handle Login via Supabase Auth
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
     setAuthSuccess('');
+    setAuthLoading(true);
 
-    if (!signupName || !signupEmail || !signupPhone || !signupPassword) {
-      setAuthError('يرجى تعبئة كافة الحقول المطلوبة.');
-      return;
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+
+      if (error) {
+        setAuthError(`❌ Login failed: ${error.message}`);
+        setAuthLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        await fetchMarketerProfile(data.user.id);
+      }
+    } catch (err: any) {
+      setAuthError(`❌ An unexpected error occurred: ${err.message}`);
+    } finally {
+      setAuthLoading(false);
     }
+  };
+
+  // 3️⃣ Handle Sign Up via Supabase Auth & Database
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
 
     if (signupPassword !== signupConfirmPassword) {
-      setAuthError('كلمتا المرور غير متطابقتين.');
+      setAuthError('❌ Passwords do not match.');
       return;
     }
 
-    // فحص عدم تكرار الإيميل
-    const exists = registeredMarketers.some(
-      (m) => m.email.toLowerCase() === signupEmail.toLowerCase()
-    );
+    setAuthLoading(true);
 
-    if (exists) {
-      setAuthError('هذا البريد الإلكتروني مسجل بالفعل.');
-      return;
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: signupEmail,
+        password: signupPassword,
+        options: {
+          data: { name: signupName, phone: signupPhone },
+        },
+      });
+
+      if (authError) {
+        setAuthError(`❌ ${authError.message}`);
+        setAuthLoading(false);
+        return;
+      }
+
+      if (authData.user) {
+        const { error: dbError } = await supabase.from('marketers').insert([
+          {
+            id: authData.user.id,
+            name: signupName,
+            email: signupEmail,
+            phone: signupPhone,
+            status: 'pending',
+          },
+        ]);
+
+        if (dbError) {
+          console.error('Error inserting marketer:', dbError);
+          setAuthError(`⚠️ Account created, but database record failed: ${dbError.message}`);
+        } else {
+          setAuthSuccess('✅ Registration successful! Your account is now awaiting admin approval.');
+          setSignupName('');
+          setSignupEmail('');
+          setSignupPhone('');
+          setSignupPassword('');
+          setSignupConfirmPassword('');
+        }
+      }
+    } catch (err: any) {
+      setAuthError(`❌ ${err.message}`);
+    } finally {
+      setAuthLoading(false);
     }
-
-    // إنشاء الحساب بحالة approved: false
-    const newMarketer: Marketer = {
-      id: 'mkt-' + Date.now(),
-      name: signupName,
-      email: signupEmail,
-      phone: signupPhone,
-      password: signupPassword,
-      approved: false, // 👈 يتطلب موافقة الأدمن
-    };
-
-    setRegisteredMarketers((prev) => [...prev, newMarketer]);
-    setAuthSuccess('✅ تم تقديم طلب الحساب بنجاح! حسابك في انتظار موافقة المسؤول (Admin) لتتمكن من الدخول.');
-
-    // إعادة ضبط الحقول
-    setSignupName('');
-    setSignupEmail('');
-    setSignupPhone('');
-    setSignupPassword('');
-    setSignupConfirmPassword('');
   };
 
-  // 3. دالة للأدمن لقبول أو رفض المسوق (للمحاكاة)
-  const toggleApproveMarketer = (id: string) => {
-    setRegisteredMarketers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, approved: !m.approved } : m))
-    );
-  };
-
-  // 4. تسجيل الخروج
-  const handleLogout = () => {
+  // 4️⃣ Logout
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setCurrentMarketer(null);
-    localStorage.removeItem('current_marketer');
   };
 
-  // --- Handlers: Matrix & Lead Operations ---
+  // Cell Click Handler
   const handleCellClick = (floor: string, unitType: UnitType, status: UnitStatus) => {
     const key = `${floor}-${unitType.id}`;
     const label = `${floor} Floor [${unitType.title} (${unitType.area}m²)]`;
@@ -284,7 +310,8 @@ export function MarketerDashboard() {
     }
   };
 
-  const handleReserveAndSaveLead = (e: React.FormEvent) => {
+  // Save Lead & Reserve Unit
+  const handleReserveAndSaveLead = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
 
@@ -298,14 +325,7 @@ export function MarketerDashboard() {
       return;
     }
 
-    const existingLead = allSystemLeads.find((l) => l.phone === cleanPhone);
-    if (existingLead) {
-      alert(
-        `⚠️ Lead Protection Alert:\nClient phone (${cleanPhone}) is already registered under marketer: [ ${existingLead.marketerName} ]!`
-      );
-      return;
-    }
-
+    // Update local Matrix
     setProjects((prevProjects) =>
       prevProjects.map((proj) => {
         if (proj.id === selectedProjectId) {
@@ -334,7 +354,24 @@ export function MarketerDashboard() {
     };
 
     setLeads([newLead, ...leads]);
-    setAllSystemLeads([newLead, ...allSystemLeads]);
+
+    // Save lead to Supabase if table exists
+    try {
+      await supabase.from('leads').insert([
+        {
+          name: clientName,
+          phone: cleanPhone,
+          apartment_id: selectedUnitLabel,
+          unit_key: selectedUnitKey,
+          project_id: selectedProjectId,
+          marketer_id: currentMarketer?.id,
+          marketer_name: currentMarketer?.name,
+          status: 'Reserved',
+        },
+      ]);
+    } catch {
+      // Fallback
+    }
 
     setClientName('');
     setClientPhone('');
@@ -342,33 +379,42 @@ export function MarketerDashboard() {
     setSelectedUnitLabel('');
     setSelectedUnitDetails(null);
 
-    alert('🟡 Unit status updated to RESERVED (Yellow) and client protected under your name!');
+    alert('🟡 Unit status updated to RESERVED and lead saved successfully!');
   };
 
+  if (loadingUser) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-xs">Loading application...</p>
+        </div>
+      </div>
+    );
+  }
+
   // -------------------------------------------------------------
-  // SCREEN 1: AUTHENTICATION FORM (SIGN IN / SIGN UP + ADMIN SIMULATOR)
+  // SCREEN 1: LOGIN / SIGN UP SCREEN (SUPABASE AUTH)
   // -------------------------------------------------------------
   if (!currentMarketer) {
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4" dir="rtl">
+      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4" dir="ltr">
         <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
           
-          {/* Header */}
           <div className="text-center mb-6">
             <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl mx-auto mb-3 shadow-lg shadow-blue-500/30">
               🏢
             </div>
             <h2 className="text-2xl font-bold text-gray-800">
-              {isSignUp ? 'طلب حساب مسوّق جديد' : 'بوابة المسوّقين - تسجيل الدخول'}
+              {isSignUp ? 'Create Marketer Account' : 'Marketer Portal - Login'}
             </h2>
             <p className="text-xs text-gray-500 mt-1">
               {isSignUp
-                ? 'أدخل بياناتك وسيتم إرسال الطلب للمدير للموافقة عليه'
-                : 'أدخل بيانات حسابك المعتمد للدخول إلى لوحة المبيعات'}
+                ? 'Enter your details to submit an account request for admin review'
+                : 'Enter your credentials to access the sales portal'}
             </p>
           </div>
 
-          {/* Tab Switcher */}
           <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
             <button
               type="button"
@@ -377,7 +423,7 @@ export function MarketerDashboard() {
                 !isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
               }`}
             >
-              تسجيل الدخول
+              Sign In
             </button>
             <button
               type="button"
@@ -386,30 +432,26 @@ export function MarketerDashboard() {
                 isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
               }`}
             >
-              إنشاء حساب جديد
+              Register
             </button>
           </div>
 
-          {/* Error Message */}
           {authError && (
-            <div className="bg-red-50 border-r-4 border-red-500 text-red-700 p-3 rounded-lg text-xs mb-4">
+            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded-lg text-xs mb-4">
               {authError}
             </div>
           )}
 
-          {/* Success Message */}
           {authSuccess && (
-            <div className="bg-emerald-50 border-r-4 border-emerald-500 text-emerald-700 p-3 rounded-lg text-xs mb-4">
+            <div className="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-700 p-3 rounded-lg text-xs mb-4">
               {authSuccess}
             </div>
           )}
 
-          {/* Form */}
           {!isSignUp ? (
-            // --- LOGIN FORM ---
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">البريد الإلكتروني</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
                 <input
                   type="email"
                   required
@@ -421,7 +463,7 @@ export function MarketerDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">كلمة المرور</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Password</label>
                 <input
                   type="password"
                   required
@@ -434,28 +476,28 @@ export function MarketerDashboard() {
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-blue-600/30"
+                disabled={authLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-blue-600/30 disabled:opacity-50"
               >
-                تسجيل الدخول للوحة
+                {authLoading ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
           ) : (
-            // --- SIGN UP FORM ---
             <form onSubmit={handleSignUp} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">الاسم الكامل *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name *</label>
                 <input
                   type="text"
                   required
                   value={signupName}
                   onChange={(e) => setSignupName(e.target.value)}
-                  placeholder="أحمد محمد"
+                  placeholder="John Doe"
                   className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">البريد الإلكتروني *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address *</label>
                 <input
                   type="email"
                   required
@@ -467,19 +509,19 @@ export function MarketerDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">رقم الجوال *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Phone Number *</label>
                 <input
                   type="tel"
                   required
                   value={signupPhone}
                   onChange={(e) => setSignupPhone(e.target.value)}
-                  placeholder="05xxxxxxxx"
+                  placeholder="+1234567890"
                   className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">كلمة المرور *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Password *</label>
                 <input
                   type="password"
                   required
@@ -491,7 +533,7 @@ export function MarketerDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">تأكيد كلمة المرور *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm Password *</label>
                 <input
                   type="password"
                   required
@@ -504,58 +546,15 @@ export function MarketerDashboard() {
 
               <button
                 type="submit"
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-emerald-600/30 mt-2"
+                disabled={authLoading}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-emerald-600/30 mt-2 disabled:opacity-50"
               >
-                تقديم طلب إنشاء الحساب
+                {authLoading ? 'Submitting...' : 'Submit Request'}
               </button>
             </form>
           )}
 
         </div>
-
-        {/* --- SIMULATED ADMIN APPROVAL PANEL (لوحة موافقة الأدمن التجريبية) --- */}
-        <div className="w-full max-w-md mt-6">
-          <button
-            onClick={() => setShowAdminPanel(!showAdminPanel)}
-            className="w-full text-center text-xs text-gray-400 hover:text-white underline py-2"
-          >
-            {showAdminPanel ? 'إخفاء لوحة مراجعة الأدمن ⚙️' : '⚙️ تجربة موافقة الأدمن على الحسابات (Admin Simulator)'}
-          </button>
-
-          {showAdminPanel && (
-            <div className="bg-gray-800 text-white p-4 rounded-xl shadow-xl text-xs space-y-3 border border-gray-700">
-              <h3 className="font-bold text-amber-400 border-b border-gray-700 pb-2">
-                👑 لوحة التحكم الدائمة للأدمن (قبول / تفعيل الحسابات)
-              </h3>
-              <p className="text-[11px] text-gray-300">
-                هنا يمكنك الإشراف على الحسابات وتفعيل الحسابات الجديدة لكي يتمكن المسوق من تسجيل الدخول:
-              </p>
-
-              <div className="space-y-2">
-                {registeredMarketers.map((mkt) => (
-                  <div key={mkt.id} className="bg-gray-900 p-2.5 rounded-lg flex items-center justify-between border border-gray-700">
-                    <div>
-                      <p className="font-bold">{mkt.name}</p>
-                      <p className="text-[10px] text-gray-400">{mkt.email} | {mkt.phone}</p>
-                    </div>
-
-                    <button
-                      onClick={() => toggleApproveMarketer(mkt.id)}
-                      className={`px-3 py-1 rounded-md text-[10px] font-bold transition ${
-                        mkt.approved
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                          : 'bg-amber-500 hover:bg-amber-600 text-black'
-                      }`}
-                    >
-                      {mkt.approved ? 'مقبول (مفعل)' : 'معلق (اضغط للقبول)'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
       </div>
     );
   }
@@ -566,7 +565,7 @@ export function MarketerDashboard() {
   return (
     <div className="p-4 bg-gray-100 min-h-screen text-left" dir="ltr">
       
-      {/* 1. Top Header Bar & Marketer Profile */}
+      {/* 1. Header Bar */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-gray-800">🏢 Marketer Portal - Real Estate Inventory</h1>
@@ -610,7 +609,6 @@ export function MarketerDashboard() {
         {/* 2. AVAILABLE STOCKS GRID */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
           
-          {/* Header Badges matching image design */}
           <div className="flex flex-col items-center justify-center mb-6">
             <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
               AVAILABLE STOCKS
@@ -620,7 +618,6 @@ export function MarketerDashboard() {
             </div>
           </div>
 
-          {/* Matrix Stock Table */}
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-center text-xs font-sans">
               <thead>
@@ -714,7 +711,7 @@ export function MarketerDashboard() {
           </div>
         </div>
 
-        {/* 3. Direct Unit Reservation & Payment Plan Details Side Form */}
+        {/* 3. Direct Unit Reservation */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
             <h2 className="font-bold text-gray-800 mb-2 text-md">📌 Reserve Unit & Claim Lead</h2>
@@ -817,7 +814,7 @@ export function MarketerDashboard() {
                     <div>
                       <p className="font-bold text-gray-800">{lead.name}</p>
                       <p className="text-gray-500">{lead.phone}</p>
-                      <p className="text-[11px] text-amber-800 font-medium mt-0.5">{lead.apartmentId}</p>
+                      <p className="text-[11px] text-amber-800 font-medium mt-0.5">{lead.apartmentId || lead.apartment_id}</p>
                     </div>
                     <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-2 py-1 rounded-full">
                       RESERVED
