@@ -40,18 +40,64 @@ export interface Marketer {
   name: string;
   email: string;
   phone?: string;
+  password?: string;
+  approved: boolean; // 👈 شرط موافقة الأدمن لتفعيل الحساب
 }
 
 export function MarketerDashboard() {
+  // --- 0. Registered Marketers Storage (قاعدة بيانات المسوقين المسجلين) ---
+  const [registeredMarketers, setRegisteredMarketers] = useState<Marketer[]>(() => {
+    const saved = localStorage.getItem('registered_marketers');
+    if (saved) return JSON.parse(saved);
+    
+    // حسابات افتراضية للاختبار
+    return [
+      {
+        id: 'mkt-1',
+        name: 'أحمد علي (مسوق معتمد)',
+        email: 'marketer@company.com',
+        phone: '0500000000',
+        password: '123',
+        approved: true, // حساب مقبول مسبقاً
+      },
+      {
+        id: 'mkt-2',
+        name: 'خالد عمر (في انتظار الموافقة)',
+        email: 'pending@company.com',
+        phone: '0555555555',
+        password: '123',
+        approved: false, // حساب ينتظر موافقة الأدمن
+      },
+    ];
+  });
+
+  // حفظ التعديلات في LocalStorage عند تغيير قائمة المسوقين
+  useEffect(() => {
+    localStorage.setItem('registered_marketers', JSON.stringify(registeredMarketers));
+  }, [registeredMarketers]);
+
   // --- 0. Authentication State ---
   const [currentMarketer, setCurrentMarketer] = useState<Marketer | null>(() => {
     const saved = localStorage.getItem('current_marketer');
     return saved ? JSON.parse(saved) : null;
   });
 
+  // حالة التبديل بين الدخول (false) وإنشاء حساب (true)
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false); // إظهار لوحة الأدمن التجريبية
+
+  // حقول نموذج الدخول والتسجيل
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
+  
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPhone, setSignupPhone] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
+
+  const [authError, setAuthError] = useState('');
+  const [authSuccess, setAuthSuccess] = useState('');
 
   // --- 1. Projects Data State (With Payment Plans) ---
   const [projects, setProjects] = useState<Project[]>([
@@ -67,25 +113,13 @@ export function MarketerDashboard() {
         { id: '3b-145', title: 'Three bed room', area: 145, totalPrice: 220000, downPayment: 40000, installmentYears: 7, monthlyInstallment: 2142 },
       ],
       floors: [
-        'Third',
-        'Fourth',
-        'Fifth',
-        'Sixth',
-        'Seventh',
-        'Eighth',
-        'Ninth',
-        'Tenth',
-        'Eleventh',
-        'Twelfth',
-        'Thirteenth',
-        'Fourteenth',
-        'Fifteenth',
-        'Sixteenth',
-        'Seventeenth',
+        'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth',
+        'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth',
+        'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth',
       ],
       matrix: {
-        'Tenth-1b-90': 'available', // Green cell
-        'Eleventh-2b-105': 'reserved', // Example reserved cell
+        'Tenth-1b-90': 'available',
+        'Eleventh-2b-105': 'reserved',
       },
       remarks: {},
     },
@@ -112,7 +146,7 @@ export function MarketerDashboard() {
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
 
   // Selected Unit State & Payment Details
-  const [selectedUnitKey, setSelectedUnitKey] = useState<string>(''); // Key: "Floor-UnitTypeId"
+  const [selectedUnitKey, setSelectedUnitKey] = useState<string>('');
   const [selectedUnitLabel, setSelectedUnitLabel] = useState<string>('');
   const [selectedUnitDetails, setSelectedUnitDetails] = useState<UnitType | null>(null);
 
@@ -135,34 +169,106 @@ export function MarketerDashboard() {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
 
-  // Handle Marketer Login
+  // --- Handlers: Auth Operations ---
+
+  // 1. تسجيل الدخول
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+
     if (!loginEmail || !loginPassword) {
-      setLoginError('Please enter both email and password.');
+      setAuthError('يرجى إدخال البريد الإلكتروني وكلمة المرور.');
       return;
     }
 
-    // SIMULATED AUTHENTICATION (Replace with Supabase auth query if connected)
-    const loggedInUser: Marketer = {
-      id: 'mkt-' + Date.now(),
-      name: loginEmail.split('@')[0] || 'Marketer User',
-      email: loginEmail,
-      phone: '0500000000',
-    };
+    // البحث عن المسوق في القائمة المسجلة
+    const user = registeredMarketers.find(
+      (m) => m.email.toLowerCase() === loginEmail.toLowerCase()
+    );
 
-    setCurrentMarketer(loggedInUser);
-    localStorage.setItem('current_marketer', JSON.stringify(loggedInUser));
-    setLoginError('');
+    if (!user) {
+      setAuthError('البريد الإلكتروني غير مسجل بالأنظمة.');
+      return;
+    }
+
+    if (user.password && user.password !== loginPassword) {
+      setAuthError('كلمة المرور غير صحيحة.');
+      return;
+    }
+
+    // 🔥 فحص موافقة الأدمن 🔥
+    if (!user.approved) {
+      setAuthError('⏳ حسابك قيد المراجعة بانتظار موافقة الأدمن. لا يمكنك الدخول حالياً.');
+      return;
+    }
+
+    // تسجيل الدخول بنجاح
+    setCurrentMarketer(user);
+    localStorage.setItem('current_marketer', JSON.stringify(user));
   };
 
-  // Handle Marketer Logout
+  // 2. إنشاء حساب جديد (ينتظر موافقة الأدمن)
+  const handleSignUp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+
+    if (!signupName || !signupEmail || !signupPhone || !signupPassword) {
+      setAuthError('يرجى تعبئة كافة الحقول المطلوبة.');
+      return;
+    }
+
+    if (signupPassword !== signupConfirmPassword) {
+      setAuthError('كلمتا المرور غير متطابقتين.');
+      return;
+    }
+
+    // فحص عدم تكرار الإيميل
+    const exists = registeredMarketers.some(
+      (m) => m.email.toLowerCase() === signupEmail.toLowerCase()
+    );
+
+    if (exists) {
+      setAuthError('هذا البريد الإلكتروني مسجل بالفعل.');
+      return;
+    }
+
+    // إنشاء الحساب بحالة approved: false
+    const newMarketer: Marketer = {
+      id: 'mkt-' + Date.now(),
+      name: signupName,
+      email: signupEmail,
+      phone: signupPhone,
+      password: signupPassword,
+      approved: false, // 👈 يتطلب موافقة الأدمن
+    };
+
+    setRegisteredMarketers((prev) => [...prev, newMarketer]);
+    setAuthSuccess('✅ تم تقديم طلب الحساب بنجاح! حسابك في انتظار موافقة المسؤول (Admin) لتتمكن من الدخول.');
+
+    // إعادة ضبط الحقول
+    setSignupName('');
+    setSignupEmail('');
+    setSignupPhone('');
+    setSignupPassword('');
+    setSignupConfirmPassword('');
+  };
+
+  // 3. دالة للأدمن لقبول أو رفض المسوق (للمحاكاة)
+  const toggleApproveMarketer = (id: string) => {
+    setRegisteredMarketers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, approved: !m.approved } : m))
+    );
+  };
+
+  // 4. تسجيل الخروج
   const handleLogout = () => {
     setCurrentMarketer(null);
     localStorage.removeItem('current_marketer');
   };
 
-  // Cell Click Handler (Directly selects unit & fetches payment plan)
+  // --- Handlers: Matrix & Lead Operations ---
   const handleCellClick = (floor: string, unitType: UnitType, status: UnitStatus) => {
     const key = `${floor}-${unitType.id}`;
     const label = `${floor} Floor [${unitType.title} (${unitType.area}m²)]`;
@@ -170,7 +276,7 @@ export function MarketerDashboard() {
     if (status === 'available') {
       setSelectedUnitKey(key);
       setSelectedUnitLabel(label);
-      setSelectedUnitDetails(unitType); // Save payment plan info for display
+      setSelectedUnitDetails(unitType);
     } else if (status === 'reserved') {
       alert(`🟡 Unit on ${floor} floor (${unitType.title}) is already RESERVED.`);
     } else {
@@ -178,7 +284,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // Reserve Unit & Save Lead Logic
   const handleReserveAndSaveLead = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
@@ -193,7 +298,6 @@ export function MarketerDashboard() {
       return;
     }
 
-    // 1. Duplication & Protection Check
     const existingLead = allSystemLeads.find((l) => l.phone === cleanPhone);
     if (existingLead) {
       alert(
@@ -202,7 +306,6 @@ export function MarketerDashboard() {
       return;
     }
 
-    // 2. Update Project Matrix Status to 'reserved' (Yellow)
     setProjects((prevProjects) =>
       prevProjects.map((proj) => {
         if (proj.id === selectedProjectId) {
@@ -210,7 +313,7 @@ export function MarketerDashboard() {
             ...proj,
             matrix: {
               ...proj.matrix,
-              [selectedUnitKey]: 'reserved', // Changes cell status to reserved!
+              [selectedUnitKey]: 'reserved',
             },
           };
         }
@@ -218,7 +321,6 @@ export function MarketerDashboard() {
       })
     );
 
-    // 3. Register New Lead
     const newLead: Lead = {
       id: Date.now().toString(),
       name: clientName,
@@ -234,7 +336,6 @@ export function MarketerDashboard() {
     setLeads([newLead, ...leads]);
     setAllSystemLeads([newLead, ...allSystemLeads]);
 
-    // Reset Form
     setClientName('');
     setClientPhone('');
     setSelectedUnitKey('');
@@ -245,59 +346,216 @@ export function MarketerDashboard() {
   };
 
   // -------------------------------------------------------------
-  // SCREEN 1: LOGIN FORM (If no marketer logged in)
+  // SCREEN 1: AUTHENTICATION FORM (SIGN IN / SIGN UP + ADMIN SIMULATOR)
   // -------------------------------------------------------------
   if (!currentMarketer) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4 text-left" dir="ltr">
-        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-200">
+      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4" dir="rtl">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
+          
+          {/* Header */}
           <div className="text-center mb-6">
-            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-extrabold text-xl mx-auto mb-3">
+            <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl mx-auto mb-3 shadow-lg shadow-blue-500/30">
               🏢
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">Marketer Portal Login</h2>
-            <p className="text-xs text-gray-500 mt-1">Sign in to view available stocks & payment plans</p>
+            <h2 className="text-2xl font-bold text-gray-800">
+              {isSignUp ? 'طلب حساب مسوّق جديد' : 'بوابة المسوّقين - تسجيل الدخول'}
+            </h2>
+            <p className="text-xs text-gray-500 mt-1">
+              {isSignUp
+                ? 'أدخل بياناتك وسيتم إرسال الطلب للمدير للموافقة عليه'
+                : 'أدخل بيانات حسابك المعتمد للدخول إلى لوحة المبيعات'}
+            </p>
           </div>
 
-          {loginError && (
-            <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-xs mb-4">
-              {loginError}
+          {/* Tab Switcher */}
+          <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+            <button
+              type="button"
+              onClick={() => { setIsSignUp(false); setAuthError(''); setAuthSuccess(''); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                !isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              تسجيل الدخول
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsSignUp(true); setAuthError(''); setAuthSuccess(''); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              إنشاء حساب جديد
+            </button>
+          </div>
+
+          {/* Error Message */}
+          {authError && (
+            <div className="bg-red-50 border-r-4 border-red-500 text-red-700 p-3 rounded-lg text-xs mb-4">
+              {authError}
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
-              <input
-                type="email"
-                required
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="marketer@company.com"
-                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+          {/* Success Message */}
+          {authSuccess && (
+            <div className="bg-emerald-50 border-r-4 border-emerald-500 text-emerald-700 p-3 rounded-lg text-xs mb-4">
+              {authSuccess}
             </div>
+          )}
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Password</label>
-              <input
-                type="password"
-                required
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
+          {/* Form */}
+          {!isSignUp ? (
+            // --- LOGIN FORM ---
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">البريد الإلكتروني</label>
+                <input
+                  type="email"
+                  required
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="marketer@company.com"
+                  className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
 
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition shadow-md"
-            >
-              Sign In to Portal
-            </button>
-          </form>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">كلمة المرور</label>
+                <input
+                  type="password"
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-blue-600/30"
+              >
+                تسجيل الدخول للوحة
+              </button>
+            </form>
+          ) : (
+            // --- SIGN UP FORM ---
+            <form onSubmit={handleSignUp} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">الاسم الكامل *</label>
+                <input
+                  type="text"
+                  required
+                  value={signupName}
+                  onChange={(e) => setSignupName(e.target.value)}
+                  placeholder="أحمد محمد"
+                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">البريد الإلكتروني *</label>
+                <input
+                  type="email"
+                  required
+                  value={signupEmail}
+                  onChange={(e) => setSignupEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">رقم الجوال *</label>
+                <input
+                  type="tel"
+                  required
+                  value={signupPhone}
+                  onChange={(e) => setSignupPhone(e.target.value)}
+                  placeholder="05xxxxxxxx"
+                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">كلمة المرور *</label>
+                <input
+                  type="password"
+                  required
+                  value={signupPassword}
+                  onChange={(e) => setSignupPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">تأكيد كلمة المرور *</label>
+                <input
+                  type="password"
+                  required
+                  value={signupConfirmPassword}
+                  onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-emerald-600/30 mt-2"
+              >
+                تقديم طلب إنشاء الحساب
+              </button>
+            </form>
+          )}
+
         </div>
+
+        {/* --- SIMULATED ADMIN APPROVAL PANEL (لوحة موافقة الأدمن التجريبية) --- */}
+        <div className="w-full max-w-md mt-6">
+          <button
+            onClick={() => setShowAdminPanel(!showAdminPanel)}
+            className="w-full text-center text-xs text-gray-400 hover:text-white underline py-2"
+          >
+            {showAdminPanel ? 'إخفاء لوحة مراجعة الأدمن ⚙️' : '⚙️ تجربة موافقة الأدمن على الحسابات (Admin Simulator)'}
+          </button>
+
+          {showAdminPanel && (
+            <div className="bg-gray-800 text-white p-4 rounded-xl shadow-xl text-xs space-y-3 border border-gray-700">
+              <h3 className="font-bold text-amber-400 border-b border-gray-700 pb-2">
+                👑 لوحة التحكم الدائمة للأدمن (قبول / تفعيل الحسابات)
+              </h3>
+              <p className="text-[11px] text-gray-300">
+                هنا يمكنك الإشراف على الحسابات وتفعيل الحسابات الجديدة لكي يتمكن المسوق من تسجيل الدخول:
+              </p>
+
+              <div className="space-y-2">
+                {registeredMarketers.map((mkt) => (
+                  <div key={mkt.id} className="bg-gray-900 p-2.5 rounded-lg flex items-center justify-between border border-gray-700">
+                    <div>
+                      <p className="font-bold">{mkt.name}</p>
+                      <p className="text-[10px] text-gray-400">{mkt.email} | {mkt.phone}</p>
+                    </div>
+
+                    <button
+                      onClick={() => toggleApproveMarketer(mkt.id)}
+                      className={`px-3 py-1 rounded-md text-[10px] font-bold transition ${
+                        mkt.approved
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          : 'bg-amber-500 hover:bg-amber-600 text-black'
+                      }`}
+                    >
+                      {mkt.approved ? 'مقبول (مفعل)' : 'معلق (اضغط للقبول)'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
     );
   }
@@ -366,7 +624,6 @@ export function MarketerDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-center text-xs font-sans">
               <thead>
-                {/* House Types Header */}
                 <tr className="bg-[#00474b] text-white">
                   <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[90px]">
                     Floor
@@ -382,7 +639,6 @@ export function MarketerDashboard() {
                   </th>
                 </tr>
 
-                {/* Sub-headers for Room Types + Price */}
                 <tr className="bg-[#00474b] text-white">
                   {selectedProject.unitTypes.map((ut) => (
                     <th key={ut.id} className="border border-gray-400 p-2 font-semibold">
@@ -404,23 +660,20 @@ export function MarketerDashboard() {
 
                   return (
                     <tr key={floor}>
-                      {/* Floor Name Column (Yellow) */}
                       <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
                         {floor}
                       </td>
 
-                      {/* Dynamic Cells */}
                       {selectedProject.unitTypes.map((ut) => {
                         const key = `${floor}-${ut.id}`;
                         const status = selectedProject.matrix[key] || 'unavailable';
                         const isSelected = selectedUnitKey === key;
 
-                        // Dynamic styling based on status
-                        let bgClass = 'bg-[#ff0000] cursor-not-allowed'; // Unavailable (Red)
+                        let bgClass = 'bg-[#ff0000] cursor-not-allowed';
                         if (status === 'available') {
-                          bgClass = 'bg-[#00b050] hover:bg-green-600 cursor-pointer'; // Available (Green)
+                          bgClass = 'bg-[#00b050] hover:bg-green-600 cursor-pointer';
                         } else if (status === 'reserved') {
-                          bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer'; // Reserved (Yellow)
+                          bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer';
                         }
 
                         return (
@@ -441,7 +694,6 @@ export function MarketerDashboard() {
                         );
                       })}
 
-                      {/* Remark Column */}
                       <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">
                         {remark}
                       </td>
@@ -452,7 +704,6 @@ export function MarketerDashboard() {
             </table>
           </div>
 
-          {/* Footer Legend Box */}
           <div className="flex justify-center mt-6">
             <div className="border-2 border-black rounded-3xl py-2 px-8 text-center text-xs font-bold text-black bg-white shadow-sm flex flex-wrap justify-center gap-4">
               <span>NB:-</span>
@@ -471,7 +722,6 @@ export function MarketerDashboard() {
               Click any green cell in the matrix to view its <span className="font-semibold text-blue-600">Payment Plan</span> and reserve it.
             </p>
 
-            {/* PAYMENT PLAN CARD DISPLAY */}
             {selectedUnitDetails && (
               <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3.5 mb-4 text-xs space-y-2">
                 <div className="font-bold text-blue-900 border-b border-blue-200 pb-1.5 flex justify-between">
@@ -551,7 +801,6 @@ export function MarketerDashboard() {
             </form>
           </div>
 
-          {/* List of Marketer's Reserved Leads */}
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
             <h2 className="font-bold text-gray-800 mb-3 text-md">
               Your Reserved Units ({leads.length})

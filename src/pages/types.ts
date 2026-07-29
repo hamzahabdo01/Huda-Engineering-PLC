@@ -1,16 +1,35 @@
-// types.ts
-export type ApartmentStatus = 'available' | 'reserved' | 'sold';
+// src/pages/types.ts
 
-export interface Apartment {
+export interface Marketer {
   id: string;
-  unitNumber: string;     // رقم الشقة
-  floor: number;          // الدور
-  rooms: number;          // عدد الغرف
-  price: number;          // السعر
-  apartmentType: string;  // نوع الشقة (شقة نموذجية، دوبلكس، بنتهاوس...)
-  view: string;           // الإطلالة (أمامي، حديقة، شارع رئيسي...)
-  paymentPlan: string;    // خطط الدفع (كاش، أقساط 3 سنوات، أقساط 5 سنوات...)
-  status: ApartmentStatus;// التوفر (متاحة، محجوزة، مباعة)}
+  name: string;
+  email: string;
+  phone?: string;
+  password?: string;
+  approved?: boolean;
+  status?: 'approved' | 'pending' | 'rejected' | string; // تم إضافتها لحل مشكلة Login.tsx
+}
+
+export interface UnitType {
+  id: string;
+  title: string;
+  area: number;
+  totalPrice?: number;
+  downPayment?: number;
+  installmentYears?: number;
+  monthlyInstallment?: number;
+}
+
+export type UnitStatus = 'available' | 'unavailable' | 'reserved';
+
+export interface Project {
+  id: string;
+  name: string;
+  subtitle: string;
+  floors: string[];
+  unitTypes: UnitType[];
+  matrix: Record<string, UnitStatus>;
+  remarks?: Record<string, string>;
 }
 
 export interface Lead {
@@ -18,7 +37,9 @@ export interface Lead {
   name: string;
   phone: string;
   apartmentId?: string;
-  marketerName: string;
-  status: 'جديد' | 'تم التواصل' | 'معاينة' | 'محجوز' | 'مباع';
-  createdAt: string;
+  unitKey?: string;
+  projectId?: string;
+  marketerName?: string;
+  status?: string;
+  createdAt?: string;
 }
