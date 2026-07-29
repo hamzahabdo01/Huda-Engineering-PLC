@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// ⚠️ تأكد من ضبط مسار استيراد supabase حسب مجلد مشروعك
 import { supabase } from '../integrations/supabase/client'; 
 
 // --- Types & Interfaces ---
@@ -47,6 +46,15 @@ export interface MarketerClient {
   created_at?: string;
 }
 
+export interface MarketerAccount {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  status: 'pending' | 'approved' | 'rejected' | string;
+  created_at?: string;
+}
+
 export function AdminDashboardd() {
   // --- States ---
   const [projects, setProjects] = useState<Project[]>([]);
@@ -56,6 +64,7 @@ export function AdminDashboardd() {
   const [unitTypes, setUnitTypes] = useState<UnitType[]>([]);
   const [matrix, setMatrix] = useState<Record<string, UnitStatus>>({}); // Key: "floorName-unitTypeId"
   const [marketerClients, setMarketerClients] = useState<MarketerClient[]>([]);
+  const [marketerAccounts, setMarketerAccounts] = useState<MarketerAccount[]>([]);
 
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -63,7 +72,7 @@ export function AdminDashboardd() {
   const [newProjName, setNewProjName] = useState('');
   const [newProjSubtitle, setNewProjSubtitle] = useState('');
 
-  // Floor Form States (Single or Typical Bulk Creation)
+  // Floor Form States
   const [newFloorName, setNewFloorName] = useState('');
   const [typicalFloorCount, setTypicalFloorCount] = useState<number | ''>('');
 
@@ -75,7 +84,7 @@ export function AdminDashboardd() {
   const [newUnitYears, setNewUnitYears] = useState<number | ''>(5);
 
   const [activeCellKey, setActiveCellKey] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'matrix' | 'pricing' | 'clients'>('matrix');
+  const [activeTab, setActiveTab] = useState<'matrix' | 'pricing' | 'clients' | 'marketers'>('matrix');
 
   // Selected Active Project Object
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
@@ -84,6 +93,7 @@ export function AdminDashboardd() {
   useEffect(() => {
     fetchProjects();
     fetchMarketerClients();
+    fetchMarketerAccounts();
   }, []);
 
   // 2. Fetch Project Specific Data (Floors, Unit Types, Matrix)
@@ -189,6 +199,34 @@ export function AdminDashboardd() {
     }
   };
 
+  const fetchMarketerAccounts = async () => {
+    const { data, error } = await supabase
+      .from('marketers')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setMarketerAccounts(data);
+    }
+  };
+
+  // --- Marketer Approval / Rejection Handlers ---
+  const handleUpdateMarketerStatus = async (marketerId: string, newStatus: 'approved' | 'rejected') => {
+    const { error } = await supabase
+      .from('marketers')
+      .update({ status: newStatus })
+      .eq('id', marketerId);
+
+    if (error) {
+      alert(`Error updating marketer status: ${error.message}`);
+    } else {
+      setMarketerAccounts((prev) =>
+        prev.map((m) => (m.id === marketerId ? { ...m, status: newStatus } : m))
+      );
+      alert(`✅ Marketer status updated to ${newStatus}`);
+    }
+  };
+
   // --- Form Handlers ---
 
   // 1. Create Project
@@ -218,14 +256,13 @@ export function AdminDashboardd() {
     }
   };
 
-  // 2. Add Floors (Single OR Bulk/Typical Floors creation e.g. 10 floors)
+  // 2. Add Floors
   const handleAddFloors = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProjectId) return;
 
     let floorsToCreate: { project_id: string; floor_name: string }[] = [];
 
-    // Case A: Typical Floors Count (e.g. user entered 10)
     if (typicalFloorCount && Number(typicalFloorCount) > 0) {
       const count = Number(typicalFloorCount);
       for (let i = 1; i <= count; i++) {
@@ -237,9 +274,7 @@ export function AdminDashboardd() {
           });
         }
       }
-    } 
-    // Case B: Single Custom Floor Name
-    else if (newFloorName.trim()) {
+    } else if (newFloorName.trim()) {
       const name = newFloorName.trim();
       if (floors.some((f) => f.floor_name.toLowerCase() === name.toLowerCase())) {
         return alert('Floor already exists in this project!');
@@ -271,7 +306,7 @@ export function AdminDashboardd() {
     }
   };
 
-  // 3. Add House Type (Unit Type) + Pricing & Payment Plan
+  // 3. Add House Type + Pricing
   const handleAddUnitType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUnitTitle.trim() || !newUnitArea || !selectedProjectId) return;
@@ -371,6 +406,10 @@ export function AdminDashboardd() {
     });
   });
 
+  const pendingMarketersCount = marketerAccounts.filter(
+    (m) => m.status === 'pending' || !m.status
+  ).length;
+
   if (loading && projects.length === 0) {
     return <div className="p-10 text-center font-bold text-gray-600">⏳ Loading Matrix Data...</div>;
   }
@@ -382,7 +421,7 @@ export function AdminDashboardd() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">⚙️ Admin Portal - Real Estate Manager</h1>
           <p className="text-xs text-gray-500">
-            Manage floors, unit types, pricing & payment plans, and monitor marketer registrations
+            Manage floors, unit types, pricing & payment plans, and manage marketer requests
           </p>
         </div>
 
@@ -404,7 +443,7 @@ export function AdminDashboardd() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-gray-300 pb-2">
+      <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-300 pb-2">
         <button
           onClick={() => setActiveTab('matrix')}
           className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
@@ -428,6 +467,19 @@ export function AdminDashboardd() {
           }`}
         >
           👥 Marketer Clients ({marketerClients.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('marketers')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2 ${
+            activeTab === 'marketers' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          🔑 Marketers & Approvals ({marketerAccounts.length})
+          {pendingMarketersCount > 0 && (
+            <span className="bg-amber-500 text-black text-[10px] px-2 py-0.5 rounded-full font-black animate-pulse">
+              {pendingMarketersCount} Pending
+            </span>
+          )}
         </button>
       </div>
 
@@ -494,7 +546,7 @@ export function AdminDashboardd() {
                 </form>
               </div>
 
-              {/* 2. Add Floor / Typical Floors (Generate 10 Floors automatically) */}
+              {/* 2. Add Floor / Typical Floors */}
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                 <h2 className="font-bold text-gray-800 text-sm mb-1 flex items-center gap-1">
                   📐 2. Add Floors to [{selectedProject?.name || selectedProject?.title}]
@@ -547,7 +599,7 @@ export function AdminDashboardd() {
                 </div>
               </div>
 
-              {/* 3. Add Type of Houses (Unit Type) + Price */}
+              {/* 3. Add House Type */}
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                 <h2 className="font-bold text-gray-800 text-sm mb-3 flex items-center gap-1">
                   🏠 3. Add House Type & Pricing
@@ -629,8 +681,6 @@ export function AdminDashboardd() {
 
             {/* RIGHT COLUMN: Interactive Stock Grid Matrix Table */}
             <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
-              
-              {/* Header Badges matching matrix layout */}
               <div className="flex flex-col items-center justify-center mb-6">
                 <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
                   AVAILABLE STOCKS (ADMIN MATRIX)
@@ -638,30 +688,18 @@ export function AdminDashboardd() {
                 <div className="bg-[#00474b] text-white text-xs sm:text-sm font-semibold uppercase px-6 py-1.5 rounded-md mt-2 shadow-sm">
                   {selectedProject?.subtitle || 'PROJECT DETAILS'}
                 </div>
-                <p className="text-[11px] text-gray-500 mt-2 font-medium">
-                  💡 Tip: Click on any matrix cell to cycle status (🟢 Available ➔ 🟡 Reserved ➔ 🔴 Sold)
-                </p>
               </div>
 
-              {/* Matrix Table */}
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-center text-xs font-sans">
                   <thead>
                     <tr className="bg-[#00474b] text-white">
-                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[90px]">
-                        Floor
-                      </th>
-                      <th
-                        colSpan={unitTypes.length || 1}
-                        className="border border-gray-400 p-1.5 font-bold italic text-sm"
-                      >
+                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[90px]">Floor</th>
+                      <th colSpan={unitTypes.length || 1} className="border border-gray-400 p-1.5 font-bold italic text-sm">
                         Type of Houses
                       </th>
-                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[80px]">
-                        Remark
-                      </th>
+                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[80px]">Remark</th>
                     </tr>
-
                     <tr className="bg-[#00474b] text-white">
                       {unitTypes.map((ut) => (
                         <th key={ut.id} className="border border-gray-400 p-2 font-semibold">
@@ -671,257 +709,202 @@ export function AdminDashboardd() {
                       ))}
                     </tr>
                   </thead>
-
                   <tbody>
-                    {floors.map((f) => {
-                      return (
-                        <tr key={f.id}>
-                          {/* Floor Column */}
-                          <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
-                            {f.floor_name}
-                          </td>
+                    {floors.map((f) => (
+                      <tr key={f.id}>
+                        <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
+                          {f.floor_name}
+                        </td>
+                        {unitTypes.map((ut) => {
+                          const key = `${f.floor_name}-${ut.id}`;
+                          const status = matrix[key] || 'unavailable';
+                          const isActive = activeCellKey === key;
 
-                          {/* Matrix Status Cells */}
-                          {unitTypes.map((ut) => {
-                            const key = `${f.floor_name}-${ut.id}`;
-                            const status = matrix[key] || 'unavailable';
-                            const isActive = activeCellKey === key;
+                          let bgClass = 'bg-[#ff0000]';
+                          if (status === 'available') bgClass = 'bg-[#00b050]';
+                          else if (status === 'reserved') bgClass = 'bg-[#f2b827]';
 
-                            let bgClass = 'bg-[#ff0000]';
-                            if (status === 'available') bgClass = 'bg-[#00b050]';
-                            else if (status === 'reserved') bgClass = 'bg-[#f2b827]';
-
-                            return (
-                              <td
-                                key={ut.id}
-                                onClick={() => handleCellClick(f.floor_name, ut.id)}
-                                className={`border border-black p-3 font-bold transition-all cursor-pointer hover:opacity-80 select-none ${bgClass} ${
-                                  isActive ? 'ring-4 ring-blue-600 scale-95' : ''
-                                }`}
-                                title={`Click to change status for ${f.floor_name} - ${ut.title}`}
-                              >
-                                <span className="text-[10px] uppercase font-extrabold text-black drop-shadow-sm">
-                                  {status === 'available' && '🟢'}
-                                  {status === 'reserved' && '🟡'}
-                                  {status === 'unavailable' && '🔴'}
-                                </span>
-                              </td>
-                            );
-                          })}
-
-                          {/* Remark Column */}
-                          <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">
-                            -
-                          </td>
-                        </tr>
-                      );
-                    })}
+                          return (
+                            <td
+                              key={ut.id}
+                              onClick={() => handleCellClick(f.floor_name, ut.id)}
+                              className={`border border-black p-3 font-bold transition-all cursor-pointer hover:opacity-80 select-none ${bgClass} ${
+                                isActive ? 'ring-4 ring-blue-600 scale-95' : ''
+                              }`}
+                            >
+                              <span className="text-[10px] uppercase font-extrabold text-black">
+                                {status === 'available' && '🟢'}
+                                {status === 'reserved' && '🟡'}
+                                {status === 'unavailable' && '🔴'}
+                              </span>
+                            </td>
+                          );
+                        })}
+                        <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">-</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-
-              {/* Legend Footer */}
-              <div className="flex justify-center mt-6">
-                <div className="border-2 border-black rounded-3xl py-2 px-8 text-center text-xs font-bold text-black bg-white shadow-sm flex flex-wrap justify-center gap-4">
-                  <span>NB:-</span>
-                  <span className="text-red-600 font-extrabold">RED = NOT Available / Sold</span>
-                  <span className="text-emerald-600 font-extrabold">GREEN = Available</span>
-                  <span className="text-amber-500 font-extrabold">YELLOW = Reserved</span>
-                </div>
-              </div>
-
             </div>
           </div>
         </>
       )}
 
-      {/* TAB 2: PRICING & PAYMENT PLAN MANAGER (الأسعار وخطة الدفع) */}
+      {/* TAB 2: PRICING & PAYMENT PLAN MANAGER */}
       {activeTab === 'pricing' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <h2 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-gray-800 mb-2">
             💳 Manager Control: Pricing & Payment Plans for [{selectedProject?.name || selectedProject?.title}]
           </h2>
-          <p className="text-xs text-gray-500 mb-6">
-            Configure total unit prices, down payment amounts, and repayment durations for each unit type.
-          </p>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Payment Plan Form */}
-            <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
-              <h3 className="font-bold text-sm text-blue-900 mb-4">➕ Add / Update Payment Plan</h3>
-              <form onSubmit={handleAddUnitType} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Unit / House Type Title *</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 3 Bed Room (150 m²)"
-                    value={newUnitTitle}
-                    onChange={(e) => setNewUnitTitle(e.target.value)}
-                    className="w-full p-2 border rounded-lg text-xs bg-white border-gray-300"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Area (m²)</label>
-                    <input
-                      type="number"
-                      placeholder="150"
-                      value={newUnitArea}
-                      onChange={(e) => setNewUnitArea(e.target.value ? Number(e.target.value) : '')}
-                      className="w-full p-2 border rounded-lg text-xs bg-white border-gray-300"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Total Price ($) *</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 120000"
-                      value={newUnitPrice}
-                      onChange={(e) => setNewUnitPrice(e.target.value ? Number(e.target.value) : '')}
-                      className="w-full p-2 border rounded-lg text-xs bg-white border-gray-300"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Down Payment ($)</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 20000"
-                      value={newUnitDownPayment}
-                      onChange={(e) => setNewUnitDownPayment(e.target.value ? Number(e.target.value) : '')}
-                      className="w-full p-2 border rounded-lg text-xs bg-white border-gray-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Installment Duration (Years)</label>
-                    <input
-                      type="number"
-                      placeholder="5"
-                      value={newUnitYears}
-                      onChange={(e) => setNewUnitYears(e.target.value ? Number(e.target.value) : '')}
-                      className="w-full p-2 border rounded-lg text-xs bg-white border-gray-300"
-                    />
-                  </div>
-                </div>
-
-                {/* Auto Calculated Monthly Installment Preview */}
-                {Number(newUnitPrice) > 0 && (
-                  <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-xs text-emerald-900">
-                    <p className="font-bold">💡 Estimated Monthly Installment:</p>
-                    <p className="text-lg font-extrabold mt-1">
-                      ${Math.round(Math.max(0, Number(newUnitPrice) - Number(newUnitDownPayment || 0)) / ((Number(newUnitYears) || 1) * 12)).toLocaleString()} / month
-                    </p>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm"
-                >
-                  💾 Save Payment Plan
-                </button>
-              </form>
-            </div>
-
-            {/* Existing Payment Plans List */}
-            <div className="space-y-3">
-              <h3 className="font-bold text-sm text-gray-800">📋 Active Payment Plans</h3>
-              {unitTypes.length === 0 ? (
-                <p className="text-xs text-gray-500 italic">No pricing plans created yet for this project.</p>
-              ) : (
-                unitTypes.map((ut) => (
-                  <div key={ut.id} className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col gap-2">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-sm text-gray-800">{ut.title} ({ut.area} m²)</span>
-                      <span className="bg-blue-100 text-blue-900 font-extrabold text-xs px-2.5 py-1 rounded-full">
-                        ${ut.total_price ? ut.total_price.toLocaleString() : 'N/A'}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-[11px] text-gray-600 bg-gray-50 p-2 rounded-lg mt-1">
-                      <div>
-                        <span className="block text-gray-400">Down Payment</span>
-                        <span className="font-bold text-gray-800">${ut.down_payment ? ut.down_payment.toLocaleString() : 0}</span>
-                      </div>
-                      <div>
-                        <span className="block text-gray-400">Years</span>
-                        <span className="font-bold text-gray-800">{ut.installment_years || 0} Years</span>
-                      </div>
-                      <div>
-                        <span className="block text-gray-400">Monthly</span>
-                        <span className="font-bold text-emerald-700">${ut.monthly_installment ? ut.monthly_installment.toLocaleString() : 0}/mo</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-xs text-left border border-gray-200">
+              <thead className="bg-gray-800 text-white uppercase font-bold">
+                <tr>
+                  <th className="p-3 border">House Title</th>
+                  <th className="p-3 border">Area (m²)</th>
+                  <th className="p-3 border">Total Price</th>
+                  <th className="p-3 border">Down Payment</th>
+                  <th className="p-3 border">Installment Years</th>
+                  <th className="p-3 border">Monthly Payment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unitTypes.map((ut) => (
+                  <tr key={ut.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3 font-bold border">{ut.title}</td>
+                    <td className="p-3 border">{ut.area} m²</td>
+                    <td className="p-3 border font-semibold text-emerald-700">${ut.total_price?.toLocaleString() || 0}</td>
+                    <td className="p-3 border">${ut.down_payment?.toLocaleString() || 0}</td>
+                    <td className="p-3 border">{ut.installment_years || 0} Years</td>
+                    <td className="p-3 border font-bold text-blue-700">${ut.monthly_installment?.toLocaleString() || 0} / mo</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* TAB 3: MARKETER CLIENTS REGISTRY (عملاء المسوقين) */}
+      {/* TAB 3: MARKETER CLIENTS LIST */}
       {activeTab === 'clients' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">👥 Marketer Registered Clients</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border border-gray-200">
+              <thead className="bg-gray-100 text-gray-700 uppercase font-bold">
+                <tr>
+                  <th className="p-3 border">Marketer Name</th>
+                  <th className="p-3 border">Client Name</th>
+                  <th className="p-3 border">Phone</th>
+                  <th className="p-3 border">Project</th>
+                  <th className="p-3 border">Unit</th>
+                  <th className="p-3 border">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {marketerClients.map((client) => (
+                  <tr key={client.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3 border font-bold text-blue-800">{client.marketer_name}</td>
+                    <td className="p-3 border font-semibold">{client.client_name}</td>
+                    <td className="p-3 border">{client.phone}</td>
+                    <td className="p-3 border">{client.project_name || '-'}</td>
+                    <td className="p-3 border">{client.unit_title || '-'}</td>
+                    <td className="p-3 border text-gray-500">{client.created_at ? new Date(client.created_at).toLocaleDateString() : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: MARKETERS & APPROVALS (متابعة وقبول/رفض المسوقين) */}
+      {activeTab === 'marketers' && (
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+          <div className="flex justify-between items-center mb-4">
             <div>
-              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                👥 Marketer Registered Clients (سجل عملاء المسوقين)
-              </h2>
-              <p className="text-xs text-gray-500">
-                Track all clients entered by marketers, their interested units, and deal statuses.
-              </p>
+              <h2 className="text-lg font-bold text-gray-800">🔑 Marketer Registration Approvals</h2>
+              <p className="text-xs text-gray-500">Approve or Reject new marketer signup requests</p>
             </div>
             <button
-              onClick={fetchMarketerClients}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-300"
+              onClick={fetchMarketerAccounts}
+              className="px-3 py-1 bg-gray-100 hover:bg-gray-200 border rounded text-xs font-bold text-gray-700"
             >
-              🔄 Refresh List
+              🔄 Refresh Requests
             </button>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-gray-800 text-white">
-                  <th className="p-3 border">#</th>
-                  <th className="p-3 border">Marketer Name (المسوق)</th>
-                  <th className="p-3 border">Client Name (العميل)</th>
-                  <th className="p-3 border">Phone Number</th>
-                  <th className="p-3 border">Project / Unit</th>
+            <table className="w-full text-xs text-left border border-gray-200">
+              <thead className="bg-gray-800 text-white uppercase font-bold">
+                <tr>
+                  <th className="p-3 border">Marketer Name</th>
+                  <th className="p-3 border">Email</th>
+                  <th className="p-3 border">Phone</th>
                   <th className="p-3 border">Status</th>
-                  <th className="p-3 border">Registration Date</th>
+                  <th className="p-3 border text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {marketerClients.length === 0 ? (
+                {marketerAccounts.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-6 text-center text-gray-400 italic">
-                      No marketer clients registered yet.
+                    <td colSpan={5} className="p-4 text-center text-gray-500 font-semibold">
+                      No marketer accounts found.
                     </td>
                   </tr>
                 ) : (
-                  marketerClients.map((client, index) => (
-                    <tr key={client.id || index} className="border-b hover:bg-gray-50">
-                      <td className="p-3 font-bold text-gray-500">{index + 1}</td>
-                      <td className="p-3 font-bold text-blue-900">{client.marketer_name || 'N/A'}</td>
-                      <td className="p-3 font-semibold text-gray-800">{client.client_name}</td>
-                      <td className="p-3 text-gray-600">{client.phone}</td>
-                      <td className="p-3 text-gray-700">{client.project_name} - {client.unit_title || '-'}</td>
-                      <td className="p-3">
-                        <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">
-                          {client.status || 'Active'}
-                        </span>
-                      </td>
-                      <td className="p-3 text-gray-500 text-[11px]">
-                        {client.created_at ? new Date(client.created_at).toLocaleDateString() : '-'}
-                      </td>
-                    </tr>
-                  ))
+                  marketerAccounts.map((marketer) => {
+                    const status = marketer.status || 'pending';
+                    return (
+                      <tr key={marketer.id} className="border-b hover:bg-gray-50">
+                        <td className="p-3 border font-bold text-gray-800">{marketer.name}</td>
+                        <td className="p-3 border text-gray-600">{marketer.email}</td>
+                        <td className="p-3 border">{marketer.phone || '-'}</td>
+                        <td className="p-3 border">
+                          <span
+                            className={`px-2 py-1 rounded-full text-[10px] font-extrabold uppercase ${
+                              status === 'approved'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : status === 'rejected'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-amber-100 text-amber-800 animate-pulse'
+                            }`}
+                          >
+                            {status === 'approved' && '✅ Approved'}
+                            {status === 'rejected' && '❌ Rejected'}
+                            {status === 'pending' && '⏳ Pending Approval'}
+                          </span>
+                        </td>
+                        <td className="p-3 border text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleUpdateMarketerStatus(marketer.id, 'approved')}
+                              disabled={status === 'approved'}
+                              className={`px-3 py-1 rounded text-xs font-bold transition ${
+                                status === 'approved'
+                                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                              }`}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleUpdateMarketerStatus(marketer.id, 'rejected')}
+                              disabled={status === 'rejected'}
+                              className={`px-3 py-1 rounded text-xs font-bold transition ${
+                                status === 'rejected'
+                                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                  : 'bg-red-600 hover:bg-red-700 text-white'
+                              }`}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
