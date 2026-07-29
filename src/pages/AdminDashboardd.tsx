@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../integrations/supabase/client'; 
+import { supabase } from '../integrations/supabase/client';
 
 // --- Types & Interfaces ---
 export type UnitStatus = 'available' | 'reserved' | 'unavailable';
@@ -59,12 +59,13 @@ export function AdminDashboardd() {
   // --- States ---
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  
+
   const [floors, setFloors] = useState<Floor[]>([]);
   const [unitTypes, setUnitTypes] = useState<UnitType[]>([]);
-  const [matrix, setMatrix] = useState<Record<string, UnitStatus>>({}); // Key: "floorName-unitTypeId"
+  const [matrix, setMatrix] = useState<Record<string, UnitStatus>>({});
   const [marketerClients, setMarketerClients] = useState<MarketerClient[]>([]);
   const [marketerAccounts, setMarketerAccounts] = useState<MarketerAccount[]>([]);
+  const [marketersFetchError, setMarketersFetchError] = useState<string | null>(null);
 
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -86,23 +87,37 @@ export function AdminDashboardd() {
   const [activeCellKey, setActiveCellKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'matrix' | 'pricing' | 'clients' | 'marketers'>('matrix');
 
-  // Selected Active Project Object
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
-  // 1. Fetch All Data on Mount
+  // 1. Fetch Initial Data and Setup Realtime Listeners
   useEffect(() => {
     fetchProjects();
     fetchMarketerClients();
     fetchMarketerAccounts();
+
+    // ⚡ Realtime Listener for Marketers Table
+    const marketersChannel = supabase
+      .channel('realtime-marketers-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'marketers' },
+        () => {
+          fetchMarketerAccounts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(marketersChannel);
+    };
   }, []);
 
-  // 2. Fetch Project Specific Data (Floors, Unit Types, Matrix)
+  // 2. Fetch Project Specific Data
   useEffect(() => {
     if (!selectedProjectId) return;
 
     fetchProjectDetails(selectedProjectId);
 
-    // ⚡ Realtime Listener for matrix updates
     const channel = supabase
       .channel('schema-db-changes')
       .on(
@@ -200,12 +215,16 @@ export function AdminDashboardd() {
   };
 
   const fetchMarketerAccounts = async () => {
+    setMarketersFetchError(null);
     const { data, error } = await supabase
       .from('marketers')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
+    if (error) {
+      console.error('Error fetching marketer accounts:', error);
+      setMarketersFetchError(error.message);
+    } else if (data) {
       setMarketerAccounts(data);
     }
   };
@@ -229,7 +248,6 @@ export function AdminDashboardd() {
 
   // --- Form Handlers ---
 
-  // 1. Create Project
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjName.trim()) return alert('Please enter project name');
@@ -256,7 +274,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // 2. Add Floors
   const handleAddFloors = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProjectId) return;
@@ -306,7 +323,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // 3. Add House Type + Pricing
   const handleAddUnitType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUnitTitle.trim() || !newUnitArea || !selectedProjectId) return;
@@ -345,7 +361,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // 4. Update Status in Supabase Matrix
   const saveStatusToSupabase = async (floorName: string, unitTypeId: string, newStatus: UnitStatus) => {
     const key = `${floorName}-${unitTypeId}`;
 
@@ -390,7 +405,7 @@ export function AdminDashboardd() {
     }
   };
 
-  // Stats Calculation
+  // Stats
   const totalCells = floors.length * unitTypes.length;
   let availableCount = 0;
   let reservedCount = 0;
@@ -486,35 +501,29 @@ export function AdminDashboardd() {
       {/* TAB 1: MATRIX & FLOORS STOCK */}
       {activeTab === 'matrix' && (
         <>
-          {/* Stats Widget */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
             <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
               <p className="text-gray-500 text-xs font-semibold">Total Matrix Units</p>
               <p className="text-2xl font-bold text-gray-800">{totalCells}</p>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-emerald-500">
-              <p className="text-emerald-600 text-xs font-semibold">🟢 Available (Mataha)</p>
+              <p className="text-emerald-600 text-xs font-semibold">🟢 Available</p>
               <p className="text-2xl font-bold text-emerald-700">{availableCount}</p>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
-              <p className="text-amber-600 text-xs font-semibold">🟡 Reserved (Mahjouza)</p>
+              <p className="text-amber-600 text-xs font-semibold">🟡 Reserved</p>
               <p className="text-2xl font-bold text-amber-700">{reservedCount}</p>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500">
-              <p className="text-red-600 text-xs font-semibold">🔴 Sold / Unavailable (Mubaa)</p>
+              <p className="text-red-600 text-xs font-semibold">🔴 Sold / Unavailable</p>
               <p className="text-2xl font-bold text-red-700">{unavailableCount}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* LEFT COLUMN: Controls & Form Inputs */}
             <div className="lg:col-span-1 space-y-6">
-              
-              {/* 1. Create New Project Form */}
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="font-bold text-blue-900 text-sm mb-3 flex items-center gap-1">
-                  🏢 1. Add New Project
-                </h2>
+                <h2 className="font-bold text-blue-900 text-sm mb-3">🏢 1. Add New Project</h2>
                 <form onSubmit={handleCreateProject} className="space-y-3">
                   <div>
                     <label className="block text-[11px] font-medium text-gray-700 mb-1">Project Name *</label>
@@ -528,7 +537,7 @@ export function AdminDashboardd() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-medium text-gray-700 mb-1">Subtitle / Sub-Header *</label>
+                    <label className="block text-[11px] font-medium text-gray-700 mb-1">Subtitle / Sub-Header</label>
                     <input
                       type="text"
                       placeholder="e.g. BOLE 24 AROUND IMPERIAL FEB,2026"
@@ -546,15 +555,11 @@ export function AdminDashboardd() {
                 </form>
               </div>
 
-              {/* 2. Add Floor / Typical Floors */}
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="font-bold text-gray-800 text-sm mb-1 flex items-center gap-1">
+                <h2 className="font-bold text-gray-800 text-sm mb-1">
                   📐 2. Add Floors to [{selectedProject?.name || selectedProject?.title}]
                 </h2>
-                <p className="text-[10px] text-gray-500 mb-3">
-                  Enter a floor name OR write count (e.g. 10) to generate 10 typical floors automatically.
-                </p>
-                <form onSubmit={handleAddFloors} className="space-y-3">
+                <form onSubmit={handleAddFloors} className="space-y-3 mt-3">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold text-gray-600 mb-1">Single Floor Name</label>
@@ -570,7 +575,7 @@ export function AdminDashboardd() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-blue-700 mb-1">⚡ Typical Count (e.g. 10)</label>
+                      <label className="block text-[10px] font-bold text-blue-700 mb-1">Typical Count</label>
                       <input
                         type="number"
                         placeholder="e.g. 10"
@@ -590,26 +595,16 @@ export function AdminDashboardd() {
                     + {typicalFloorCount ? `Generate ${typicalFloorCount} Typical Floors` : 'Add Single Floor'}
                   </button>
                 </form>
-                <div className="mt-3 flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                  {floors.map((fl) => (
-                    <span key={fl.id} className="bg-amber-100 text-amber-900 text-[10px] px-2 py-0.5 rounded font-bold">
-                      {fl.floor_name}
-                    </span>
-                  ))}
-                </div>
               </div>
 
-              {/* 3. Add House Type */}
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="font-bold text-gray-800 text-sm mb-3 flex items-center gap-1">
-                  🏠 3. Add House Type & Pricing
-                </h2>
+                <h2 className="font-bold text-gray-800 text-sm mb-3">🏠 3. Add House Type & Pricing</h2>
                 <form onSubmit={handleAddUnitType} className="space-y-3">
                   <div>
                     <label className="block text-[11px] font-medium text-gray-700 mb-1">House Title *</label>
                     <input
                       type="text"
-                      placeholder="e.g. 3 Bed Room / Studio"
+                      placeholder="e.g. 3 Bed Room"
                       value={newUnitTitle}
                       onChange={(e) => setNewUnitTitle(e.target.value)}
                       className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
@@ -648,7 +643,6 @@ export function AdminDashboardd() {
                 </form>
               </div>
 
-              {/* Quick Cell Status Switcher Panel */}
               {activeCellKey && (
                 <div className="bg-amber-50 p-4 rounded-xl border border-amber-300 shadow-sm">
                   <p className="text-xs font-bold text-amber-900 mb-2">
@@ -676,10 +670,8 @@ export function AdminDashboardd() {
                   </div>
                 </div>
               )}
-
             </div>
 
-            {/* RIGHT COLUMN: Interactive Stock Grid Matrix Table */}
             <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
               <div className="flex flex-col items-center justify-center mb-6">
                 <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
@@ -755,7 +747,7 @@ export function AdminDashboardd() {
       {activeTab === 'pricing' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
           <h2 className="text-lg font-bold text-gray-800 mb-2">
-            💳 Manager Control: Pricing & Payment Plans for [{selectedProject?.name || selectedProject?.title}]
+            💳 Pricing & Payment Plans for [{selectedProject?.name || selectedProject?.title}]
           </h2>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-xs text-left border border-gray-200">
@@ -835,6 +827,16 @@ export function AdminDashboardd() {
             </button>
           </div>
 
+          {/* Error Message Box if fetching fails */}
+          {marketersFetchError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-800 text-xs rounded">
+              ⚠️ <strong>Error Loading Data from Supabase:</strong> {marketersFetchError}
+              <p className="mt-1 text-[11px] text-red-600">
+                👉 Please make sure you executed the SQL query in Supabase SQL Editor to allow public select on `marketers` table!
+              </p>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border border-gray-200">
               <thead className="bg-gray-800 text-white uppercase font-bold">
@@ -850,7 +852,7 @@ export function AdminDashboardd() {
                 {marketerAccounts.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-4 text-center text-gray-500 font-semibold">
-                      No marketer accounts found.
+                      No marketer accounts found in database.
                     </td>
                   </tr>
                 ) : (
@@ -858,7 +860,7 @@ export function AdminDashboardd() {
                     const status = marketer.status || 'pending';
                     return (
                       <tr key={marketer.id} className="border-b hover:bg-gray-50">
-                        <td className="p-3 border font-bold text-gray-800">{marketer.name}</td>
+                        <td className="p-3 border font-bold text-gray-800">{marketer.name || 'Unnamed'}</td>
                         <td className="p-3 border text-gray-600">{marketer.email}</td>
                         <td className="p-3 border">{marketer.phone || '-'}</td>
                         <td className="p-3 border">
