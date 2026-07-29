@@ -1,108 +1,97 @@
 import React, { useState } from 'react';
-import { Marketer } from './types';
+import { supabase } from '../integrations/supabase/client';
 
-interface LoginProps {
-  onLoginSuccess: (marketer: Marketer) => void;
-  onNavigateToSignUp: () => void;
-}
-
-export function Login({ onLoginSuccess, onNavigateToSignUp }: LoginProps) {
+export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setLoading(true);
 
-    const storedMarketers: Marketer[] = JSON.parse(
-      localStorage.getItem('system_marketers') || '[]'
-    );
+    // 1️⃣ تسجيل الدخول بـ Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    const targetUser = storedMarketers.find(
-      (m) => m.email.toLowerCase() === email.toLowerCase()
-    );
-
-    if (!targetUser || targetUser.password !== password) {
-      setError('Invalid email or password.');
+    if (authError) {
+      alert(`❌ خطأ في كلمة المرور أو البريد الإلكتروني: ${authError.message}`);
+      setLoading(false);
       return;
     }
 
-    // Check Admin Approval Status
-    if (targetUser.status === 'pending') {
-      setError(' Your registration is still pending Admin approval.');
-      return;
+    if (authData.user) {
+      // 2️⃣ الاستعلام عن حالة المسوق في جدول marketers
+      const { data: marketer, error: marketerError } = await supabase
+        .from('marketers')
+        .select('status')
+        .eq('email', authData.user.email)
+        .maybeSingle();
+
+      if (marketerError || !marketer) {
+        alert('⚠️ لم يتم العثور على بيانات هذا المسوق في النظام.');
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      // 3️⃣ التحقق من قبول الأدمن
+      if (marketer.status === 'pending') {
+        alert('⏳ حسابك قيد المراجعة حالياً من قبل الإدارة. يرجى الانتظار لحين القبول.');
+        await supabase.auth.signOut(); // تسجيل خروج لمنع الدخول
+      } else if (marketer.status === 'rejected') {
+        alert('❌ للأسف، تم رفض طلب تسجيل حسابك من قبل الإدارة.');
+        await supabase.auth.signOut();
+      } else if (marketer.status === 'approved') {
+        alert('✅ مرحباً بك! تم تسجيل الدخول بنجاح.');
+        // هنا يمكنك التوجيه إلى لوحة المسوق مثلاً:
+        // window.location.href = '/marketer-dashboard';
+      } else {
+        alert('⚠️ حالة الحساب غير معروفة.');
+        await supabase.auth.signOut();
+      }
     }
 
-    if (targetUser.status === 'rejected') {
-      setError(' Your registration request was declined by the Admin.');
-      return;
-    }
-
-    // Approved -> Log In
-    onLoginSuccess(targetUser);
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4" dir="ltr">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-200">
-        <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-extrabold text-xl mx-auto mb-3">
-            🏢
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800">Marketer Portal Login</h2>
-          <p className="text-xs text-gray-500 mt-1">Sign in to access stock inventory & plans</p>
+    <div className="max-w-md mx-auto my-10 p-6 bg-white rounded-xl shadow-md border" dir="rtl">
+      <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">تسجيل دخول المسوقين</h2>
+      
+      <form onSubmit={handleLogin} className="space-y-4 text-right">
+        <div>
+          <label className="block text-xs font-bold mb-1">البريد الإلكتروني</label>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-2 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+          />
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-xs mb-4">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="marketer@company.com"
-              className="w-full p-3 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full p-3 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition shadow-md"
-          >
-            Sign In
-          </button>
-        </form>
-
-        <div className="text-center mt-6 text-xs text-gray-500">
-          Need an account?{' '}
-          <button
-            onClick={onNavigateToSignUp}
-            className="text-blue-600 font-bold hover:underline"
-          >
-            Request Sign-Up
-          </button>
+        <div>
+          <label className="block text-xs font-bold mb-1">كلمة المرور</label>
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-2 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+          />
         </div>
-      </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded transition"
+        >
+          {loading ? 'جاري التحقق...' : 'تسجيل الدخول'}
+        </button>
+      </form>
     </div>
   );
 }
