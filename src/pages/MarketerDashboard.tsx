@@ -50,6 +50,7 @@ export function MarketerDashboard() {
   // --- Auth & User State ---
   const [currentMarketer, setCurrentMarketer] = useState<MarketerProfile | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingProjects, setLoadingProjects] = useState(true);
   
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
@@ -67,49 +68,10 @@ export function MarketerDashboard() {
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
 
-  // --- Projects State ---
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: 'proj-1',
-      name: 'Bole 24 Imperial Project',
-      subtitle: 'BOLE 24 AROUND IMPERIAL FEB,2026',
-      unitTypes: [
-        { id: '1b-90', title: 'One bed room', area: 90, totalPrice: 120000, downPayment: 20000, installmentYears: 5, monthlyInstallment: 1666 },
-        { id: '2b-105', title: 'Two bed room', area: 105, totalPrice: 150000, downPayment: 25000, installmentYears: 5, monthlyInstallment: 2083 },
-        { id: '2b-110', title: 'Two bed room', area: 110, totalPrice: 160000, downPayment: 30000, installmentYears: 6, monthlyInstallment: 1805 },
-        { id: '3b-140', title: 'Three bed room', area: 140, totalPrice: 210000, downPayment: 35000, installmentYears: 7, monthlyInstallment: 2083 },
-        { id: '3b-145', title: 'Three bed room', area: 145, totalPrice: 220000, downPayment: 40000, installmentYears: 7, monthlyInstallment: 2142 },
-      ],
-      floors: [
-        'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth',
-        'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth',
-        'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth',
-      ],
-      matrix: {
-        'Tenth-1b-90': 'available',
-        'Eleventh-2b-105': 'reserved',
-      },
-      remarks: {},
-    },
-    {
-      id: 'proj-2',
-      name: 'Downtown Towers',
-      subtitle: 'DOWNTOWN PLAZA APR,2026',
-      unitTypes: [
-        { id: 'dt-1b-80', title: '1 Bed Studio', area: 80, totalPrice: 95000, downPayment: 15000, installmentYears: 4, monthlyInstallment: 1666 },
-        { id: 'dt-2b-120', title: '2 Bed Luxury', area: 120, totalPrice: 180000, downPayment: 30000, installmentYears: 5, monthlyInstallment: 2500 },
-        { id: 'dt-3b-160', title: '3 Bed Family', area: 160, totalPrice: 250000, downPayment: 45000, installmentYears: 6, monthlyInstallment: 2847 },
-      ],
-      floors: ['First', 'Second', 'Third', 'Fourth', 'Fifth'],
-      matrix: {
-        'First-dt-1b-80': 'available',
-        'Second-dt-2b-120': 'available',
-      },
-      remarks: {},
-    },
-  ]);
-
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0].id);
+  // --- Dynamic Projects State ---
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
 
   const [selectedUnitKey, setSelectedUnitKey] = useState<string>('');
@@ -120,9 +82,18 @@ export function MarketerDashboard() {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
 
-  // 1️⃣ Check Active Supabase Session on Mount
+  // 1️⃣ Check Active Session & Fetch Dynamic Projects on Mount
   useEffect(() => {
     checkCurrentUser();
+    fetchProjects();
+
+    // ⚡ Realtime subscriptions for projects and leads updates
+    const projectsChannel = supabase
+      .channel('realtime-projects')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
+        fetchProjects();
+      })
+      .subscribe();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
@@ -134,6 +105,7 @@ export function MarketerDashboard() {
     });
 
     return () => {
+      supabase.removeChannel(projectsChannel);
       authListener.subscription.unsubscribe();
     };
   }, []);
@@ -150,6 +122,47 @@ export function MarketerDashboard() {
       console.error("Auth check error:", err);
     } finally {
       setLoadingUser(false);
+    }
+  };
+
+  // 2️⃣ Fetch Dynamic Projects from Supabase Database
+  const fetchProjects = async () => {
+    setLoadingProjects(true);
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const formattedProjects: Project[] = data.map((p: any) => ({
+          id: p.id,
+          name: p.name || 'Untitled Project',
+          subtitle: p.subtitle || '',
+          floors: Array.isArray(p.floors) ? p.floors : (typeof p.floors === 'string' ? JSON.parse(p.floors) : []),
+          unitTypes: p.unit_types || p.unitTypes || [],
+          matrix: p.matrix || {},
+          remarks: p.remarks || {},
+        }));
+
+        setProjects(formattedProjects);
+        
+        // Auto-select first project if none selected
+        setSelectedProjectId((prev) => {
+          if (!prev || !formattedProjects.some((p) => p.id === prev)) {
+            return formattedProjects[0].id;
+          }
+          return prev;
+        });
+      } else {
+        setProjects([]);
+      }
+    } catch (err: any) {
+      console.error('Error fetching dynamic projects:', err.message);
+    } finally {
+      setLoadingProjects(false);
     }
   };
 
@@ -185,23 +198,24 @@ export function MarketerDashboard() {
     }
   };
 
-  // Fetch Leads from Supabase
+  // Fetch Leads for Current Marketer
   const fetchLeadsForMarketer = async (marketerId: string, marketerName: string) => {
     try {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .or(`marketer_id.eq.${marketerId},marketerName.eq.${marketerName}`);
+        .or(`marketer_id.eq.${marketerId},marketer_name.eq.${marketerName}`)
+        .order('created_at', { ascending: false });
 
       if (!error && data) {
         setLeads(data);
       }
-    } catch {
-      // Leads table might not exist yet
+    } catch (err) {
+      console.error('Error fetching leads:', err);
     }
   };
 
-  // 2️⃣ Handle Login via Supabase Auth
+  // Login Handler
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -230,7 +244,7 @@ export function MarketerDashboard() {
     }
   };
 
-  // 3️⃣ Handle Sign Up via Supabase Auth & Database
+  // Sign Up Handler
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -288,7 +302,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // 4️⃣ Logout
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setCurrentMarketer(null);
@@ -310,7 +323,7 @@ export function MarketerDashboard() {
     }
   };
 
-  // Save Lead & Reserve Unit
+  // Reserve Unit & Save Lead with Database Sync
   const handleReserveAndSaveLead = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
@@ -325,39 +338,15 @@ export function MarketerDashboard() {
       return;
     }
 
-    // Update local Matrix
-    setProjects((prevProjects) =>
-      prevProjects.map((proj) => {
-        if (proj.id === selectedProjectId) {
-          return {
-            ...proj,
-            matrix: {
-              ...proj.matrix,
-              [selectedUnitKey]: 'reserved',
-            },
-          };
-        }
-        return proj;
-      })
-    );
+    if (!selectedProject) {
+      alert('No active project selected.');
+      return;
+    }
 
-    const newLead: Lead = {
-      id: Date.now().toString(),
-      name: clientName,
-      phone: cleanPhone,
-      apartmentId: selectedUnitLabel,
-      unitKey: selectedUnitKey,
-      projectId: selectedProjectId,
-      marketerName: currentMarketer?.name || 'My Account',
-      status: 'Reserved',
-      createdAt: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setLeads([newLead, ...leads]);
-
-    // Save lead to Supabase if table exists
-    try {
-      await supabase.from('leads').insert([
+    // 1️⃣ Save Lead to Supabase `leads` Table
+    const { data: leadData, error: leadError } = await supabase
+      .from('leads')
+      .insert([
         {
           name: clientName,
           phone: cleanPhone,
@@ -368,18 +357,55 @@ export function MarketerDashboard() {
           marketer_name: currentMarketer?.name,
           status: 'Reserved',
         },
-      ]);
-    } catch {
-      // Fallback
+      ])
+      .select();
+
+    if (leadError) {
+      console.error('Error saving lead:', leadError);
+      alert(`❌ Failed to save lead! Database error: ${leadError.message}`);
+      return;
     }
 
+    // 2️⃣ Update Project Matrix Status to 'reserved' in Supabase `projects` Table
+    const updatedMatrix = {
+      ...(selectedProject.matrix || {}),
+      [selectedUnitKey]: 'reserved',
+    };
+
+    const { error: projUpdateError } = await supabase
+      .from('projects')
+      .update({ matrix: updatedMatrix })
+      .eq('id', selectedProjectId);
+
+    if (projUpdateError) {
+      console.error('Error updating project matrix:', projUpdateError);
+    }
+
+    // 3️⃣ Update Local State UI
+    setProjects((prevProjects) =>
+      prevProjects.map((proj) => {
+        if (proj.id === selectedProjectId) {
+          return {
+            ...proj,
+            matrix: updatedMatrix,
+          };
+        }
+        return proj;
+      })
+    );
+
+    if (leadData && leadData[0]) {
+      setLeads([leadData[0], ...leads]);
+    }
+
+    // Reset Input Fields
     setClientName('');
     setClientPhone('');
     setSelectedUnitKey('');
     setSelectedUnitLabel('');
     setSelectedUnitDetails(null);
 
-    alert('🟡 Unit status updated to RESERVED and lead saved successfully!');
+    alert('✅ Unit reserved and client saved successfully in database!');
   };
 
   if (loadingUser) {
@@ -394,7 +420,7 @@ export function MarketerDashboard() {
   }
 
   // -------------------------------------------------------------
-  // SCREEN 1: LOGIN / SIGN UP SCREEN (SUPABASE AUTH)
+  // SCREEN 1: LOGIN / SIGN UP SCREEN
   // -------------------------------------------------------------
   if (!currentMarketer) {
     return (
@@ -565,7 +591,7 @@ export function MarketerDashboard() {
   return (
     <div className="p-4 bg-gray-100 min-h-screen text-left" dir="ltr">
       
-      {/* 1. Header Bar */}
+      {/* Header Bar */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-gray-800">🏢 Marketer Portal - Real Estate Inventory</h1>
@@ -575,25 +601,27 @@ export function MarketerDashboard() {
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">Project:</label>
-            <select
-              value={selectedProjectId}
-              onChange={(e) => {
-                setSelectedProjectId(e.target.value);
-                setSelectedUnitKey('');
-                setSelectedUnitLabel('');
-                setSelectedUnitDetails(null);
-              }}
-              className="p-2 bg-blue-50 border border-blue-300 font-semibold text-blue-900 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {projects.length > 0 && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">Project:</label>
+              <select
+                value={selectedProjectId}
+                onChange={(e) => {
+                  setSelectedProjectId(e.target.value);
+                  setSelectedUnitKey('');
+                  setSelectedUnitLabel('');
+                  setSelectedUnitDetails(null);
+                }}
+                className="p-2 bg-blue-50 border border-blue-300 font-semibold text-blue-900 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <button
             onClick={handleLogout}
@@ -604,229 +632,249 @@ export function MarketerDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* 2. AVAILABLE STOCKS GRID */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
+      {loadingProjects ? (
+        <div className="bg-white p-12 rounded-xl shadow-md text-center text-gray-500">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-sm font-semibold">Loading projects from Database...</p>
+        </div>
+      ) : projects.length === 0 ? (
+        <div className="bg-white p-12 rounded-xl shadow-md text-center text-gray-500">
+          <p className="text-lg font-bold text-gray-700">No Projects Available</p>
+          <p className="text-xs text-gray-500 mt-1">
+            There are no projects added by Admin yet. Please check back later.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          <div className="flex flex-col items-center justify-center mb-6">
-            <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
-              AVAILABLE STOCKS
+          {/* AVAILABLE STOCKS GRID */}
+          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
+            
+            <div className="flex flex-col items-center justify-center mb-6">
+              <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
+                AVAILABLE STOCKS
+              </div>
+              {selectedProject?.subtitle && (
+                <div className="bg-[#00474b] text-white text-xs sm:text-sm font-semibold uppercase px-6 py-1.5 rounded-md mt-2 shadow-sm">
+                  {selectedProject.subtitle}
+                </div>
+              )}
             </div>
-            <div className="bg-[#00474b] text-white text-xs sm:text-sm font-semibold uppercase px-6 py-1.5 rounded-md mt-2 shadow-sm">
-              {selectedProject.subtitle}
-            </div>
-          </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-center text-xs font-sans">
-              <thead>
-                <tr className="bg-[#00474b] text-white">
-                  <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[90px]">
-                    Floor
-                  </th>
-                  <th
-                    colSpan={selectedProject.unitTypes.length}
-                    className="border border-gray-400 p-1.5 font-bold italic text-sm"
-                  >
-                    Type of Houses & Price Plans
-                  </th>
-                  <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[80px]">
-                    Remark
-                  </th>
-                </tr>
-
-                <tr className="bg-[#00474b] text-white">
-                  {selectedProject.unitTypes.map((ut) => (
-                    <th key={ut.id} className="border border-gray-400 p-2 font-semibold">
-                      {ut.title} <br />
-                      <span className="font-normal text-[11px] text-amber-300">[{ut.area} m²]</span>
-                      {ut.totalPrice && (
-                        <div className="text-[10px] text-emerald-300 font-bold mt-0.5">
-                          ${ut.totalPrice.toLocaleString()}
-                        </div>
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {selectedProject.floors.map((floor) => {
-                  const remark = selectedProject.remarks?.[floor] || '';
-
-                  return (
-                    <tr key={floor}>
-                      <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
-                        {floor}
-                      </td>
-
-                      {selectedProject.unitTypes.map((ut) => {
-                        const key = `${floor}-${ut.id}`;
-                        const status = selectedProject.matrix[key] || 'unavailable';
-                        const isSelected = selectedUnitKey === key;
-
-                        let bgClass = 'bg-[#ff0000] cursor-not-allowed';
-                        if (status === 'available') {
-                          bgClass = 'bg-[#00b050] hover:bg-green-600 cursor-pointer';
-                        } else if (status === 'reserved') {
-                          bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer';
-                        }
-
-                        return (
-                          <td
-                            key={ut.id}
-                            onClick={() => handleCellClick(floor, ut, status)}
-                            className={`border border-black p-3 font-bold transition-all ${bgClass} ${
-                              isSelected ? 'ring-4 ring-blue-600 scale-95' : ''
-                            }`}
-                            title={`Floor ${floor} - ${ut.title} (${status.toUpperCase()})`}
-                          >
-                            {isSelected && (
-                              <span className="text-[10px] bg-black text-white px-1 py-0.5 rounded">
-                                Selected
-                              </span>
-                            )}
-                          </td>
-                        );
-                      })}
-
-                      <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">
-                        {remark}
-                      </td>
+            {selectedProject && (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-center text-xs font-sans">
+                  <thead>
+                    <tr className="bg-[#00474b] text-white">
+                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[90px]">
+                        Floor
+                      </th>
+                      <th
+                        colSpan={selectedProject.unitTypes?.length || 1}
+                        className="border border-gray-400 p-1.5 font-bold italic text-sm"
+                      >
+                        Type of Houses & Price Plans
+                      </th>
+                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[80px]">
+                        Remark
+                      </th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
 
-          <div className="flex justify-center mt-6">
-            <div className="border-2 border-black rounded-3xl py-2 px-8 text-center text-xs font-bold text-black bg-white shadow-sm flex flex-wrap justify-center gap-4">
-              <span>NB:-</span>
-              <span className="text-red-600 font-extrabold">RED = NOT Available</span>
-              <span className="text-emerald-600 font-extrabold">GREEN = Available</span>
-              <span className="text-amber-500 font-extrabold">YELLOW = Reserved</span>
+                    <tr className="bg-[#00474b] text-white">
+                      {(selectedProject.unitTypes || []).map((ut) => (
+                        <th key={ut.id} className="border border-gray-400 p-2 font-semibold">
+                          {ut.title} <br />
+                          <span className="font-normal text-[11px] text-amber-300">[{ut.area} m²]</span>
+                          {ut.totalPrice && (
+                            <div className="text-[10px] text-emerald-300 font-bold mt-0.5">
+                              ${ut.totalPrice.toLocaleString()}
+                            </div>
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {(selectedProject.floors || []).map((floor) => {
+                      const remark = selectedProject.remarks?.[floor] || '';
+
+                      return (
+                        <tr key={floor}>
+                          <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
+                            {floor}
+                          </td>
+
+                          {(selectedProject.unitTypes || []).map((ut) => {
+                            const key = `${floor}-${ut.id}`;
+                            const status = selectedProject.matrix?.[key] || 'unavailable';
+                            const isSelected = selectedUnitKey === key;
+
+                            let bgClass = 'bg-[#ff0000] cursor-not-allowed';
+                            if (status === 'available') {
+                              bgClass = 'bg-[#00b050] hover:bg-green-600 cursor-pointer';
+                            } else if (status === 'reserved') {
+                              bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer';
+                            }
+
+                            return (
+                              <td
+                                key={ut.id}
+                                onClick={() => handleCellClick(floor, ut, status)}
+                                className={`border border-black p-3 font-bold transition-all ${bgClass} ${
+                                  isSelected ? 'ring-4 ring-blue-600 scale-95' : ''
+                                }`}
+                                title={`Floor ${floor} - ${ut.title} (${status.toUpperCase()})`}
+                              >
+                                {isSelected && (
+                                  <span className="text-[10px] bg-black text-white px-1 py-0.5 rounded">
+                                    Selected
+                                  </span>
+                                )}
+                              </td>
+                            );
+                          })}
+
+                          <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">
+                            {remark}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="flex justify-center mt-6">
+              <div className="border-2 border-black rounded-3xl py-2 px-8 text-center text-xs font-bold text-black bg-white shadow-sm flex flex-wrap justify-center gap-4">
+                <span>NB:-</span>
+                <span className="text-red-600 font-extrabold">RED = NOT Available</span>
+                <span className="text-emerald-600 font-extrabold">GREEN = Available</span>
+                <span className="text-amber-500 font-extrabold">YELLOW = Reserved</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* 3. Direct Unit Reservation */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <h2 className="font-bold text-gray-800 mb-2 text-md">📌 Reserve Unit & Claim Lead</h2>
-            <p className="text-xs text-gray-500 mb-4">
-              Click any green cell in the matrix to view its <span className="font-semibold text-blue-600">Payment Plan</span> and reserve it.
-            </p>
+          {/* Direct Unit Reservation Form */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+              <h2 className="font-bold text-gray-800 mb-2 text-md">📌 Reserve Unit & Claim Lead</h2>
+              <p className="text-xs text-gray-500 mb-4">
+                Click any green cell in the matrix to view its <span className="font-semibold text-blue-600">Payment Plan</span> and reserve it.
+              </p>
 
-            {selectedUnitDetails && (
-              <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3.5 mb-4 text-xs space-y-2">
-                <div className="font-bold text-blue-900 border-b border-blue-200 pb-1.5 flex justify-between">
-                  <span>💳 PAYMENT PLAN DETAILS</span>
-                  <span className="text-blue-700">{selectedUnitDetails.area} m²</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-gray-700">
-                  <div>
-                    <span className="block text-[10px] text-gray-500">Total Price:</span>
-                    <strong className="text-gray-900">${selectedUnitDetails.totalPrice?.toLocaleString() || 0}</strong>
+              {selectedUnitDetails && (
+                <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3.5 mb-4 text-xs space-y-2">
+                  <div className="font-bold text-blue-900 border-b border-blue-200 pb-1.5 flex justify-between">
+                    <span>💳 PAYMENT PLAN DETAILS</span>
+                    <span className="text-blue-700">{selectedUnitDetails.area} m²</span>
                   </div>
-                  <div>
-                    <span className="block text-[10px] text-gray-500">Down Payment:</span>
-                    <strong className="text-emerald-700">${selectedUnitDetails.downPayment?.toLocaleString() || 0}</strong>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-gray-500">Installment Period:</span>
-                    <strong className="text-gray-900">{selectedUnitDetails.installmentYears || 1} Years</strong>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-gray-500">Monthly Installment:</span>
-                    <strong className="text-blue-700">${selectedUnitDetails.monthlyInstallment?.toLocaleString() || 0}/mo</strong>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={handleReserveAndSaveLead} className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Selected Unit *
-                </label>
-                <input
-                  type="text"
-                  readOnly
-                  placeholder="← Click a GREEN cell in table"
-                  value={selectedUnitLabel}
-                  className="w-full p-2.5 border rounded-lg text-xs bg-amber-50 text-amber-900 font-bold border-amber-300 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Client Name *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. John Doe"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  className="w-full p-2.5 border rounded-lg text-xs border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  placeholder="05xxxxxxxx / 09xxxxxxxx"
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  className="w-full p-2.5 border rounded-lg text-xs border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-amber-500 hover:bg-amber-600 text-black font-extrabold py-2.5 rounded-lg text-xs transition shadow-sm"
-              >
-                🔒 Save & Mark as Reserved (Yellow)
-              </button>
-            </form>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <h2 className="font-bold text-gray-800 mb-3 text-md">
-              Your Reserved Units ({leads.length})
-            </h2>
-            {leads.length === 0 ? (
-              <p className="text-gray-400 text-xs">No reserved units yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {leads.map((lead) => (
-                  <div
-                    key={lead.id}
-                    className="p-3 border rounded-lg bg-amber-50/50 border-amber-200 flex justify-between items-center text-xs"
-                  >
+                  <div className="grid grid-cols-2 gap-2 text-gray-700">
                     <div>
-                      <p className="font-bold text-gray-800">{lead.name}</p>
-                      <p className="text-gray-500">{lead.phone}</p>
-                      <p className="text-[11px] text-amber-800 font-medium mt-0.5">{lead.apartmentId || lead.apartment_id}</p>
+                      <span className="block text-[10px] text-gray-500">Total Price:</span>
+                      <strong className="text-gray-900">${selectedUnitDetails.totalPrice?.toLocaleString() || 0}</strong>
                     </div>
-                    <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-2 py-1 rounded-full">
-                      RESERVED
-                    </span>
+                    <div>
+                      <span className="block text-[10px] text-gray-500">Down Payment:</span>
+                      <strong className="text-emerald-700">${selectedUnitDetails.downPayment?.toLocaleString() || 0}</strong>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-gray-500">Installment Period:</span>
+                      <strong className="text-gray-900">{selectedUnitDetails.installmentYears || 1} Years</strong>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-gray-500">Monthly Installment:</span>
+                      <strong className="text-blue-700">${selectedUnitDetails.monthlyInstallment?.toLocaleString() || 0}/mo</strong>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+                </div>
+              )}
 
-      </div>
+              <form onSubmit={handleReserveAndSaveLead} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Selected Unit *
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    placeholder="← Click a GREEN cell in table"
+                    value={selectedUnitLabel}
+                    className="w-full p-2.5 border rounded-lg text-xs bg-amber-50 text-amber-900 font-bold border-amber-300 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Client Name *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. John Doe"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    className="w-full p-2.5 border rounded-lg text-xs border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="05xxxxxxxx / 09xxxxxxxx"
+                    value={clientPhone}
+                    onChange={(e) => setClientPhone(e.target.value)}
+                    className="w-full p-2.5 border rounded-lg text-xs border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-extrabold py-2.5 rounded-lg text-xs transition shadow-sm"
+                >
+                  🔒 Save & Mark as Reserved (Yellow)
+                </button>
+              </form>
+            </div>
+
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+              <h2 className="font-bold text-gray-800 mb-3 text-md">
+                Your Reserved Units ({leads.length})
+              </h2>
+              {leads.length === 0 ? (
+                <p className="text-gray-400 text-xs">No reserved units yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {leads.map((lead) => (
+                    <div
+                      key={lead.id}
+                      className="p-3 border rounded-lg bg-amber-50/50 border-amber-200 flex justify-between items-center text-xs"
+                    >
+                      <div>
+                        <p className="font-bold text-gray-800">{lead.name}</p>
+                        <p className="text-gray-500">{lead.phone}</p>
+                        <p className="text-[11px] text-amber-800 font-medium mt-0.5">
+                          {lead.apartment_id || lead.apartmentId}
+                        </p>
+                      </div>
+                      <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-2 py-1 rounded-full">
+                        RESERVED
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }
