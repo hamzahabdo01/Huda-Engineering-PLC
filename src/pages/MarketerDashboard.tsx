@@ -367,7 +367,8 @@ export function MarketerDashboard() {
     }
 
     // 2️⃣ Update Project Matrix Status to 'reserved' in Supabase `projects` Table
-    const updatedMatrix = {
+    // 💡 تم تحديد نوع المتغير هنا لحل مشكلة TypeScript
+    const updatedMatrix: Record<string, UnitStatus> = {
       ...(selectedProject.matrix || {}),
       [selectedUnitKey]: 'reserved',
     };
