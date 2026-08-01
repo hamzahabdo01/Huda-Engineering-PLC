@@ -101,17 +101,20 @@ export function MarketerDashboard() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
 
-  // 1️⃣ Check Active Session & Listen to Auth Change (Including Password Recovery Protection)
+  // 1️⃣ Check Active Session & Handle Recovery URL with URL Cleanup
   useEffect(() => {
-    // التحقق مما إذا كان الرابط القادم من الإيميل يحتوي على توكن الاستعادة
+    // فحص ما إذا كان الرابط يحتوي على معلمات استعادة كلمة المرور
     const isRecoveryUrl = window.location.hash.includes('type=recovery') || 
-                          window.location.href.includes('type=recovery');
+                          window.location.search.includes('type=recovery');
 
     if (isRecoveryUrl) {
       setIsUpdatePassword(true);
       setIsForgotPassword(false);
       setIsSignUp(false);
       setLoadingUser(false);
+
+      // 🧹 تنظيف الـ URL فوراً لمنع تكرار التحويل عند التنقل أو التحديث
+      window.history.replaceState(null, '', window.location.pathname);
     } else {
       checkCurrentUser();
     }
@@ -124,6 +127,8 @@ export function MarketerDashboard() {
         setIsForgotPassword(false);
         setIsSignUp(false);
         setLoadingUser(false);
+        // تنظيف شريط العنوان
+        window.history.replaceState(null, '', window.location.pathname);
       } else if (session?.user && !isUpdatePassword && !isRecoveryUrl) {
         fetchMarketerProfile(session.user.id);
       } else if (!session) {
@@ -285,7 +290,6 @@ export function MarketerDashboard() {
       if (error) throw error;
 
       if (data) {
-        // الفحص يعتمد فقط على حقل status
         const isApproved = data.status === 'approved';
 
         if (!isApproved && !isUpdatePassword) {
@@ -367,7 +371,7 @@ export function MarketerDashboard() {
     setAuthLoading(true);
 
     try {
-      // يحافظ على اسم الصفحة الحالية ديناميكياً
+      // إرسال رابط ديناميكي بدون معلمات زائدة
       const redirectUrl = `${window.location.origin}${window.location.pathname}`;
 
       const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
@@ -427,8 +431,10 @@ export function MarketerDashboard() {
           return;
         }
 
-        // 3️⃣ تسجيل الخروج وإظهار رسالة النجاح
+        // 3️⃣ تنظيف الـ URL وتسجيل الخروج
+        window.history.replaceState(null, '', window.location.pathname);
         await supabase.auth.signOut();
+        
         setIsUpdatePassword(false);
         setNewPassword('');
         setConfirmNewPassword('');
@@ -682,7 +688,7 @@ export function MarketerDashboard() {
             </div>
           )}
 
-          {/* 🔑 1️⃣ UPDATE PASSWORD FORM */}
+          {/* 🔑 UPDATE PASSWORD FORM */}
           {isUpdatePassword ? (
             <form onSubmit={handleSetNewPassword} className="space-y-4">
               <div>
@@ -718,7 +724,7 @@ export function MarketerDashboard() {
               </button>
             </form>
           ) : isForgotPassword ? (
-            /* 2️⃣ FORGOT PASSWORD FORM */
+            /* FORGOT PASSWORD FORM */
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
@@ -753,7 +759,7 @@ export function MarketerDashboard() {
               </button>
             </form>
           ) : !isSignUp ? (
-            /* 3️⃣ LOGIN FORM */
+            /* LOGIN FORM */
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
@@ -801,7 +807,7 @@ export function MarketerDashboard() {
               </button>
             </form>
           ) : (
-            /* 4️⃣ REGISTER FORM */
+            /* REGISTER FORM */
             <form onSubmit={handleSignUp} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name *</label>
