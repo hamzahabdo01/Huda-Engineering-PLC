@@ -48,7 +48,6 @@ export interface MarketerProfile {
   email: string;
   phone?: string;
   status?: string;
-  approved?: boolean;
 }
 
 export function MarketerDashboard() {
@@ -60,7 +59,7 @@ export function MarketerDashboard() {
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [isUpdatePassword, setIsUpdatePassword] = useState(false); // 👈 واجهة إدخال كلمة المرور الجديدة
+  const [isUpdatePassword, setIsUpdatePassword] = useState(false); // واجهة إدخال كلمة المرور الجديدة
   const [authLoading, setAuthLoading] = useState(false);
 
   // Auth Inputs
@@ -104,7 +103,7 @@ export function MarketerDashboard() {
 
   // 1️⃣ Check Active Session & Listen to Auth Change (Including Password Recovery Protection)
   useEffect(() => {
-    // 👈 التحقق مما إذا كان الرابط القادم من الإيميل يحتوي على توكن الاستعادة
+    // التحقق مما إذا كان الرابط القادم من الإيميل يحتوي على توكن الاستعادة
     const isRecoveryUrl = window.location.hash.includes('type=recovery') || 
                           window.location.href.includes('type=recovery');
 
@@ -286,9 +285,9 @@ export function MarketerDashboard() {
       if (error) throw error;
 
       if (data) {
-        const isApproved = data.status === 'approved' || data.approved === true;
+        // الفحص يعتمد فقط على حقل status
+        const isApproved = data.status === 'approved';
 
-        // 👈 حماية: عدم عمل signOut إذا كنا في وضع استعادة كلمة المرور
         if (!isApproved && !isUpdatePassword) {
           setAuthError('⏳ Your account is pending admin approval. Access is restricted.');
           setCurrentMarketer(null);
@@ -354,97 +353,93 @@ export function MarketerDashboard() {
     }
   };
 
-  // 👈 إرسال رابط استعادة كلمة المرور
-const handleResetPassword = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setAuthError('');
-  setAuthSuccess('');
+  // إرسال رابط استعادة كلمة المرور
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
 
-  if (!loginEmail.trim()) {
-    setAuthError('❌ Please enter your email address first.');
-    return;
-  }
-
-  setAuthLoading(true);
-
-  try {
-    // ❌ القديم (كان يجبر التحويل لـ /marketer-dashboard):
-    // const redirectUrl = `${window.location.origin}/marketer-dashboard`; 
-
-    // ✅ الجديد (يحافظ على اسم الصفحة الحالية التي يتواجد فيها المستخدم ديناميكياً):
-    const redirectUrl = `${window.location.origin}${window.location.pathname}`;
-
-    const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-      redirectTo: redirectUrl,
-    });
-
-    if (error) {
-      setAuthError(`❌ ${error.message}`);
-    } else {
-      setAuthSuccess('✅ Password reset link has been sent to your email inbox!');
-    }
-  } catch (err: any) {
-    setAuthError(`❌ ${err.message}`);
-  } finally {
-    setAuthLoading(false);
-  }
-};
-  // 👈 حفظ كلمة المرور الجديدة وتحويل الحساب لانتظار موافقة الأدمن
-const handleSetNewPassword = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setAuthError('');
-  setAuthSuccess('');
-
-  if (newPassword !== confirmNewPassword) {
-    setAuthError('❌ Passwords do not match.');
-    return;
-  }
-
-  setAuthLoading(true);
-
-  try {
-    // 1️⃣ تحديث كلمة المرور في Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-
-    if (authError) {
-      setAuthError(`❌ Auth error: ${authError.message}`);
-      setAuthLoading(false);
+    if (!loginEmail.trim()) {
+      setAuthError('❌ Please enter your email address first.');
       return;
     }
 
-    if (authData?.user) {
-      // 2️⃣ تغيير حالة المسوق في قاعدة البيانات فوراً
-      const { error: dbError } = await supabase
-        .from('marketers')
-        .update({ 
-          status: 'pending', 
-          approved: false 
-        })
-        .eq('id', authData.user.id);
+    setAuthLoading(true);
 
-      // 🔴 إذا فشل التحديث في الداتابيز، أوقف العملية وأظهر الخطأ فوراً
-      if (dbError) {
-        console.error('Database Update Error:', dbError);
-        setAuthError(`❌ Failed to set status to pending in Database: ${dbError.message}`);
+    try {
+      // يحافظ على اسم الصفحة الحالية ديناميكياً
+      const redirectUrl = `${window.location.origin}${window.location.pathname}`;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        setAuthError(`❌ ${error.message}`);
+      } else {
+        setAuthSuccess('✅ Password reset link has been sent to your email inbox!');
+      }
+    } catch (err: any) {
+      setAuthError(`❌ ${err.message}`);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // حفظ كلمة المرور الجديدة وتحديث الحالة في قاعدة البيانات إلى pending
+  const handleSetNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+
+    if (newPassword !== confirmNewPassword) {
+      setAuthError('❌ Passwords do not match.');
+      return;
+    }
+
+    setAuthLoading(true);
+
+    try {
+      // 1️⃣ تحديث كلمة المرور في Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (authError) {
+        setAuthError(`❌ Auth error: ${authError.message}`);
         setAuthLoading(false);
-        return; // توقف هنا ولا تسجل الخروج حتى تحل المشكلة
+        return;
       }
 
-      // 3️⃣ إذا نجح التحديث في الداتابيز، سجل الخروج واعرض رسالة النجاح
-      await supabase.auth.signOut();
-      setIsUpdatePassword(false);
-      setNewPassword('');
-      setConfirmNewPassword('');
-      setAuthSuccess('✅ Password updated successfully! Your account status is now PENDING and awaiting Admin re-approval.');
+      if (authData?.user) {
+        // 2️⃣ تعديل حقل status فقط إلى pending
+        const { error: dbError } = await supabase
+          .from('marketers')
+          .update({ 
+            status: 'pending' 
+          })
+          .eq('id', authData.user.id);
+
+        if (dbError) {
+          console.error('Database Update Error:', dbError);
+          setAuthError(`❌ Failed to update status in Database: ${dbError.message}`);
+          setAuthLoading(false);
+          return;
+        }
+
+        // 3️⃣ تسجيل الخروج وإظهار رسالة النجاح
+        await supabase.auth.signOut();
+        setIsUpdatePassword(false);
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setAuthSuccess('✅ Password updated successfully! Your account status is now PENDING and awaiting Admin re-approval.');
+      }
+    } catch (err: any) {
+      setAuthError(`❌ ${err.message}`);
+    } finally {
+      setAuthLoading(false);
     }
-  } catch (err: any) {
-    setAuthError(`❌ ${err.message}`);
-  } finally {
-    setAuthLoading(false);
-  }
-};
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -687,7 +682,7 @@ const handleSetNewPassword = async (e: React.FormEvent) => {
             </div>
           )}
 
-          {/* 🔑 1️⃣ UPDATE PASSWORD FORM (عند فتح الرابط من الإيميل) */}
+          {/* 🔑 1️⃣ UPDATE PASSWORD FORM */}
           {isUpdatePassword ? (
             <form onSubmit={handleSetNewPassword} className="space-y-4">
               <div>
