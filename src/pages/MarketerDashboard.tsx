@@ -108,49 +108,42 @@ export function MarketerDashboard() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
 
-  // 1️⃣ Check Active Session & Handle Recovery URL
-  useEffect(() => {
-    // فحص ما إذا كان الـ URL يحتوي على معاملات استعادة كلمة المرور
-    const isRecoveryUrl =
-      window.location.hash.includes('type=recovery') ||
-      window.location.search.includes('type=recovery');
+ // 1️⃣ Check Active Session & Handle Recovery
+ useEffect(() => {
+  fetchProjects();
 
-    if (isRecoveryUrl) {
+  const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    console.log("Auth Event:", event);
+
+    // 🛑 1. التقاط حدث استعادة كلمة المرور مباشرة من Supabase
+    if (event === 'PASSWORD_RECOVERY') {
       setUpdatePasswordMode(true);
       setIsForgotPassword(false);
       setIsSignUp(false);
       setCurrentMarketer(null);
       setLoadingUser(false);
-    } else {
-      checkCurrentUser();
+      return;
     }
 
-    fetchProjects();
+    // 🛑 2. إذا كنا في وضع تعديل كلمة المرور، يمنع نهائياً جلب البروفايل أو التحويل للداشبورد
+    if (isUpdatePasswordRef.current) {
+      setLoadingUser(false);
+      return;
+    }
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      const hasRecoveryInUrl =
-        window.location.hash.includes('type=recovery') ||
-        window.location.search.includes('type=recovery');
+    // 🟢 3. الحالات العادية لتسجيل الدخول
+    if (session?.user) {
+      fetchMarketerProfile(session.user.id);
+    } else {
+      setCurrentMarketer(null);
+      setLoadingUser(false);
+    }
+  });
 
-      // 🛑 إذا كنا في وضع استعادة كلمة المرور يمنع التحويل للداشبورد نهائياً
-      if (event === 'PASSWORD_RECOVERY' || hasRecoveryInUrl || isUpdatePasswordRef.current) {
-        setUpdatePasswordMode(true);
-        setIsForgotPassword(false);
-        setIsSignUp(false);
-        setCurrentMarketer(null);
-        setLoadingUser(false);
-      } else if (session?.user && !isUpdatePasswordRef.current) {
-        fetchMarketerProfile(session.user.id);
-      } else if (!session) {
-        setCurrentMarketer(null);
-        setLoadingUser(false);
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+  return () => {
+    authListener.subscription.unsubscribe();
+  };
+ }, []);
 
   // 2️⃣ Fetch Project Details & Listen for Realtime Cell Changes
   useEffect(() => {
