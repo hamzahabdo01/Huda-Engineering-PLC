@@ -43,6 +43,7 @@ export interface MarketerClient {
   project_name?: string;
   unit_title?: string;
   status?: string;
+  source?: string; // 👈 إضافة المصدر هنا
   created_at?: string;
 }
 
@@ -95,22 +96,22 @@ export function AdminDashboardd() {
     fetchMarketerClients();
     fetchMarketerAccounts();
 
-  // ⚡ الاستماع للحجوزات والعملاء الجدد لحظياً
-  const leadsChannel = supabase
-    .channel('realtime-leads-changes')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'leads' },
-      () => {
-        fetchMarketerClients();
-      }
-    )
-    .subscribe();
+    // ⚡ الاستماع للحجوزات والعملاء الجدد لحظياً
+    const leadsChannel = supabase
+      .channel('realtime-leads-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'leads' },
+        () => {
+          fetchMarketerClients();
+        }
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(leadsChannel);
-  };
-}, []);
+    return () => {
+      supabase.removeChannel(leadsChannel);
+    };
+  }, []);
 
   // 2. Fetch Project Specific Data
   useEffect(() => {
@@ -204,17 +205,17 @@ export function AdminDashboardd() {
   };
 
   const fetchMarketerClients = async () => {
-  const { data, error } = await supabase
-    .from('leads') // 👈 التعديل هنا: الاستعلام من جدول leads
-    .select('*')
-    .order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (!error && data) {
-    setMarketerClients(data);
-  } else if (error) {
-    console.error('Error fetching leads:', error.message);
-  }
-};
+    if (!error && data) {
+      setMarketerClients(data);
+    } else if (error) {
+      console.error('Error fetching leads:', error.message);
+    }
+  };
 
   const fetchMarketerAccounts = async () => {
     setMarketersFetchError(null);
@@ -766,7 +767,7 @@ export function AdminDashboardd() {
               <tbody>
                 {unitTypes.map((ut) => (
                   <tr key={ut.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3 font-bold border">{ut.title}</td>
+                    <td className="p-3 border font-bold">{ut.title}</td>
                     <td className="p-3 border">{ut.area} m²</td>
                     <td className="p-3 border font-semibold text-emerald-700">${ut.total_price?.toLocaleString() || 0}</td>
                     <td className="p-3 border">${ut.down_payment?.toLocaleString() || 0}</td>
@@ -780,8 +781,8 @@ export function AdminDashboardd() {
         </div>
       )}
 
-          {/* TAB 3: MARKETER CLIENTS LIST */}
-         {activeTab === 'clients' && (
+      {/* TAB 3: MARKETER CLIENTS LIST */}
+      {activeTab === 'clients' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
           <h2 className="text-lg font-bold text-gray-800 mb-4">👥 Marketer Registered Clients</h2>
           <div className="overflow-x-auto">
@@ -792,39 +793,45 @@ export function AdminDashboardd() {
                   <th className="p-3 border">Client Name</th>
                   <th className="p-3 border">Phone</th>
                   <th className="p-3 border">Unit / Details</th>
+                  <th className="p-3 border">Source</th> {/* 👈 إضافة رأس العمود */}
                   <th className="p-3 border">Status</th>
                   <th className="p-3 border">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {marketerClients.length === 0 ? (
-                <tr>
-                 <td colSpan={6} className="p-4 text-center text-gray-500 font-semibold">
-                  No client leads found.
-                 </td>
-                 </tr>
-                ) : (
-                 marketerClients.map((client: any) => (
-                  <tr key={client.id} className="border-b hover:bg-gray-50">
-                 <td className="p-3 border font-bold text-blue-800">
-                  {client.marketer_name || client.marketerName || 'Unknown'}
-                 </td>
-                 <td className="p-3 border font-semibold">
-                  {client.name || client.client_name}
-                 </td>
-                 <td className="p-3 border">{client.phone}</td>
-                 <td className="p-3 border font-medium text-amber-900">
-                  {client.apartment_id || client.apartmentId || '-'}
-                 </td>
-                 <td className="p-3 border">
-                   <span className="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full text-[10px]">
-                    {client.status || 'Reserved'}
-                   </span>
-                  </td>
-                  <td className="p-3 border text-gray-500">
-                  {client.created_at ? new Date(client.created_at).toLocaleDateString() : '-'}
+                  <tr>
+                    <td colSpan={7} className="p-4 text-center text-gray-500 font-semibold"> {/* 👈 زيادة colSpan إلى 7 */}
+                      No client leads found.
                     </td>
                   </tr>
+                ) : (
+                  marketerClients.map((client: any) => (
+                    <tr key={client.id} className="border-b hover:bg-gray-50">
+                      <td className="p-3 border font-bold text-blue-800">
+                        {client.marketer_name || client.marketerName || 'Unknown'}
+                      </td>
+                      <td className="p-3 border font-semibold">
+                        {client.name || client.client_name}
+                      </td>
+                      <td className="p-3 border">{client.phone}</td>
+                      <td className="p-3 border font-medium text-amber-900">
+                        {client.apartment_id || client.apartmentId || '-'}
+                      </td>
+                      <td className="p-3 border"> {/* 👈 إضافة خلية عرض المصدر */}
+                        <span className="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded text-[10px]">
+                          {client.source || client.lead_source || 'Direct'}
+                        </span>
+                      </td>
+                      <td className="p-3 border">
+                        <span className="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full text-[10px]">
+                          {client.status || 'Reserved'}
+                        </span>
+                      </td>
+                      <td className="p-3 border text-gray-500">
+                        {client.created_at ? new Date(client.created_at).toLocaleDateString() : '-'}
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>
@@ -935,7 +942,6 @@ export function AdminDashboardd() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
