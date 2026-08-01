@@ -187,7 +187,7 @@ export function MarketerDashboard() {
       }
     } catch (err: any) {
       console.error('Error fetching projects:', err.message);
-    } fontally {
+    } finally {
       setLoadingProjects(false);
     }
   };
