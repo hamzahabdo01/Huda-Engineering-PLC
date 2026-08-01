@@ -2,8 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 
 // --- Types & Interfaces ---
+export interface Floor {
+  id: string;
+  project_id: string;
+  floor_name: string;
+}
+
 export interface UnitType {
   id: string;
+  project_id: string;
   title: string;
   area: number;
   totalPrice?: number;
@@ -16,25 +23,22 @@ export type UnitStatus = 'available' | 'unavailable' | 'reserved';
 
 export interface Project {
   id: string;
-  name: string;
-  subtitle: string;
-  floors: string[];
-  unitTypes: UnitType[];
-  matrix: Record<string, UnitStatus>;
-  remarks?: Record<string, string>;
+  name?: string;
+  title?: string;
+  subtitle?: string;
 }
 
 export interface Lead {
   id: string;
   name: string;
   phone: string;
-  apartmentId?: string;
   apartment_id?: string;
-  unitKey?: string;
-  projectId?: string;
-  marketerName?: string;
+  unit_key?: string;
+  project_id?: string;
+  marketer_id?: string;
+  marketer_name?: string;
   status: string;
-  createdAt?: string;
+  created_at?: string;
 }
 
 export interface MarketerProfile {
@@ -51,7 +55,8 @@ export function MarketerDashboard() {
   const [currentMarketer, setCurrentMarketer] = useState<MarketerProfile | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingProjects, setLoadingProjects] = useState(true);
-  
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
@@ -68,32 +73,31 @@ export function MarketerDashboard() {
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
 
-  // --- Dynamic Projects State ---
+  // --- Dynamic Relational Database States ---
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) || projects[0];
+  const [floors, setFloors] = useState<Floor[]>([]);
+  const [unitTypes, setUnitTypes] = useState<UnitType[]>([]);
+  const [matrix, setMatrix] = useState<Record<string, UnitStatus>>({});
 
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
+
+  // Selection States
   const [selectedUnitKey, setSelectedUnitKey] = useState<string>('');
+  const [selectedFloorName, setSelectedFloorName] = useState<string>('');
+  const [selectedUnitTypeId, setSelectedUnitTypeId] = useState<string>('');
   const [selectedUnitLabel, setSelectedUnitLabel] = useState<string>('');
   const [selectedUnitDetails, setSelectedUnitDetails] = useState<UnitType | null>(null);
 
+  // Leads State
   const [leads, setLeads] = useState<Lead[]>([]);
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
 
-  // 1️⃣ Check Active Session & Fetch Dynamic Projects on Mount
+  // 1️⃣ Check Active Session & Fetch Initial Projects
   useEffect(() => {
     checkCurrentUser();
     fetchProjects();
-
-    // ⚡ Realtime subscriptions for projects and leads updates
-    const projectsChannel = supabase
-      .channel('realtime-projects')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
-        fetchProjects();
-      })
-      .subscribe();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
@@ -105,10 +109,37 @@ export function MarketerDashboard() {
     });
 
     return () => {
-      supabase.removeChannel(projectsChannel);
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  // 2️⃣ Fetch Project Details & Listen for Realtime Cell Changes
+  useEffect(() => {
+    if (!selectedProjectId) return;
+
+    fetchProjectDetails(selectedProjectId);
+
+    // ⚡ Realtime subscription for matrix changes on selected project
+    const matrixChannel = supabase
+      .channel(`realtime-matrix-${selectedProjectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'srm_matrix_cells',
+          filter: `project_id=eq.${selectedProjectId}`,
+        },
+        () => {
+          fetchMatrixData(selectedProjectId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(matrixChannel);
+    };
+  }, [selectedProjectId]);
 
   const checkCurrentUser = async () => {
     try {
@@ -119,13 +150,13 @@ export function MarketerDashboard() {
         setCurrentMarketer(null);
       }
     } catch (err) {
-      console.error("Auth check error:", err);
+      console.error('Auth check error:', err);
     } finally {
       setLoadingUser(false);
     }
   };
 
-  // 2️⃣ Fetch Dynamic Projects from Supabase Database
+  // Fetch Projects List
   const fetchProjects = async () => {
     setLoadingProjects(true);
     try {
@@ -137,22 +168,18 @@ export function MarketerDashboard() {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const formattedProjects: Project[] = data.map((p: any) => ({
+        const formatted: Project[] = data.map((p: any) => ({
           id: p.id,
-          name: p.name || 'Untitled Project',
+          name: p.name || p.title || 'Untitled Project',
           subtitle: p.subtitle || '',
-          floors: Array.isArray(p.floors) ? p.floors : (typeof p.floors === 'string' ? JSON.parse(p.floors) : []),
-          unitTypes: p.unit_types || p.unitTypes || [],
-          matrix: p.matrix || {},
-          remarks: p.remarks || {},
         }));
 
-        setProjects(formattedProjects);
+        setProjects(formatted);
         
-        // Auto-select first project if none selected
+        // Default to first project if none selected
         setSelectedProjectId((prev) => {
-          if (!prev || !formattedProjects.some((p) => p.id === prev)) {
-            return formattedProjects[0].id;
+          if (!prev || !formatted.some((p) => p.id === prev)) {
+            return formatted[0].id;
           }
           return prev;
         });
@@ -160,9 +187,70 @@ export function MarketerDashboard() {
         setProjects([]);
       }
     } catch (err: any) {
-      console.error('Error fetching dynamic projects:', err.message);
+      console.error('Error fetching projects:', err.message);
     } finally {
       setLoadingProjects(false);
+    }
+  };
+
+  // Fetch Floors, Unit Types, and Matrix Cells for Selected Project
+  const fetchProjectDetails = async (projectId: string) => {
+    setLoadingDetails(true);
+    await Promise.all([
+      fetchFloors(projectId),
+      fetchUnitTypes(projectId),
+      fetchMatrixData(projectId),
+    ]);
+    setLoadingDetails(false);
+  };
+
+  const fetchFloors = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from('srm_floors')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    if (!error && data) {
+      setFloors(data);
+    }
+  };
+
+  const fetchUnitTypes = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from('srm_unit_types')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    if (!error && data) {
+      const formatted: UnitType[] = data.map((ut: any) => ({
+        id: ut.id,
+        project_id: ut.project_id,
+        title: ut.title,
+        area: ut.area,
+        totalPrice: ut.total_price || ut.totalPrice,
+        downPayment: ut.down_payment || ut.downPayment,
+        installmentYears: ut.installment_years || ut.installmentYears,
+        monthlyInstallment: ut.monthly_installment || ut.monthlyInstallment,
+      }));
+      setUnitTypes(formatted);
+    }
+  };
+
+  const fetchMatrixData = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from('srm_matrix_cells')
+      .select('*')
+      .eq('project_id', projectId);
+
+    if (!error && data) {
+      const matrixMap: Record<string, UnitStatus> = {};
+      data.forEach((item: any) => {
+        const key = `${item.floor_name}___${item.unit_type_id}`;
+        matrixMap[key] = item.status as UnitStatus;
+      });
+      setMatrix(matrixMap);
     }
   };
 
@@ -178,7 +266,7 @@ export function MarketerDashboard() {
 
       if (data) {
         const isApproved = data.status === 'approved' || data.approved === true;
-        
+
         if (!isApproved) {
           setAuthError('⏳ Your account is pending admin approval. Access is restricted.');
           setCurrentMarketer(null);
@@ -198,7 +286,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // Fetch Leads for Current Marketer
   const fetchLeadsForMarketer = async (marketerId: string, marketerName: string) => {
     try {
       const { data, error } = await supabase
@@ -215,7 +302,7 @@ export function MarketerDashboard() {
     }
   };
 
-  // Login Handler
+  // Auth Handlers
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -244,7 +331,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // Sign Up Handler
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -307,28 +393,30 @@ export function MarketerDashboard() {
     setCurrentMarketer(null);
   };
 
-  // Cell Click Handler
-  const handleCellClick = (floor: string, unitType: UnitType, status: UnitStatus) => {
-    const key = `${floor}-${unitType.id}`;
-    const label = `${floor} Floor [${unitType.title} (${unitType.area}m²)]`;
+  // Cell Selection Handler
+  const handleCellClick = (floorName: string, unitType: UnitType, status: UnitStatus) => {
+    const key = `${floorName}___${unitType.id}`;
+    const label = `${floorName} Floor [${unitType.title} (${unitType.area}m²)]`;
 
     if (status === 'available') {
       setSelectedUnitKey(key);
+      setSelectedFloorName(floorName);
+      setSelectedUnitTypeId(unitType.id);
       setSelectedUnitLabel(label);
       setSelectedUnitDetails(unitType);
     } else if (status === 'reserved') {
-      alert(`🟡 Unit on ${floor} floor (${unitType.title}) is already RESERVED.`);
+      alert(`🟡 Unit on ${floorName} floor (${unitType.title}) is already RESERVED.`);
     } else {
-      alert(`🔴 Unit on ${floor} floor (${unitType.title}) is NOT available.`);
+      alert(`🔴 Unit on ${floorName} floor (${unitType.title}) is NOT available.`);
     }
   };
 
-  // Reserve Unit & Save Lead with Database Sync
+  // Reserve Unit & Save Lead
   const handleReserveAndSaveLead = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
 
-    if (!selectedUnitKey) {
+    if (!selectedUnitKey || !selectedFloorName || !selectedUnitTypeId) {
       alert('Please click on an available GREEN unit in the matrix first.');
       return;
     }
@@ -338,7 +426,7 @@ export function MarketerDashboard() {
       return;
     }
 
-    if (!selectedProject) {
+    if (!selectedProjectId) {
       alert('No active project selected.');
       return;
     }
@@ -366,47 +454,40 @@ export function MarketerDashboard() {
       return;
     }
 
-    // 2️⃣ Update Project Matrix Status to 'reserved' in Supabase `projects` Table
-    // 💡 تم تحديد نوع المتغير هنا لحل مشكلة TypeScript
-    const updatedMatrix: Record<string, UnitStatus> = {
-      ...(selectedProject.matrix || {}),
-      [selectedUnitKey]: 'reserved',
-    };
-
-    const { error: projUpdateError } = await supabase
-      .from('projects')
-      .update({ matrix: updatedMatrix })
-      .eq('id', selectedProjectId);
-
-    if (projUpdateError) {
-      console.error('Error updating project matrix:', projUpdateError);
-    }
-
-    // 3️⃣ Update Local State UI
-    setProjects((prevProjects) =>
-      prevProjects.map((proj) => {
-        if (proj.id === selectedProjectId) {
-          return {
-            ...proj,
-            matrix: updatedMatrix,
-          };
-        }
-        return proj;
-      })
+    // 2️⃣ Upsert Unit Status into `srm_matrix_cells`
+    const { error: matrixError } = await supabase.from('srm_matrix_cells').upsert(
+      {
+        project_id: selectedProjectId,
+        floor_name: selectedFloorName,
+        unit_type_id: selectedUnitTypeId,
+        status: 'reserved',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'project_id,floor_name,unit_type_id' }
     );
 
-    if (leadData && leadData[0]) {
-      setLeads([leadData[0], ...leads]);
+    if (matrixError) {
+      console.error('Error updating unit cell status:', matrixError);
+      alert(`⚠️ Lead saved, but unit status update failed: ${matrixError.message}`);
+    } else {
+      // Re-fetch Matrix to reflect changes immediately
+      await fetchMatrixData(selectedProjectId);
     }
 
-    // Reset Input Fields
+    if (leadData && leadData[0]) {
+      setLeads((prev) => [leadData[0], ...prev]);
+    }
+
+    // Clear Selection
     setClientName('');
     setClientPhone('');
     setSelectedUnitKey('');
+    setSelectedFloorName('');
+    setSelectedUnitTypeId('');
     setSelectedUnitLabel('');
     setSelectedUnitDetails(null);
 
-    alert('✅ Unit reserved and client saved successfully in database!');
+    alert('✅ Unit reserved and lead saved successfully!');
   };
 
   if (loadingUser) {
@@ -427,7 +508,6 @@ export function MarketerDashboard() {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4" dir="ltr">
         <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
-          
           <div className="text-center mb-6">
             <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl mx-auto mb-3 shadow-lg shadow-blue-500/30">
               🏢
@@ -445,7 +525,11 @@ export function MarketerDashboard() {
           <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
             <button
               type="button"
-              onClick={() => { setIsSignUp(false); setAuthError(''); setAuthSuccess(''); }}
+              onClick={() => {
+                setIsSignUp(false);
+                setAuthError('');
+                setAuthSuccess('');
+              }}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
                 !isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
               }`}
@@ -454,7 +538,11 @@ export function MarketerDashboard() {
             </button>
             <button
               type="button"
-              onClick={() => { setIsSignUp(true); setAuthError(''); setAuthSuccess(''); }}
+              onClick={() => {
+                setIsSignUp(true);
+                setAuthError('');
+                setAuthSuccess('');
+              }}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
                 isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
               }`}
@@ -580,7 +668,6 @@ export function MarketerDashboard() {
               </button>
             </form>
           )}
-
         </div>
       </div>
     );
@@ -591,7 +678,6 @@ export function MarketerDashboard() {
   // -------------------------------------------------------------
   return (
     <div className="p-4 bg-gray-100 min-h-screen text-left" dir="ltr">
-      
       {/* Header Bar */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
@@ -610,6 +696,8 @@ export function MarketerDashboard() {
                 onChange={(e) => {
                   setSelectedProjectId(e.target.value);
                   setSelectedUnitKey('');
+                  setSelectedFloorName('');
+                  setSelectedUnitTypeId('');
                   setSelectedUnitLabel('');
                   setSelectedUnitDetails(null);
                 }}
@@ -647,10 +735,8 @@ export function MarketerDashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
           {/* AVAILABLE STOCKS GRID */}
           <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
-            
             <div className="flex flex-col items-center justify-center mb-6">
               <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
                 AVAILABLE STOCKS
@@ -662,7 +748,12 @@ export function MarketerDashboard() {
               )}
             </div>
 
-            {selectedProject && (
+            {loadingDetails ? (
+              <div className="p-12 text-center text-gray-400">
+                <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <p className="text-xs">Loading matrix data...</p>
+              </div>
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-center text-xs font-sans">
                   <thead>
@@ -671,7 +762,7 @@ export function MarketerDashboard() {
                         Floor
                       </th>
                       <th
-                        colSpan={selectedProject.unitTypes?.length || 1}
+                        colSpan={unitTypes.length || 1}
                         className="border border-gray-400 p-1.5 font-bold italic text-sm"
                       >
                         Type of Houses & Price Plans
@@ -682,7 +773,7 @@ export function MarketerDashboard() {
                     </tr>
 
                     <tr className="bg-[#00474b] text-white">
-                      {(selectedProject.unitTypes || []).map((ut) => (
+                      {unitTypes.map((ut) => (
                         <th key={ut.id} className="border border-gray-400 p-2 font-semibold">
                           {ut.title} <br />
                           <span className="font-normal text-[11px] text-amber-300">[{ut.area} m²]</span>
@@ -697,51 +788,45 @@ export function MarketerDashboard() {
                   </thead>
 
                   <tbody>
-                    {(selectedProject.floors || []).map((floor) => {
-                      const remark = selectedProject.remarks?.[floor] || '';
+                    {floors.map((floorObj) => (
+                      <tr key={floorObj.id}>
+                        <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
+                          {floorObj.floor_name}
+                        </td>
 
-                      return (
-                        <tr key={floor}>
-                          <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
-                            {floor}
-                          </td>
+                        {unitTypes.map((ut) => {
+                          const key = `${floorObj.floor_name}___${ut.id}`;
+                          const status = matrix[key] || 'unavailable';
+                          const isSelected = selectedUnitKey === key;
 
-                          {(selectedProject.unitTypes || []).map((ut) => {
-                            const key = `${floor}-${ut.id}`;
-                            const status = selectedProject.matrix?.[key] || 'unavailable';
-                            const isSelected = selectedUnitKey === key;
+                          let bgClass = 'bg-[#ff0000] cursor-not-allowed';
+                          if (status === 'available') {
+                            bgClass = 'bg-[#00b050] hover:bg-green-600 cursor-pointer';
+                          } else if (status === 'reserved') {
+                            bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer';
+                          }
 
-                            let bgClass = 'bg-[#ff0000] cursor-not-allowed';
-                            if (status === 'available') {
-                              bgClass = 'bg-[#00b050] hover:bg-green-600 cursor-pointer';
-                            } else if (status === 'reserved') {
-                              bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer';
-                            }
+                          return (
+                            <td
+                              key={ut.id}
+                              onClick={() => handleCellClick(floorObj.floor_name, ut, status)}
+                              className={`border border-black p-3 font-bold transition-all ${bgClass} ${
+                                isSelected ? 'ring-4 ring-blue-600 scale-95' : ''
+                              }`}
+                              title={`Floor ${floorObj.floor_name} - ${ut.title} (${status.toUpperCase()})`}
+                            >
+                              {isSelected && (
+                                <span className="text-[10px] bg-black text-white px-1 py-0.5 rounded">
+                                  Selected
+                                </span>
+                              )}
+                            </td>
+                          );
+                        })}
 
-                            return (
-                              <td
-                                key={ut.id}
-                                onClick={() => handleCellClick(floor, ut, status)}
-                                className={`border border-black p-3 font-bold transition-all ${bgClass} ${
-                                  isSelected ? 'ring-4 ring-blue-600 scale-95' : ''
-                                }`}
-                                title={`Floor ${floor} - ${ut.title} (${status.toUpperCase()})`}
-                              >
-                                {isSelected && (
-                                  <span className="text-[10px] bg-black text-white px-1 py-0.5 rounded">
-                                    Selected
-                                  </span>
-                                )}
-                              </td>
-                            );
-                          })}
-
-                          <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">
-                            {remark}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                        <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">-</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -861,7 +946,7 @@ export function MarketerDashboard() {
                         <p className="font-bold text-gray-800">{lead.name}</p>
                         <p className="text-gray-500">{lead.phone}</p>
                         <p className="text-[11px] text-amber-800 font-medium mt-0.5">
-                          {lead.apartment_id || lead.apartmentId}
+                          {lead.apartment_id}
                         </p>
                       </div>
                       <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-2 py-1 rounded-full">
@@ -873,7 +958,6 @@ export function MarketerDashboard() {
               )}
             </div>
           </div>
-
         </div>
       )}
     </div>
