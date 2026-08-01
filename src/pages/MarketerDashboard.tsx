@@ -32,6 +32,7 @@ export interface Lead {
   id: string;
   name: string;
   phone: string;
+  source?: string; // 👈 إضافة حقل المصدر
   apartment_id?: string;
   unit_key?: string;
   project_id?: string;
@@ -93,6 +94,7 @@ export function MarketerDashboard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
+  const [clientSource, setClientSource] = useState('Facebook boost'); // 👈 State الخاص بالمصدر
 
   // 1️⃣ Check Active Session & Fetch Initial Projects
   useEffect(() => {
@@ -119,7 +121,6 @@ export function MarketerDashboard() {
 
     fetchProjectDetails(selectedProjectId);
 
-    // ⚡ Realtime subscription for matrix changes on selected project
     const matrixChannel = supabase
       .channel(`realtime-matrix-${selectedProjectId}`)
       .on(
@@ -156,7 +157,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // Fetch Projects List
   const fetchProjects = async () => {
     setLoadingProjects(true);
     try {
@@ -176,7 +176,6 @@ export function MarketerDashboard() {
 
         setProjects(formatted);
         
-        // Default to first project if none selected
         setSelectedProjectId((prev) => {
           if (!prev || !formatted.some((p) => p.id === prev)) {
             return formatted[0].id;
@@ -188,12 +187,11 @@ export function MarketerDashboard() {
       }
     } catch (err: any) {
       console.error('Error fetching projects:', err.message);
-    } finally {
+    } fontally {
       setLoadingProjects(false);
     }
   };
 
-  // Fetch Floors, Unit Types, and Matrix Cells for Selected Project
   const fetchProjectDetails = async (projectId: string) => {
     setLoadingDetails(true);
     await Promise.all([
@@ -302,7 +300,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // Auth Handlers
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -393,7 +390,6 @@ export function MarketerDashboard() {
     setCurrentMarketer(null);
   };
 
-  // Cell Selection Handler
   const handleCellClick = (floorName: string, unitType: UnitType, status: UnitStatus) => {
     const key = `${floorName}___${unitType.id}`;
     const label = `${floorName} Floor [${unitType.title} (${unitType.area}m²)]`;
@@ -431,13 +427,14 @@ export function MarketerDashboard() {
       return;
     }
 
-    // 1️⃣ Save Lead to Supabase `leads` Table
+    // 1️⃣ Save Lead to Supabase `leads` Table (مع إضافة source)
     const { data: leadData, error: leadError } = await supabase
       .from('leads')
       .insert([
         {
           name: clientName,
           phone: cleanPhone,
+          source: clientSource, // 👈 إرسال المصدر المختار للـ Database
           apartment_id: selectedUnitLabel,
           unit_key: selectedUnitKey,
           project_id: selectedProjectId,
@@ -470,7 +467,6 @@ export function MarketerDashboard() {
       console.error('Error updating unit cell status:', matrixError);
       alert(`⚠️ Lead saved, but unit status update failed: ${matrixError.message}`);
     } else {
-      // Re-fetch Matrix to reflect changes immediately
       await fetchMatrixData(selectedProjectId);
     }
 
@@ -481,6 +477,7 @@ export function MarketerDashboard() {
     // Clear Selection
     setClientName('');
     setClientPhone('');
+    setClientSource('Facebook boost');
     setSelectedUnitKey('');
     setSelectedFloorName('');
     setSelectedUnitTypeId('');
@@ -501,9 +498,7 @@ export function MarketerDashboard() {
     );
   }
 
-  // -------------------------------------------------------------
-  // SCREEN 1: LOGIN / SIGN UP SCREEN
-  // -------------------------------------------------------------
+  // SCREEN 1: LOGIN / SIGN UP
   if (!currentMarketer) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4" dir="ltr">
@@ -673,9 +668,7 @@ export function MarketerDashboard() {
     );
   }
 
-  // -------------------------------------------------------------
   // SCREEN 2: MAIN DASHBOARD
-  // -------------------------------------------------------------
   return (
     <div className="p-4 bg-gray-100 min-h-screen text-left" dir="ltr">
       {/* Header Bar */}
@@ -920,15 +913,41 @@ export function MarketerDashboard() {
                   />
                 </div>
 
+                {/* 🔽 حقل الـ Dropdown لمصدر العميل (Source) 🔽 */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Lead Source *
+                  </label>
+                  <select
+                    value={clientSource}
+                    onChange={(e) => setClientSource(e.target.value)}
+                    className="w-full p-2.5 border rounded-lg text-xs border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium text-gray-800"
+                    required
+                  >
+                    <option value="Facebook boost">Facebook boost</option>
+                    <option value="telegram">telegram</option>
+                    <option value="YouTube">YouTube</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="survey">survey</option>
+                    <option value="called call">called call</option>
+                    <option value="purchased leads">purchased leads</option>
+                    <option value="walk in">walk in</option>
+                    <option value="company lead">company lead</option>
+                    <option value="linkedin">linkedin</option>
+                    <option value="company boost">company boost</option>
+                  </select>
+                </div>
+
                 <button
                   type="submit"
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-extrabold py-2.5 rounded-lg text-xs transition shadow-sm"
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-extrabold py-2.5 rounded-lg text-xs transition shadow-sm mt-2"
                 >
                   🔒 Save & Mark as Reserved (Yellow)
                 </button>
               </form>
             </div>
 
+            {/* عرض الحجوزات والمصدر للمسوق */}
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
               <h2 className="font-bold text-gray-800 mb-3 text-md">
                 Your Reserved Units ({leads.length})
@@ -940,16 +959,24 @@ export function MarketerDashboard() {
                   {leads.map((lead) => (
                     <div
                       key={lead.id}
-                      className="p-3 border rounded-lg bg-amber-50/50 border-amber-200 flex justify-between items-center text-xs"
+                      className="p-3 border rounded-lg bg-amber-50/50 border-amber-200 flex justify-between items-start text-xs"
                     >
                       <div>
                         <p className="font-bold text-gray-800">{lead.name}</p>
                         <p className="text-gray-500">{lead.phone}</p>
-                        <p className="text-[11px] text-amber-800 font-medium mt-0.5">
+
+                        {/* 🔽 عرض المصدر هنا 🔽 */}
+                        {lead.source && (
+                          <span className="inline-block bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded mt-1">
+                            📍 Source: {lead.source}
+                          </span>
+                        )}
+
+                        <p className="text-[11px] text-amber-800 font-medium mt-1">
                           {lead.apartment_id}
                         </p>
                       </div>
-                      <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-2 py-1 rounded-full">
+                      <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-2 py-1 rounded-full whitespace-nowrap">
                         RESERVED
                       </span>
                     </div>
