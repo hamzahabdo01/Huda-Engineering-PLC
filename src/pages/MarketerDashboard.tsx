@@ -59,7 +59,8 @@ export function MarketerDashboard() {
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   const [isSignUp, setIsSignUp] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false); // 👈 State لخاصية نسيت كلمة المرور
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isUpdatePassword, setIsUpdatePassword] = useState(false); // 👈 واجهة إدخال كلمة المرور الجديدة
   const [authLoading, setAuthLoading] = useState(false);
 
   // Auth Inputs
@@ -71,6 +72,10 @@ export function MarketerDashboard() {
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
+
+  // Password Reset Inputs
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
@@ -97,13 +102,19 @@ export function MarketerDashboard() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
 
-  // 1️⃣ Check Active Session & Fetch Initial Projects
+  // 1️⃣ Check Active Session & Listen to Auth Change (Including Password Recovery)
   useEffect(() => {
     checkCurrentUser();
     fetchProjects();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      // 👈 الالتقاط التلقائي عند الضغط على رابط إعادة التعيين من الإيميل
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsUpdatePassword(true);
+        setIsForgotPassword(false);
+        setIsSignUp(false);
+        setLoadingUser(false);
+      } else if (session?.user && !isUpdatePassword) {
         fetchMarketerProfile(session.user.id);
       } else {
         setCurrentMarketer(null);
@@ -146,7 +157,7 @@ export function MarketerDashboard() {
   const checkCurrentUser = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
+      if (session?.user && !isUpdatePassword) {
         await fetchMarketerProfile(session.user.id);
       } else {
         setCurrentMarketer(null);
@@ -329,7 +340,7 @@ export function MarketerDashboard() {
     }
   };
 
-  // 👈 دالة إرسال رابط استعادة كلمة المرور
+  // 👈 إرسال رابط استعادة كلمة المرور
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -343,14 +354,67 @@ export function MarketerDashboard() {
     setAuthLoading(true);
 
     try {
+      // الرابط الموجه للمستخدم (يأخذ عنوان الدومين الحالي تلقائياً)
+      const redirectUrl = window.location.origin;
+
       const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-        redirectTo: window.location.href,
+        redirectTo: redirectUrl,
       });
 
       if (error) {
         setAuthError(`❌ ${error.message}`);
       } else {
         setAuthSuccess('✅ Password reset link has been sent to your email inbox!');
+      }
+    } catch (err: any) {
+      setAuthError(`❌ ${err.message}`);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // 👈 دالة حفظ كلمة المرور الجديدة وتحويل الحساب لانتظار موافقة الأدمن
+  const handleSetNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+
+    if (newPassword !== confirmNewPassword) {
+      setAuthError('❌ Passwords do not match.');
+      return;
+    }
+
+    setAuthLoading(true);
+
+    try {
+      // 1️⃣ تحديث كلمة المرور في Supabase Auth
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        setAuthError(`❌ ${error.message}`);
+        setAuthLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // 2️⃣ تغيير حالة المسوق إلى pending لإجبار الأدمن على الموافقة
+        const { error: dbError } = await supabase
+          .from('marketers')
+          .update({ status: 'pending', approved: false })
+          .eq('id', data.user.id);
+
+        if (dbError) {
+          console.error('Error updating status:', dbError);
+        }
+
+        // 3️⃣ تسجيل الخروج وإظهار رسالة التنبيه
+        await supabase.auth.signOut();
+        setIsUpdatePassword(false);
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setAuthSuccess('✅ Password updated successfully! Your account is now awaiting Admin re-approval before you can login.');
       }
     } catch (err: any) {
       setAuthError(`❌ ${err.message}`);
@@ -526,8 +590,8 @@ export function MarketerDashboard() {
     );
   }
 
-  // SCREEN 1: LOGIN / SIGN UP / FORGOT PASSWORD
-  if (!currentMarketer) {
+  // SCREEN 1: LOGIN / SIGN UP / FORGOT PASSWORD / NEW PASSWORD FORM
+  if (!currentMarketer || isUpdatePassword) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4" dir="ltr">
         <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
@@ -536,14 +600,18 @@ export function MarketerDashboard() {
               🏢
             </div>
             <h2 className="text-2xl font-bold text-gray-800">
-              {isForgotPassword
+              {isUpdatePassword
+                ? 'Set New Password'
+                : isForgotPassword
                 ? 'Reset Password'
                 : isSignUp
                 ? 'Create Marketer Account'
                 : 'Marketer Portal - Login'}
             </h2>
             <p className="text-xs text-gray-500 mt-1">
-              {isForgotPassword
+              {isUpdatePassword
+                ? 'Enter your new password. Changes require Admin re-approval.'
+                : isForgotPassword
                 ? 'Enter your email address to receive a password reset link'
                 : isSignUp
                 ? 'Enter your details to submit an account request for admin review'
@@ -551,7 +619,7 @@ export function MarketerDashboard() {
             </p>
           </div>
 
-          {!isForgotPassword && (
+          {!isForgotPassword && !isUpdatePassword && (
             <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
               <button
                 type="button"
@@ -596,8 +664,43 @@ export function MarketerDashboard() {
             </div>
           )}
 
-          {/* 1️⃣ FORGOT PASSWORD FORM */}
-          {isForgotPassword ? (
+          {/* 🔑 1️⃣ UPDATE PASSWORD FORM (عند فتح الرابط من الإيميل) */}
+          {isUpdatePassword ? (
+            <form onSubmit={handleSetNewPassword} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">New Password *</label>
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm New Password *</label>
+                <input
+                  type="password"
+                  required
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 rounded-xl text-sm transition shadow-lg shadow-emerald-600/30 disabled:opacity-50"
+              >
+                {authLoading ? 'Updating...' : '🔒 Update & Submit for Admin Approval'}
+              </button>
+            </form>
+          ) : isForgotPassword ? (
+            /* 2️⃣ FORGOT PASSWORD FORM */
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
@@ -632,7 +735,7 @@ export function MarketerDashboard() {
               </button>
             </form>
           ) : !isSignUp ? (
-            /* 2️⃣ LOGIN FORM */
+            /* 3️⃣ LOGIN FORM */
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
@@ -649,7 +752,6 @@ export function MarketerDashboard() {
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className="block text-xs font-semibold text-gray-700">Password</label>
-                  {/* 👈 زر نسيت كلمة المرور */}
                   <button
                     type="button"
                     onClick={() => {
@@ -681,7 +783,7 @@ export function MarketerDashboard() {
               </button>
             </form>
           ) : (
-            /* 3️⃣ REGISTER FORM */
+            /* 4️⃣ REGISTER FORM */
             <form onSubmit={handleSignUp} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name *</label>
