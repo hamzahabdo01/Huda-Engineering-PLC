@@ -32,7 +32,7 @@ export interface Lead {
   id: string;
   name: string;
   phone: string;
-  source?: string; // 👈 إضافة حقل المصدر
+  source?: string;
   apartment_id?: string;
   unit_key?: string;
   project_id?: string;
@@ -59,6 +59,7 @@ export function MarketerDashboard() {
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false); // 👈 State لخاصية نسيت كلمة المرور
   const [authLoading, setAuthLoading] = useState(false);
 
   // Auth Inputs
@@ -94,7 +95,7 @@ export function MarketerDashboard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
-  const [clientSource, setClientSource] = useState('Facebook boost'); // 👈 State الخاص بالمصدر
+  const [clientSource, setClientSource] = useState('Facebook boost');
 
   // 1️⃣ Check Active Session & Fetch Initial Projects
   useEffect(() => {
@@ -328,6 +329,36 @@ export function MarketerDashboard() {
     }
   };
 
+  // 👈 دالة إرسال رابط استعادة كلمة المرور
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+
+    if (!loginEmail.trim()) {
+      setAuthError('❌ Please enter your email address first.');
+      return;
+    }
+
+    setAuthLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+        redirectTo: window.location.href,
+      });
+
+      if (error) {
+        setAuthError(`❌ ${error.message}`);
+      } else {
+        setAuthSuccess('✅ Password reset link has been sent to your email inbox!');
+      }
+    } catch (err: any) {
+      setAuthError(`❌ ${err.message}`);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -427,14 +458,13 @@ export function MarketerDashboard() {
       return;
     }
 
-    // 1️⃣ Save Lead to Supabase `leads` Table (مع إضافة source)
     const { data: leadData, error: leadError } = await supabase
       .from('leads')
       .insert([
         {
           name: clientName,
           phone: cleanPhone,
-          source: clientSource, // 👈 إرسال المصدر المختار للـ Database
+          source: clientSource,
           apartment_id: selectedUnitLabel,
           unit_key: selectedUnitKey,
           project_id: selectedProjectId,
@@ -451,7 +481,6 @@ export function MarketerDashboard() {
       return;
     }
 
-    // 2️⃣ Upsert Unit Status into `srm_matrix_cells`
     const { error: matrixError } = await supabase.from('srm_matrix_cells').upsert(
       {
         project_id: selectedProjectId,
@@ -474,7 +503,6 @@ export function MarketerDashboard() {
       setLeads((prev) => [leadData[0], ...prev]);
     }
 
-    // Clear Selection
     setClientName('');
     setClientPhone('');
     setClientSource('Facebook boost');
@@ -498,7 +526,7 @@ export function MarketerDashboard() {
     );
   }
 
-  // SCREEN 1: LOGIN / SIGN UP
+  // SCREEN 1: LOGIN / SIGN UP / FORGOT PASSWORD
   if (!currentMarketer) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4" dir="ltr">
@@ -508,43 +536,53 @@ export function MarketerDashboard() {
               🏢
             </div>
             <h2 className="text-2xl font-bold text-gray-800">
-              {isSignUp ? 'Create Marketer Account' : 'Marketer Portal - Login'}
+              {isForgotPassword
+                ? 'Reset Password'
+                : isSignUp
+                ? 'Create Marketer Account'
+                : 'Marketer Portal - Login'}
             </h2>
             <p className="text-xs text-gray-500 mt-1">
-              {isSignUp
+              {isForgotPassword
+                ? 'Enter your email address to receive a password reset link'
+                : isSignUp
                 ? 'Enter your details to submit an account request for admin review'
                 : 'Enter your credentials to access the sales portal'}
             </p>
           </div>
 
-          <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(false);
-                setAuthError('');
-                setAuthSuccess('');
-              }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                !isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(true);
-                setAuthError('');
-                setAuthSuccess('');
-              }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
-              }`}
-            >
-              Register
-            </button>
-          </div>
+          {!isForgotPassword && (
+            <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(false);
+                  setIsForgotPassword(false);
+                  setAuthError('');
+                  setAuthSuccess('');
+                }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                  !isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(true);
+                  setIsForgotPassword(false);
+                  setAuthError('');
+                  setAuthSuccess('');
+                }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                  isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                Register
+              </button>
+            </div>
+          )}
 
           {authError && (
             <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded-lg text-xs mb-4">
@@ -558,7 +596,43 @@ export function MarketerDashboard() {
             </div>
           )}
 
-          {!isSignUp ? (
+          {/* 1️⃣ FORGOT PASSWORD FORM */}
+          {isForgotPassword ? (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="marketer@company.com"
+                  className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full bg-amber-500 hover:bg-amber-600 text-black font-extrabold py-3.5 rounded-xl text-sm transition shadow-lg shadow-amber-500/30 disabled:opacity-50"
+              >
+                {authLoading ? 'Sending link...' : '📩 Send Reset Link'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setAuthError('');
+                  setAuthSuccess('');
+                }}
+                className="w-full text-center text-xs font-bold text-gray-600 hover:text-blue-600 pt-2 transition"
+              >
+                ← Back to Sign In
+              </button>
+            </form>
+          ) : !isSignUp ? (
+            /* 2️⃣ LOGIN FORM */
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
@@ -573,7 +647,21 @@ export function MarketerDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Password</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-semibold text-gray-700">Password</label>
+                  {/* 👈 زر نسيت كلمة المرور */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(true);
+                      setAuthError('');
+                      setAuthSuccess('');
+                    }}
+                    className="text-[11px] font-bold text-blue-600 hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
                 <input
                   type="password"
                   required
@@ -593,6 +681,7 @@ export function MarketerDashboard() {
               </button>
             </form>
           ) : (
+            /* 3️⃣ REGISTER FORM */
             <form onSubmit={handleSignUp} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name *</label>
@@ -913,7 +1002,6 @@ export function MarketerDashboard() {
                   />
                 </div>
 
-                {/* 🔽 حقل الـ Dropdown لمصدر العميل (Source) 🔽 */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Lead Source *
@@ -947,7 +1035,6 @@ export function MarketerDashboard() {
               </form>
             </div>
 
-            {/* عرض الحجوزات والمصدر للمسوق */}
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
               <h2 className="font-bold text-gray-800 mb-3 text-md">
                 Your Reserved Units ({leads.length})
@@ -965,7 +1052,6 @@ export function MarketerDashboard() {
                         <p className="font-bold text-gray-800">{lead.name}</p>
                         <p className="text-gray-500">{lead.phone}</p>
 
-                        {/* 🔽 عرض المصدر هنا 🔽 */}
                         {lead.source && (
                           <span className="inline-block bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded mt-1">
                             📍 Source: {lead.source}
