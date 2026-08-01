@@ -355,37 +355,40 @@ export function MarketerDashboard() {
   };
 
   // 👈 إرسال رابط استعادة كلمة المرور
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    setAuthSuccess('');
+const handleResetPassword = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setAuthError('');
+  setAuthSuccess('');
 
-    if (!loginEmail.trim()) {
-      setAuthError('❌ Please enter your email address first.');
-      return;
+  if (!loginEmail.trim()) {
+    setAuthError('❌ Please enter your email address first.');
+    return;
+  }
+
+  setAuthLoading(true);
+
+  try {
+    // ❌ القديم (كان يجبر التحويل لـ /marketer-dashboard):
+    // const redirectUrl = `${window.location.origin}/marketer-dashboard`; 
+
+    // ✅ الجديد (يحافظ على اسم الصفحة الحالية التي يتواجد فيها المستخدم ديناميكياً):
+    const redirectUrl = `${window.location.origin}${window.location.pathname}`;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+      redirectTo: redirectUrl,
+    });
+
+    if (error) {
+      setAuthError(`❌ ${error.message}`);
+    } else {
+      setAuthSuccess('✅ Password reset link has been sent to your email inbox!');
     }
-
-    setAuthLoading(true);
-
-    try {
-      const redirectUrl = `${window.location.origin}/marketer-dashboard`; 
-
-      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-        redirectTo: redirectUrl,
-      });
-
-      if (error) {
-        setAuthError(`❌ ${error.message}`);
-      } else {
-        setAuthSuccess('✅ Password reset link has been sent to your email inbox!');
-      }
-    } catch (err: any) {
-      setAuthError(`❌ ${err.message}`);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
+  } catch (err: any) {
+    setAuthError(`❌ ${err.message}`);
+  } finally {
+    setAuthLoading(false);
+  }
+};
   // 👈 حفظ كلمة المرور الجديدة وتحويل الحساب لانتظار موافقة الأدمن
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
