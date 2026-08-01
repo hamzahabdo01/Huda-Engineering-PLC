@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../integrations/supabase/client';
 
 // --- Types & Interfaces ---
@@ -60,6 +60,13 @@ export function MarketerDashboard() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isUpdatePassword, setIsUpdatePassword] = useState(false); // واجهة إدخال كلمة المرور الجديدة
+  const isUpdatePasswordRef = useRef(false); // 🔑 مرجع لحفظ حالة التحديث بدون مشاكل Stale Closure
+
+  const setUpdatePasswordMode = (val: boolean) => {
+    isUpdatePasswordRef.current = val;
+    setIsUpdatePassword(val);
+  };
+
   const [authLoading, setAuthLoading] = useState(false);
 
   // Auth Inputs
@@ -101,21 +108,19 @@ export function MarketerDashboard() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
 
-  // 1️⃣ Check Active Session & Handle Recovery URL with Multi-Tab Isolation
+  // 1️⃣ Check Active Session & Handle Recovery URL
   useEffect(() => {
-    // فحص ما إذا كانت التاب الحالية بالذات تحتوي على رابط استعادة كلمة المرور
-    const isThisTabRecoveryUrl =
+    // فحص ما إذا كان الـ URL يحتوي على معاملات استعادة كلمة المرور
+    const isRecoveryUrl =
       window.location.hash.includes('type=recovery') ||
       window.location.search.includes('type=recovery');
 
-    if (isThisTabRecoveryUrl) {
-      setIsUpdatePassword(true);
+    if (isRecoveryUrl) {
+      setUpdatePasswordMode(true);
       setIsForgotPassword(false);
       setIsSignUp(false);
+      setCurrentMarketer(null);
       setLoadingUser(false);
-
-      // 🧹 تنظيف الـ URL الخاص بهذه التاب فوراً لمنع تكرار التحويل
-      window.history.replaceState(null, '', window.location.pathname);
     } else {
       checkCurrentUser();
     }
@@ -123,20 +128,18 @@ export function MarketerDashboard() {
     fetchProjects();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      // 🛑 حماية التابات الأخرى: لا ننقل الواجهة إلى PASSWORD_RECOVERY إلا إذا كانت التاب الحالية هي من تتضمن الرابط
-      if (event === 'PASSWORD_RECOVERY') {
-        const urlHasRecovery =
-          window.location.hash.includes('type=recovery') ||
-          window.location.search.includes('type=recovery');
+      const hasRecoveryInUrl =
+        window.location.hash.includes('type=recovery') ||
+        window.location.search.includes('type=recovery');
 
-        if (urlHasRecovery || isThisTabRecoveryUrl) {
-          setIsUpdatePassword(true);
-          setIsForgotPassword(false);
-          setIsSignUp(false);
-          setLoadingUser(false);
-          window.history.replaceState(null, '', window.location.pathname);
-        }
-      } else if (session?.user && !isUpdatePassword && !isThisTabRecoveryUrl) {
+      // 🛑 إذا كنا في وضع استعادة كلمة المرور يمنع التحويل للداشبورد نهائياً
+      if (event === 'PASSWORD_RECOVERY' || hasRecoveryInUrl || isUpdatePasswordRef.current) {
+        setUpdatePasswordMode(true);
+        setIsForgotPassword(false);
+        setIsSignUp(false);
+        setCurrentMarketer(null);
+        setLoadingUser(false);
+      } else if (session?.user && !isUpdatePasswordRef.current) {
         fetchMarketerProfile(session.user.id);
       } else if (!session) {
         setCurrentMarketer(null);
@@ -178,8 +181,9 @@ export function MarketerDashboard() {
 
   const checkCurrentUser = async () => {
     try {
+      if (isUpdatePasswordRef.current) return;
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user && !isUpdatePassword) {
+      if (session?.user && !isUpdatePasswordRef.current) {
         await fetchMarketerProfile(session.user.id);
       } else {
         setCurrentMarketer(null);
@@ -287,6 +291,8 @@ export function MarketerDashboard() {
   };
 
   const fetchMarketerProfile = async (userId: string) => {
+    if (isUpdatePasswordRef.current) return;
+
     try {
       const { data, error } = await supabase
         .from('marketers')
@@ -299,16 +305,16 @@ export function MarketerDashboard() {
       if (data) {
         const isApproved = data.status === 'approved';
 
-        if (!isApproved && !isUpdatePassword) {
+        if (!isApproved && !isUpdatePasswordRef.current) {
           setAuthError('⏳ Your account is pending admin approval. Access is restricted.');
           setCurrentMarketer(null);
           await supabase.auth.signOut();
-        } else if (isApproved) {
+        } else if (isApproved && !isUpdatePasswordRef.current) {
           setCurrentMarketer(data);
           fetchLeadsForMarketer(data.id, data.name);
         }
       } else {
-        if (!isUpdatePassword) {
+        if (!isUpdatePasswordRef.current) {
           setAuthError('❌ Profile record not found in marketers table.');
           setCurrentMarketer(null);
         }
@@ -437,11 +443,12 @@ export function MarketerDashboard() {
           return;
         }
 
-        // 3️⃣ تنظيف الـ URL وتسجيل الخروج
+        // 3️⃣ تنظيف الـ URL وتسجيل الخروج والعودة لشاشة الدخول
         window.history.replaceState(null, '', window.location.pathname);
         await supabase.auth.signOut();
 
-        setIsUpdatePassword(false);
+        setUpdatePasswordMode(false);
+        setCurrentMarketer(null);
         setNewPassword('');
         setConfirmNewPassword('');
         setAuthSuccess(
