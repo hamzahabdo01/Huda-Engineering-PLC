@@ -102,21 +102,32 @@ export function MarketerDashboard() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
 
-  // 1️⃣ Check Active Session & Listen to Auth Change (Including Password Recovery)
+  // 1️⃣ Check Active Session & Listen to Auth Change (Including Password Recovery Protection)
   useEffect(() => {
-    checkCurrentUser();
+    // 👈 التحقق مما إذا كان الرابط القادم من الإيميل يحتوي على توكن الاستعادة
+    const isRecoveryUrl = window.location.hash.includes('type=recovery') || 
+                          window.location.href.includes('type=recovery');
+
+    if (isRecoveryUrl) {
+      setIsUpdatePassword(true);
+      setIsForgotPassword(false);
+      setIsSignUp(false);
+      setLoadingUser(false);
+    } else {
+      checkCurrentUser();
+    }
+
     fetchProjects();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      // 👈 الالتقاط التلقائي عند الضغط على رابط إعادة التعيين من الإيميل
       if (event === 'PASSWORD_RECOVERY') {
         setIsUpdatePassword(true);
         setIsForgotPassword(false);
         setIsSignUp(false);
         setLoadingUser(false);
-      } else if (session?.user && !isUpdatePassword) {
+      } else if (session?.user && !isUpdatePassword && !isRecoveryUrl) {
         fetchMarketerProfile(session.user.id);
-      } else {
+      } else if (!session) {
         setCurrentMarketer(null);
         setLoadingUser(false);
       }
@@ -277,17 +288,20 @@ export function MarketerDashboard() {
       if (data) {
         const isApproved = data.status === 'approved' || data.approved === true;
 
-        if (!isApproved) {
+        // 👈 حماية: عدم عمل signOut إذا كنا في وضع استعادة كلمة المرور
+        if (!isApproved && !isUpdatePassword) {
           setAuthError('⏳ Your account is pending admin approval. Access is restricted.');
           setCurrentMarketer(null);
           await supabase.auth.signOut();
-        } else {
+        } else if (isApproved) {
           setCurrentMarketer(data);
           fetchLeadsForMarketer(data.id, data.name);
         }
       } else {
-        setAuthError('❌ Profile record not found in marketers table.');
-        setCurrentMarketer(null);
+        if (!isUpdatePassword) {
+          setAuthError('❌ Profile record not found in marketers table.');
+          setCurrentMarketer(null);
+        }
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -342,39 +356,37 @@ export function MarketerDashboard() {
 
   // 👈 إرسال رابط استعادة كلمة المرور
   const handleResetPassword = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setAuthError('');
-  setAuthSuccess('');
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
 
-  if (!loginEmail.trim()) {
-    setAuthError('❌ Please enter your email address first.');
-    return;
-  }
-
-  setAuthLoading(true);
-
-  try {
-    // 👈 نحدد المسار الذي يفتح مكون MarketerDashboard مباشرة
-    const redirectUrl = `${window.location.origin}/marketer-dashboard`; 
-    // (إذا كانت الواجهة تفتح في الصفحة الرئيسية مباشرة اتتركها window.location.href)
-
-    const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-      redirectTo: redirectUrl,
-    });
-
-    if (error) {
-      setAuthError(`❌ ${error.message}`);
-    } else {
-      setAuthSuccess('✅ Password reset link has been sent to your email inbox!');
+    if (!loginEmail.trim()) {
+      setAuthError('❌ Please enter your email address first.');
+      return;
     }
-  } catch (err: any) {
-    setAuthError(`❌ ${err.message}`);
-  } finally {
-    setAuthLoading(false);
-  }
-};
 
-  // 👈 دالة حفظ كلمة المرور الجديدة وتحويل الحساب لانتظار موافقة الأدمن
+    setAuthLoading(true);
+
+    try {
+      const redirectUrl = `${window.location.origin}/marketer-dashboard`; 
+
+      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        setAuthError(`❌ ${error.message}`);
+      } else {
+        setAuthSuccess('✅ Password reset link has been sent to your email inbox!');
+      }
+    } catch (err: any) {
+      setAuthError(`❌ ${err.message}`);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // 👈 حفظ كلمة المرور الجديدة وتحويل الحساب لانتظار موافقة الأدمن
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -400,7 +412,7 @@ export function MarketerDashboard() {
       }
 
       if (data.user) {
-        // 2️⃣ تغيير حالة المسوق إلى pending لإجبار الأدمن على الموافقة
+        // 2️⃣ تغيير حالة المسوق إلى pending لإجبار الأدمن على الموافقة من جديد
         const { error: dbError } = await supabase
           .from('marketers')
           .update({ status: 'pending', approved: false })
@@ -410,7 +422,7 @@ export function MarketerDashboard() {
           console.error('Error updating status:', dbError);
         }
 
-        // 3️⃣ تسجيل الخروج وإظهار رسالة التنبيه
+        // 3️⃣ تسجيل الخروج وإظهار التنبيه
         await supabase.auth.signOut();
         setIsUpdatePassword(false);
         setNewPassword('');
