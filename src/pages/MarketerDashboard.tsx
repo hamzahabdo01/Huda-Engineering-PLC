@@ -101,19 +101,20 @@ export function MarketerDashboard() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
 
-  // 1️⃣ Check Active Session & Handle Recovery URL with URL Cleanup
+  // 1️⃣ Check Active Session & Handle Recovery URL with Multi-Tab Isolation
   useEffect(() => {
-    // فحص ما إذا كان الرابط يحتوي على معلمات استعادة كلمة المرور
-    const isRecoveryUrl = window.location.hash.includes('type=recovery') || 
-                          window.location.search.includes('type=recovery');
+    // فحص ما إذا كانت التاب الحالية بالذات تحتوي على رابط استعادة كلمة المرور
+    const isThisTabRecoveryUrl =
+      window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('type=recovery');
 
-    if (isRecoveryUrl) {
+    if (isThisTabRecoveryUrl) {
       setIsUpdatePassword(true);
       setIsForgotPassword(false);
       setIsSignUp(false);
       setLoadingUser(false);
 
-      // 🧹 تنظيف الـ URL فوراً لمنع تكرار التحويل عند التنقل أو التحديث
+      // 🧹 تنظيف الـ URL الخاص بهذه التاب فوراً لمنع تكرار التحويل
       window.history.replaceState(null, '', window.location.pathname);
     } else {
       checkCurrentUser();
@@ -122,14 +123,20 @@ export function MarketerDashboard() {
     fetchProjects();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      // 🛑 حماية التابات الأخرى: لا ننقل الواجهة إلى PASSWORD_RECOVERY إلا إذا كانت التاب الحالية هي من تتضمن الرابط
       if (event === 'PASSWORD_RECOVERY') {
-        setIsUpdatePassword(true);
-        setIsForgotPassword(false);
-        setIsSignUp(false);
-        setLoadingUser(false);
-        // تنظيف شريط العنوان
-        window.history.replaceState(null, '', window.location.pathname);
-      } else if (session?.user && !isUpdatePassword && !isRecoveryUrl) {
+        const urlHasRecovery =
+          window.location.hash.includes('type=recovery') ||
+          window.location.search.includes('type=recovery');
+
+        if (urlHasRecovery || isThisTabRecoveryUrl) {
+          setIsUpdatePassword(true);
+          setIsForgotPassword(false);
+          setIsSignUp(false);
+          setLoadingUser(false);
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      } else if (session?.user && !isUpdatePassword && !isThisTabRecoveryUrl) {
         fetchMarketerProfile(session.user.id);
       } else if (!session) {
         setCurrentMarketer(null);
@@ -202,7 +209,7 @@ export function MarketerDashboard() {
         }));
 
         setProjects(formatted);
-        
+
         setSelectedProjectId((prev) => {
           if (!prev || !formatted.some((p) => p.id === prev)) {
             return formatted[0].id;
@@ -371,7 +378,6 @@ export function MarketerDashboard() {
     setAuthLoading(true);
 
     try {
-      // إرسال رابط ديناميكي بدون معلمات زائدة
       const redirectUrl = `${window.location.origin}${window.location.pathname}`;
 
       const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
@@ -419,8 +425,8 @@ export function MarketerDashboard() {
         // 2️⃣ تعديل حقل status فقط إلى pending
         const { error: dbError } = await supabase
           .from('marketers')
-          .update({ 
-            status: 'pending' 
+          .update({
+            status: 'pending',
           })
           .eq('id', authData.user.id);
 
@@ -434,11 +440,13 @@ export function MarketerDashboard() {
         // 3️⃣ تنظيف الـ URL وتسجيل الخروج
         window.history.replaceState(null, '', window.location.pathname);
         await supabase.auth.signOut();
-        
+
         setIsUpdatePassword(false);
         setNewPassword('');
         setConfirmNewPassword('');
-        setAuthSuccess('✅ Password updated successfully! Your account status is now PENDING and awaiting Admin re-approval.');
+        setAuthSuccess(
+          '✅ Password updated successfully! Your account status is now PENDING and awaiting Admin re-approval.'
+        );
       }
     } catch (err: any) {
       setAuthError(`❌ ${err.message}`);
@@ -489,7 +497,9 @@ export function MarketerDashboard() {
           console.error('Error inserting marketer:', dbError);
           setAuthError(`⚠️ Account created, but database record failed: ${dbError.message}`);
         } else {
-          setAuthSuccess('✅ Registration successful! Your account is now awaiting admin approval.');
+          setAuthSuccess(
+            '✅ Registration successful! Your account is now awaiting admin approval.'
+          );
           setSignupName('');
           setSignupEmail('');
           setSignupPhone('');
@@ -692,7 +702,9 @@ export function MarketerDashboard() {
           {isUpdatePassword ? (
             <form onSubmit={handleSetNewPassword} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">New Password *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  New Password *
+                </label>
                 <input
                   type="password"
                   required
@@ -704,7 +716,9 @@ export function MarketerDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm New Password *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Confirm New Password *
+                </label>
                 <input
                   type="password"
                   required
@@ -858,7 +872,9 @@ export function MarketerDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm Password *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Confirm Password *
+                </label>
                 <input
                   type="password"
                   required
@@ -891,7 +907,8 @@ export function MarketerDashboard() {
         <div>
           <h1 className="text-xl font-bold text-gray-800">🏢 Marketer Portal - Real Estate Inventory</h1>
           <p className="text-xs text-gray-500">
-            Welcome back, <span className="font-bold text-blue-600">{currentMarketer.name}</span> ({currentMarketer.email})
+            Welcome back, <span className="font-bold text-blue-600">{currentMarketer.name}</span> (
+            {currentMarketer.email})
           </p>
         </div>
 
@@ -1055,7 +1072,8 @@ export function MarketerDashboard() {
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
               <h2 className="font-bold text-gray-800 mb-2 text-md">📌 Reserve Unit & Claim Lead</h2>
               <p className="text-xs text-gray-500 mb-4">
-                Click any green cell in the matrix to view its <span className="font-semibold text-blue-600">Payment Plan</span> and reserve it.
+                Click any green cell in the matrix to view its{' '}
+                <span className="font-semibold text-blue-600">Payment Plan</span> and reserve it.
               </p>
 
               {selectedUnitDetails && (
@@ -1067,19 +1085,27 @@ export function MarketerDashboard() {
                   <div className="grid grid-cols-2 gap-2 text-gray-700">
                     <div>
                       <span className="block text-[10px] text-gray-500">Total Price:</span>
-                      <strong className="text-gray-900">${selectedUnitDetails.totalPrice?.toLocaleString() || 0}</strong>
+                      <strong className="text-gray-900">
+                        ${selectedUnitDetails.totalPrice?.toLocaleString() || 0}
+                      </strong>
                     </div>
                     <div>
                       <span className="block text-[10px] text-gray-500">Down Payment:</span>
-                      <strong className="text-emerald-700">${selectedUnitDetails.downPayment?.toLocaleString() || 0}</strong>
+                      <strong className="text-emerald-700">
+                        ${selectedUnitDetails.downPayment?.toLocaleString() || 0}
+                      </strong>
                     </div>
                     <div>
                       <span className="block text-[10px] text-gray-500">Installment Period:</span>
-                      <strong className="text-gray-900">{selectedUnitDetails.installmentYears || 1} Years</strong>
+                      <strong className="text-gray-900">
+                        {selectedUnitDetails.installmentYears || 1} Years
+                      </strong>
                     </div>
                     <div>
                       <span className="block text-[10px] text-gray-500">Monthly Installment:</span>
-                      <strong className="text-blue-700">${selectedUnitDetails.monthlyInstallment?.toLocaleString() || 0}/mo</strong>
+                      <strong className="text-blue-700">
+                        ${selectedUnitDetails.monthlyInstallment?.toLocaleString() || 0}/mo
+                      </strong>
                     </div>
                   </div>
                 </div>
