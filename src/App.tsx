@@ -1,10 +1,12 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { lazyLoad } from "@/utils/lazyLoad";
+import { supabase } from "@/integrations/supabase/client"; // 👈 استيراد Supabase
 import ScrollToTop from "./components/ScrollToTop";
 import BackToHomeButton from "./components/BackToHomeButton";
 
@@ -18,7 +20,7 @@ const ApartmentDetail = lazyLoad(() => import("./pages/ApartmentDetail"));
 const Contact = lazyLoad(() => import("./pages/Contact"));
 const Auth = lazyLoad(() => import("./pages/Auth"));
 const AdminDashboard = lazyLoad(() => import("./pages/AdminDashboard"));
-const AdminDashboardd = lazyLoad(() => import("./pages/AdminDashboardd"));// 👈 إضافة واجهة الإدارة
+const AdminDashboardd = lazyLoad(() => import("./pages/AdminDashboardd")); // 👈 إضافة واجهة الإدارة
 const MarketerDashboard = lazyLoad(() => import("./pages/MarketerDashboard")); // 👈 إضافة واجهة المسوق
 const Booking = lazyLoad(() => import("./pages/Booking"));
 const Announcements = lazyLoad(() => import("./pages/Announcements"));
@@ -38,11 +40,31 @@ const queryClient = new QueryClient({
   },
 });
 
+// 👈 مكون لالتقاط حدث استعادة كلمة المرور والتوجيه لصفحة المسوق تلقائياً
+function AuthListener() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/marketer-dashboard');
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <TooltipProvider>
+          <AuthListener /> {/* 👈 تشغيل مستمع استعادة كلمة المرور */}
           <Toaster />
           <Sonner />
           <ScrollToTop />
@@ -58,7 +80,7 @@ function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/admin-dashboardd" element={<AdminDashboardd />} /> {/* 👈 إضافة واجهة الإدارة */}
-            <Route path="/marketer-dashboard" element={<MarketerDashboard />} /> {/* 👈 إضافة واجهة المسوق */ }
+            <Route path="/marketer-dashboard" element={<MarketerDashboard />} /> {/* 👈 إضافة واجهة المسوق */}
             <Route path="/booking" element={<Booking />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/announcements/:id" element={<AnnouncementDetail />} />

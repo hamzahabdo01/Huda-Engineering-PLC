@@ -342,36 +342,37 @@ export function MarketerDashboard() {
 
   // 👈 إرسال رابط استعادة كلمة المرور
   const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    setAuthSuccess('');
+  e.preventDefault();
+  setAuthError('');
+  setAuthSuccess('');
 
-    if (!loginEmail.trim()) {
-      setAuthError('❌ Please enter your email address first.');
-      return;
+  if (!loginEmail.trim()) {
+    setAuthError('❌ Please enter your email address first.');
+    return;
+  }
+
+  setAuthLoading(true);
+
+  try {
+    // 👈 نحدد المسار الذي يفتح مكون MarketerDashboard مباشرة
+    const redirectUrl = `${window.location.origin}/marketer-dashboard`; 
+    // (إذا كانت الواجهة تفتح في الصفحة الرئيسية مباشرة اتتركها window.location.href)
+
+    const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+      redirectTo: redirectUrl,
+    });
+
+    if (error) {
+      setAuthError(`❌ ${error.message}`);
+    } else {
+      setAuthSuccess('✅ Password reset link has been sent to your email inbox!');
     }
-
-    setAuthLoading(true);
-
-    try {
-      // الرابط الموجه للمستخدم (يأخذ عنوان الدومين الحالي تلقائياً)
-      const redirectUrl = window.location.origin;
-
-      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-        redirectTo: redirectUrl,
-      });
-
-      if (error) {
-        setAuthError(`❌ ${error.message}`);
-      } else {
-        setAuthSuccess('✅ Password reset link has been sent to your email inbox!');
-      }
-    } catch (err: any) {
-      setAuthError(`❌ ${err.message}`);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
+  } catch (err: any) {
+    setAuthError(`❌ ${err.message}`);
+  } finally {
+    setAuthLoading(false);
+  }
+};
 
   // 👈 دالة حفظ كلمة المرور الجديدة وتحويل الحساب لانتظار موافقة الأدمن
   const handleSetNewPassword = async (e: React.FormEvent) => {
