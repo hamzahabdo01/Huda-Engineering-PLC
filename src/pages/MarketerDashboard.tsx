@@ -390,54 +390,61 @@ const handleResetPassword = async (e: React.FormEvent) => {
   }
 };
   // 👈 حفظ كلمة المرور الجديدة وتحويل الحساب لانتظار موافقة الأدمن
-  const handleSetNewPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    setAuthSuccess('');
+const handleSetNewPassword = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setAuthError('');
+  setAuthSuccess('');
 
-    if (newPassword !== confirmNewPassword) {
-      setAuthError('❌ Passwords do not match.');
+  if (newPassword !== confirmNewPassword) {
+    setAuthError('❌ Passwords do not match.');
+    return;
+  }
+
+  setAuthLoading(true);
+
+  try {
+    // 1️⃣ تحديث كلمة المرور في Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (authError) {
+      setAuthError(`❌ Auth error: ${authError.message}`);
+      setAuthLoading(false);
       return;
     }
 
-    setAuthLoading(true);
+    if (authData?.user) {
+      // 2️⃣ تغيير حالة المسوق في قاعدة البيانات فوراً
+      const { error: dbError } = await supabase
+        .from('marketers')
+        .update({ 
+          status: 'pending', 
+          approved: false 
+        })
+        .eq('id', authData.user.id);
 
-    try {
-      // 1️⃣ تحديث كلمة المرور في Supabase Auth
-      const { data, error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (error) {
-        setAuthError(`❌ ${error.message}`);
+      // 🔴 إذا فشل التحديث في الداتابيز، أوقف العملية وأظهر الخطأ فوراً
+      if (dbError) {
+        console.error('Database Update Error:', dbError);
+        setAuthError(`❌ Failed to set status to pending in Database: ${dbError.message}`);
         setAuthLoading(false);
-        return;
+        return; // توقف هنا ولا تسجل الخروج حتى تحل المشكلة
       }
 
-      if (data.user) {
-        // 2️⃣ تغيير حالة المسوق إلى pending لإجبار الأدمن على الموافقة من جديد
-        const { error: dbError } = await supabase
-          .from('marketers')
-          .update({ status: 'pending', approved: false })
-          .eq('id', data.user.id);
-
-        if (dbError) {
-          console.error('Error updating status:', dbError);
-        }
-
-        // 3️⃣ تسجيل الخروج وإظهار التنبيه
-        await supabase.auth.signOut();
-        setIsUpdatePassword(false);
-        setNewPassword('');
-        setConfirmNewPassword('');
-        setAuthSuccess('✅ Password updated successfully! Your account is now awaiting Admin re-approval before you can login.');
-      }
-    } catch (err: any) {
-      setAuthError(`❌ ${err.message}`);
-    } finally {
-      setAuthLoading(false);
+      // 3️⃣ إذا نجح التحديث في الداتابيز، سجل الخروج واعرض رسالة النجاح
+      await supabase.auth.signOut();
+      setIsUpdatePassword(false);
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setAuthSuccess('✅ Password updated successfully! Your account status is now PENDING and awaiting Admin re-approval.');
     }
-  };
+  } catch (err: any) {
+    setAuthError(`❌ ${err.message}`);
+  } finally {
+    setAuthLoading(false);
+  }
+};
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
