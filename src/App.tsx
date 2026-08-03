@@ -3,10 +3,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom"; // 👈 تم إضافة useLocation
 import { ThemeProvider } from "next-themes";
 import { lazyLoad } from "@/utils/lazyLoad";
-import { supabase } from "@/integrations/supabase/client"; // 👈 استيراد Supabase
+import { supabase } from "@/integrations/supabase/client";
 import ScrollToTop from "./components/ScrollToTop";
 import BackToHomeButton from "./components/BackToHomeButton";
 
@@ -20,8 +20,8 @@ const ApartmentDetail = lazyLoad(() => import("./pages/ApartmentDetail"));
 const Contact = lazyLoad(() => import("./pages/Contact"));
 const Auth = lazyLoad(() => import("./pages/Auth"));
 const AdminDashboard = lazyLoad(() => import("./pages/AdminDashboard"));
-const AdminDashboardd = lazyLoad(() => import("./pages/AdminDashboardd")); // 👈 إضافة واجهة الإدارة
-const MarketerDashboard = lazyLoad(() => import("./pages/MarketerDashboard")); // 👈 إضافة واجهة المسوق
+const AdminDashboardd = lazyLoad(() => import("./pages/AdminDashboardd"));
+const MarketerDashboard = lazyLoad(() => import("./pages/MarketerDashboard"));
 const Booking = lazyLoad(() => import("./pages/Booking"));
 const Announcements = lazyLoad(() => import("./pages/Announcements"));
 const AnnouncementDetail = lazyLoad(() => import("./pages/AnnouncementDetail"));
@@ -32,13 +32,27 @@ const NotFound = lazyLoad(() => import("./pages/NotFound"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       retry: 1,
       refetchOnWindowFocus: false,
     },
   },
 });
+
+// 👈 مكون إخفاء الزر في لوحات التحكم فقط
+function ConditionalBackToHome() {
+  const location = useLocation();
+  
+  // قائمة الصفحات التي نريد إخفاء الزر فيها
+  const hiddenPaths = ["/admin-dashboardd", "/admin-dashboard", "/marketer-dashboard"];
+
+  if (hiddenPaths.includes(location.pathname)) {
+    return null; // لا تعرض شيء
+  }
+
+  return <BackToHomeButton />;
+}
 
 // 👈 مكون لالتقاط حدث استعادة كلمة المرور والتوجيه لصفحة المسوق تلقائياً
 function AuthListener() {
@@ -64,11 +78,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <TooltipProvider>
-          <AuthListener /> {/* 👈 تشغيل مستمع استعادة كلمة المرور */}
+          <AuthListener />
           <Toaster />
           <Sonner />
           <ScrollToTop />
-          <BackToHomeButton />
+          
+          {/* 👈 الزر سيعمل فقط في باقي الصفحات وسيختفي من لوحات التحكم */}
+          <ConditionalBackToHome />
+
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
@@ -79,8 +96,8 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            <Route path="/admin-dashboardd" element={<AdminDashboardd />} /> {/* 👈 إضافة واجهة الإدارة */}
-            <Route path="/marketer-dashboard" element={<MarketerDashboard />} /> {/* 👈 إضافة واجهة المسوق */}
+            <Route path="/admin-dashboardd" element={<AdminDashboardd />} />
+            <Route path="/marketer-dashboard" element={<MarketerDashboard />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/announcements/:id" element={<AnnouncementDetail />} />
