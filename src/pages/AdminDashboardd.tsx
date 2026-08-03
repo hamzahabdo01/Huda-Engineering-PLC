@@ -385,16 +385,27 @@ export function AdminDashboardd() {
     }
   };
 
-  const handleCellClick = (floorName: string, unitTypeId: string) => {
+const handleCellClick = (floorName: string, unitTypeId: string) => {
     const key = `${floorName}-${unitTypeId}`;
     const currentStatus = matrix[key] || 'unavailable';
 
+    // 1️⃣ تحديد الحالة التالية بالتناوب عند الضغط المباشر
+    let nextStatus: UnitStatus = 'available';
+    if (currentStatus === 'available') nextStatus = 'reserved';
+    else if (currentStatus === 'reserved') nextStatus = 'unavailable';
+    else if (currentStatus === 'unavailable') nextStatus = 'available';
+    else nextStatus = 'available'; // إذا كان الخلية بها نص مخصص، تعود لـ available عند الضغط
+
+    // 2️⃣ تحديد الخلية الحالية وتحديث النص
     setActiveCellKey(key);
     if (!['available', 'reserved', 'unavailable'].includes(currentStatus)) {
       setCustomCellText(currentStatus);
     } else {
       setCustomCellText('');
     }
+
+    // 3️⃣ حفظ التغيير فوراً في Supabase
+    saveStatusToSupabase(floorName, unitTypeId, nextStatus);
   };
 
   const handleExplicitStatusChange = (status: UnitStatus) => {
