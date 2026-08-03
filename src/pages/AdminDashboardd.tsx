@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 
 // --- Types & Interfaces ---
-export type UnitStatus = 'available' | 'reserved' | 'unavailable';
+// 👈 تم تحديث نوع الحالة لدعم النصوص المخصصة مثل office و business
+export type UnitStatus = 'available' | 'reserved' | 'unavailable' | 'office' | 'business' | 'shop' | string;
 
 export interface PaymentPlan {
   total_price?: number;
@@ -43,7 +44,7 @@ export interface MarketerClient {
   project_name?: string;
   unit_title?: string;
   status?: string;
-  source?: string; // 👈 إضافة المصدر هنا
+  source?: string;
   created_at?: string;
 }
 
@@ -86,6 +87,7 @@ export function AdminDashboardd() {
   const [newUnitYears, setNewUnitYears] = useState<number | ''>(5);
 
   const [activeCellKey, setActiveCellKey] = useState<string | null>(null);
+  const [customCellText, setCustomCellText] = useState<string>(''); // 👈 نص مخصص للخلية
   const [activeTab, setActiveTab] = useState<'matrix' | 'pricing' | 'clients' | 'marketers'>('matrix');
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
@@ -96,7 +98,6 @@ export function AdminDashboardd() {
     fetchMarketerClients();
     fetchMarketerAccounts();
 
-    // ⚡ الاستماع للحجوزات والعملاء الجدد لحظياً
     const leadsChannel = supabase
       .channel('realtime-leads-changes')
       .on(
@@ -232,7 +233,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // --- Marketer Approval / Rejection Handlers ---
   const handleUpdateMarketerStatus = async (marketerId: string, newStatus: 'approved' | 'rejected') => {
     const { error } = await supabase
       .from('marketers')
@@ -248,8 +248,6 @@ export function AdminDashboardd() {
       alert(`✅ Marketer status updated to ${newStatus}`);
     }
   };
-
-  // --- Form Handlers ---
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -391,13 +389,12 @@ export function AdminDashboardd() {
     const key = `${floorName}-${unitTypeId}`;
     const currentStatus = matrix[key] || 'unavailable';
 
-    let nextStatus: UnitStatus = 'available';
-    if (currentStatus === 'available') nextStatus = 'reserved';
-    else if (currentStatus === 'reserved') nextStatus = 'unavailable';
-    else if (currentStatus === 'unavailable') nextStatus = 'available';
-
     setActiveCellKey(key);
-    saveStatusToSupabase(floorName, unitTypeId, nextStatus);
+    if (!['available', 'reserved', 'unavailable'].includes(currentStatus)) {
+      setCustomCellText(currentStatus);
+    } else {
+      setCustomCellText('');
+    }
   };
 
   const handleExplicitStatusChange = (status: UnitStatus) => {
@@ -406,6 +403,12 @@ export function AdminDashboardd() {
     if (floorName && unitTypeId) {
       saveStatusToSupabase(floorName, unitTypeId, status);
     }
+  };
+
+  const handleApplyCustomText = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeCellKey || !customCellText.trim()) return;
+    handleExplicitStatusChange(customCellText.trim());
   };
 
   // Stats
@@ -568,7 +571,7 @@ export function AdminDashboardd() {
                       <label className="block text-[10px] font-bold text-gray-600 mb-1">Single Floor Name</label>
                       <input
                         type="text"
-                        placeholder="e.g. Ground"
+                        placeholder="e.g. Ground / First"
                         value={newFloorName}
                         onChange={(e) => {
                           setNewFloorName(e.target.value);
@@ -646,35 +649,78 @@ export function AdminDashboardd() {
                 </form>
               </div>
 
+              {/* 👈 لوحة التحكم بالخلية المحددة (تم تطويرها لدعم الأنشطة والنصوص المخصصة) */}
               {activeCellKey && (
-                <div className="bg-amber-50 p-4 rounded-xl border border-amber-300 shadow-sm">
-                  <p className="text-xs font-bold text-amber-900 mb-2">
+                <div className="bg-amber-50 p-4 rounded-xl border border-amber-300 shadow-sm space-y-3">
+                  <p className="text-xs font-bold text-amber-900">
                     Selected Cell: <span className="underline">{activeCellKey}</span>
                   </p>
+                  
+                  {/* أزرار الحالات العادية */}
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleExplicitStatusChange('available')}
-                      className="bg-[#00b050] text-white py-1.5 rounded text-[11px] font-bold shadow-sm"
+                      className="bg-[#00b050] text-white py-1.5 rounded text-[10px] font-bold shadow-sm"
                     >
                       🟢 Available
                     </button>
                     <button
                       onClick={() => handleExplicitStatusChange('reserved')}
-                      className="bg-[#f2b827] text-black py-1.5 rounded text-[11px] font-bold shadow-sm"
+                      className="bg-[#f2b827] text-black py-1.5 rounded text-[10px] font-bold shadow-sm"
                     >
                       🟡 Reserved
                     </button>
                     <button
                       onClick={() => handleExplicitStatusChange('unavailable')}
-                      className="bg-[#ff0000] text-white py-1.5 rounded text-[11px] font-bold shadow-sm"
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm"
                     >
                       🔴 Sold/Off
                     </button>
                   </div>
+
+                  {/* أزرار الأنشطة والتجارية (مثل صورة العميل) */}
+                  <div className="grid grid-cols-3 gap-2 pt-1 border-t border-amber-200">
+                    <button
+                      onClick={() => handleExplicitStatusChange('Buisness')}
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm"
+                    >
+                      🏢 Buisness
+                    </button>
+                    <button
+                      onClick={() => handleExplicitStatusChange('office')}
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm"
+                    >
+                      💼 Office
+                    </button>
+                    <button
+                      onClick={() => handleExplicitStatusChange('Shops')}
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm"
+                    >
+                      🛍️ Shops
+                    </button>
+                  </div>
+
+                  {/* إمكانية كتابة نص حر */}
+                  <form onSubmit={handleApplyCustomText} className="flex gap-2 pt-1">
+                    <input
+                      type="text"
+                      placeholder="Or enter custom text (e.g. Gym)"
+                      value={customCellText}
+                      onChange={(e) => setCustomCellText(e.target.value)}
+                      className="flex-1 p-1.5 text-xs border border-amber-400 rounded outline-none focus:ring-1 focus:ring-amber-600 bg-white"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-amber-800 text-white px-3 py-1 rounded text-xs font-bold hover:bg-amber-900"
+                    >
+                      Apply Text
+                    </button>
+                  </form>
                 </div>
               )}
             </div>
 
+            {/* Matrix Render Table */}
             <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
               <div className="flex flex-col items-center justify-center mb-6">
                 <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
@@ -715,22 +761,35 @@ export function AdminDashboardd() {
                           const status = matrix[key] || 'unavailable';
                           const isActive = activeCellKey === key;
 
-                          let bgClass = 'bg-[#ff0000]';
-                          if (status === 'available') bgClass = 'bg-[#00b050]';
-                          else if (status === 'reserved') bgClass = 'bg-[#f2b827]';
+                          // 👈 تنسيق اللون والنص حسب الحالة (بما في ذلك Buisness و Office تماماً كالصورة)
+                          let bgClass = 'bg-[#ff0000] text-white';
+                          let cellContent: React.ReactNode = null;
+
+                          if (status === 'available') {
+                            bgClass = 'bg-[#00b050] text-black';
+                            cellContent = '🟢';
+                          } else if (status === 'reserved') {
+                            bgClass = 'bg-[#f2b827] text-black';
+                            cellContent = '🟡';
+                          } else if (status === 'unavailable') {
+                            bgClass = 'bg-[#ff0000] text-white';
+                            cellContent = '🔴';
+                          } else {
+                            // نصوص مخصصة مثل Buisness أو office بخلفية حمراء ونص أبيض عريض
+                            bgClass = 'bg-[#ff0000] text-white font-extrabold';
+                            cellContent = status;
+                          }
 
                           return (
                             <td
                               key={ut.id}
                               onClick={() => handleCellClick(f.floor_name, ut.id)}
-                              className={`border border-black p-3 font-bold transition-all cursor-pointer hover:opacity-80 select-none ${bgClass} ${
-                                isActive ? 'ring-4 ring-blue-600 scale-95' : ''
+                              className={`border border-black p-2 font-bold transition-all cursor-pointer hover:opacity-80 select-none ${bgClass} ${
+                                isActive ? 'ring-4 ring-blue-600 scale-95 z-10' : ''
                               }`}
                             >
-                              <span className="text-[10px] uppercase font-extrabold text-black">
-                                {status === 'available' && '🟢'}
-                                {status === 'reserved' && '🟡'}
-                                {status === 'unavailable' && '🔴'}
+                              <span className="text-[11px] uppercase tracking-wider font-black break-words">
+                                {cellContent}
                               </span>
                             </td>
                           );
@@ -793,7 +852,7 @@ export function AdminDashboardd() {
                   <th className="p-3 border">Client Name</th>
                   <th className="p-3 border">Phone</th>
                   <th className="p-3 border">Unit / Details</th>
-                  <th className="p-3 border">Source</th> {/* 👈 إضافة رأس العمود */}
+                  <th className="p-3 border">Source</th>
                   <th className="p-3 border">Status</th>
                   <th className="p-3 border">Date</th>
                 </tr>
@@ -801,7 +860,7 @@ export function AdminDashboardd() {
               <tbody>
                 {marketerClients.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500 font-semibold"> {/* 👈 زيادة colSpan إلى 7 */}
+                    <td colSpan={7} className="p-4 text-center text-gray-500 font-semibold">
                       No client leads found.
                     </td>
                   </tr>
@@ -818,7 +877,7 @@ export function AdminDashboardd() {
                       <td className="p-3 border font-medium text-amber-900">
                         {client.apartment_id || client.apartmentId || '-'}
                       </td>
-                      <td className="p-3 border"> {/* 👈 إضافة خلية عرض المصدر */}
+                      <td className="p-3 border">
                         <span className="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded text-[10px]">
                           {client.source || client.lead_source || 'Direct'}
                         </span>
@@ -840,7 +899,7 @@ export function AdminDashboardd() {
         </div>
       )}
 
-      {/* TAB 4: MARKETERS & APPROVALS (متابعة وقبول/رفض المسوقين) */}
+      {/* TAB 4: MARKETERS & APPROVALS */}
       {activeTab === 'marketers' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
           <div className="flex justify-between items-center mb-4">
@@ -856,13 +915,9 @@ export function AdminDashboardd() {
             </button>
           </div>
 
-          {/* Error Message Box if fetching fails */}
           {marketersFetchError && (
             <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-800 text-xs rounded">
               ⚠️ <strong>Error Loading Data from Supabase:</strong> {marketersFetchError}
-              <p className="mt-1 text-[11px] text-red-600">
-                👉 Please make sure you executed the SQL query in Supabase SQL Editor to allow public select on `marketers` table!
-              </p>
             </div>
           )}
 
