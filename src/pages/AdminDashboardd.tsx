@@ -338,8 +338,31 @@ export function AdminDashboardd() {
     }
   };
 
+  // 🔹 دالة مساعدة لتحويل رقم الطابق إلى اسم ترتيبي (First Floor, Second Floor... إلخ)
+  const getOrdinalFloorName = (num: number): string => {
+    const ordinals = [
+      'First', 'Second', 'Third', 'Fourth', 'Fifth',
+      'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth',
+      'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth',
+      'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth',
+      'Twenty-First', 'Twenty-Second', 'Twenty-Third', 'Twenty-Fourth', 'Twenty-Fifth',
+      'Twenty-Sixth', 'Twenty-Seventh', 'Twenty-Eighth', 'Twenty-Ninth', 'Thirtieth'
+    ];
 
-  const handleAddFloors = async (e: React.FormEvent) => {
+    if (num <= ordinals.length) {
+      return `${ordinals[num - 1]} Floor`; // يمكنك إزالة ' Floor' إذا أردتها الكلمة فقط
+    }
+
+    // fallback للأرقام الكبيرة جداً (مثال: 31st Floor)
+    const j = num % 10, k = num % 100;
+    if (j === 1 && k !== 11) return `${num}st Floor`;
+    if (j === 2 && k !== 12) return `${num}nd Floor`;
+    if (j === 3 && k !== 13) return `${num}rd Floor`;
+    return `${num}th Floor`;
+  };
+
+
+const handleAddFloors = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProjectId) return;
 
@@ -348,7 +371,9 @@ export function AdminDashboardd() {
     if (typicalFloorCount && Number(typicalFloorCount) > 0) {
       const count = Number(typicalFloorCount);
       for (let i = 1; i <= count; i++) {
-        const name = `Floor ${i}`;
+        // 👈 استخدام التسمية الترتيبية بدلاً من "Floor 1"
+        const name = getOrdinalFloorName(i);
+
         if (!floors.some((f) => f.floor_name.toLowerCase() === name.toLowerCase())) {
           floorsToCreate.push({
             project_id: selectedProjectId,
@@ -366,7 +391,7 @@ export function AdminDashboardd() {
         floor_name: name,
       });
     } else {
-      return alert('Please enter floor name or typical count (e.g., 10)');
+      return alert('Please enter floor name or typical count (e.g., 20)');
     }
 
     if (floorsToCreate.length === 0) {
