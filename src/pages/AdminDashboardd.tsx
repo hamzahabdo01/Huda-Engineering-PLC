@@ -92,6 +92,10 @@ export function AdminDashboardd() {
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
+  // --- Pricing Edit States ---
+  const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
+  const [editUnitForm, setEditUnitForm] = useState<Partial<UnitType>>({});
+
   // 1. Fetch Initial Data and Setup Realtime Listeners
   useEffect(() => {
     fetchProjects();
@@ -274,6 +278,66 @@ export function AdminDashboardd() {
       alert('✅ New Project created successfully!');
     }
   };
+
+  // 1. لبدء وضع التعديل
+  const handleEditUnitClick = (ut: UnitType) => {
+    setEditingUnitId(ut.id);
+    setEditUnitForm(ut);
+  };
+
+  // 2. إلغاء التعديل
+  const handleCancelEdit = () => {
+    setEditingUnitId(null);
+    setEditUnitForm({});
+  };
+
+  // 3. حفظ التعديل في Supabase
+  const handleSaveUnitPricing = async (unitId: string) => {
+    const totalPrice = Number(editUnitForm.total_price) || 0;
+    const downPayment = Number(editUnitForm.down_payment) || 0;
+    const years = Number(editUnitForm.installment_years) || 1;
+    const remaining = Math.max(0, totalPrice - downPayment);
+    const monthlyInstallment = years > 0 ? Math.round(remaining / (years * 12)) : 0;
+
+    const updatedData = {
+      title: editUnitForm.title?.trim() || '',
+      area: Number(editUnitForm.area) || 0,
+      total_price: totalPrice,
+      down_payment: downPayment,
+      installment_years: years,
+      monthly_installment: monthlyInstallment,
+    };
+
+    const { error } = await supabase
+      .from('srm_unit_types')
+      .update(updatedData)
+      .eq('id', unitId);
+
+    if (error) {
+      alert('Error updating pricing: ' + error.message);
+    } else {
+      setUnitTypes((prev) =>
+        prev.map((ut) => (ut.id === unitId ? { ...ut, ...updatedData } : ut))
+      );
+      setEditingUnitId(null);
+      alert('✅ Unit Pricing updated successfully!');
+    }
+  };
+
+  // 4. حذف نوع الوحدة (اختياري)
+  const handleDeleteUnitType = async (unitId: string) => {
+    if (!confirm('Are you sure you want to delete this unit type?')) return;
+
+    const { error } = await supabase.from('srm_unit_types').delete().eq('id', unitId);
+
+    if (error) {
+      alert('Error deleting unit type: ' + error.message);
+    } else {
+      setUnitTypes((prev) => prev.filter((ut) => ut.id !== unitId));
+      alert('🗑️ Unit type deleted successfully!');
+    }
+  };
+
 
   const handleAddFloors = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -816,35 +880,143 @@ const handleCellClick = (floorName: string, unitTypeId: string) => {
         </>
       )}
 
-      {/* TAB 2: PRICING & PAYMENT PLAN MANAGER */}
+{/* TAB 2: PRICING & PAYMENT PLAN MANAGER */}
       {activeTab === 'pricing' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <h2 className="text-lg font-bold text-gray-800 mb-2">
-            💳 Pricing & Payment Plans for [{selectedProject?.name || selectedProject?.title}]
-          </h2>
-          <div className="mt-4 overflow-x-auto">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">
+                💳 Pricing & Payment Plans for [{selectedProject?.name || selectedProject?.title}]
+              </h2>
+              <p className="text-xs text-gray-500">Edit prices, down payments, and installment duration dynamically</p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border border-gray-200">
               <thead className="bg-gray-800 text-white uppercase font-bold">
                 <tr>
                   <th className="p-3 border">House Title</th>
                   <th className="p-3 border">Area (m²)</th>
-                  <th className="p-3 border">Total Price</th>
-                  <th className="p-3 border">Down Payment</th>
+                  <th className="p-3 border">Total Price ($)</th>
+                  <th className="p-3 border">Down Payment ($)</th>
                   <th className="p-3 border">Installment Years</th>
-                  <th className="p-3 border">Monthly Payment</th>
+                  <th className="p-3 border">Est. Monthly Payment</th>
+                  <th className="p-3 border text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {unitTypes.map((ut) => (
-                  <tr key={ut.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3 border font-bold">{ut.title}</td>
-                    <td className="p-3 border">{ut.area} m²</td>
-                    <td className="p-3 border font-semibold text-emerald-700">${ut.total_price?.toLocaleString() || 0}</td>
-                    <td className="p-3 border">${ut.down_payment?.toLocaleString() || 0}</td>
-                    <td className="p-3 border">{ut.installment_years || 0} Years</td>
-                    <td className="p-3 border font-bold text-blue-700">${ut.monthly_installment?.toLocaleString() || 0} / mo</td>
+                {unitTypes.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-4 text-center text-gray-500 font-semibold">
+                      No unit types found for this project.
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  unitTypes.map((ut) => {
+                    const isEditing = editingUnitId === ut.id;
+
+                    if (isEditing) {
+                      // حساب القسط الشري المستقبلي تلقائياً أثناء الكتابة
+                      const currentPrice = Number(editUnitForm.total_price) || 0;
+                      const currentDown = Number(editUnitForm.down_payment) || 0;
+                      const currentYears = Number(editUnitForm.installment_years) || 1;
+                      const rem = Math.max(0, currentPrice - currentDown);
+                      const calcMonthly = currentYears > 0 ? Math.round(rem / (currentYears * 12)) : 0;
+
+                      return (
+                        <tr key={ut.id} className="bg-blue-50 border-b border-blue-200">
+                          <td className="p-2 border">
+                            <input
+                              type="text"
+                              value={editUnitForm.title || ''}
+                              onChange={(e) => setEditUnitForm({ ...editUnitForm, title: e.target.value })}
+                              className="w-full p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="p-2 border">
+                            <input
+                              type="number"
+                              value={editUnitForm.area || ''}
+                              onChange={(e) => setEditUnitForm({ ...editUnitForm, area: Number(e.target.value) })}
+                              className="w-20 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="p-2 border">
+                            <input
+                              type="number"
+                              value={editUnitForm.total_price || ''}
+                              onChange={(e) => setEditUnitForm({ ...editUnitForm, total_price: Number(e.target.value) })}
+                              className="w-28 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500 font-bold text-emerald-700"
+                            />
+                          </td>
+                          <td className="p-2 border">
+                            <input
+                              type="number"
+                              value={editUnitForm.down_payment || ''}
+                              onChange={(e) => setEditUnitForm({ ...editUnitForm, down_payment: Number(e.target.value) })}
+                              className="w-28 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="p-2 border">
+                            <input
+                              type="number"
+                              value={editUnitForm.installment_years || ''}
+                              onChange={(e) => setEditUnitForm({ ...editUnitForm, installment_years: Number(e.target.value) })}
+                              className="w-16 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="p-2 border font-bold text-blue-700">
+                            ${calcMonthly.toLocaleString()} / mo
+                          </td>
+                          <td className="p-2 border text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => handleSaveUnitPricing(ut.id)}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[11px]"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="px-2.5 py-1 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded text-[11px]"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return (
+                      <tr key={ut.id} className="border-b hover:bg-gray-50">
+                        <td className="p-3 border font-bold">{ut.title}</td>
+                        <td className="p-3 border">{ut.area} m²</td>
+                        <td className="p-3 border font-semibold text-emerald-700">${ut.total_price?.toLocaleString() || 0}</td>
+                        <td className="p-3 border">${ut.down_payment?.toLocaleString() || 0}</td>
+                        <td className="p-3 border">{ut.installment_years || 0} Years</td>
+                        <td className="p-3 border font-bold text-blue-700">${ut.monthly_installment?.toLocaleString() || 0} / mo</td>
+                        <td className="p-3 border text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleEditUnitClick(ut)}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold text-[11px]"
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUnitType(ut.id)}
+                              className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-[11px]"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
