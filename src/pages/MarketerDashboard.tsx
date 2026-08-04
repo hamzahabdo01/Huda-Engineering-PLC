@@ -19,7 +19,8 @@ export interface UnitType {
   monthlyInstallment?: number;
 }
 
-export type UnitStatus = 'available' | 'unavailable' | 'reserved';
+// 🟢 دعم النصوص المخصصة مثل OFFICE, SHOPS, BUSINESS ...
+export type UnitStatus = 'available' | 'unavailable' | 'reserved' | string;
 
 export interface Project {
   id: string;
@@ -59,8 +60,8 @@ export function MarketerDashboard() {
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [isUpdatePassword, setIsUpdatePassword] = useState(false); // واجهة إدخال كلمة المرور الجديدة
-  const isUpdatePasswordRef = useRef(false); // 🔑 مرجع لحفظ حالة التحديث بدون مشاكل Stale Closure
+  const [isUpdatePassword, setIsUpdatePassword] = useState(false);
+  const isUpdatePasswordRef = useRef(false);
 
   const setUpdatePasswordMode = (val: boolean) => {
     isUpdatePasswordRef.current = val;
@@ -91,7 +92,7 @@ export function MarketerDashboard() {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [floors, setFloors] = useState<Floor[]>([]);
   const [unitTypes, setUnitTypes] = useState<UnitType[]>([]);
-  const [matrix, setMatrix] = useState<Record<string, UnitStatus>>({});
+  const [matrix, setMatrix] = useState<Record<string, string>>({});
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
@@ -108,42 +109,37 @@ export function MarketerDashboard() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
 
- // 1️⃣ Check Active Session & Handle Recovery
- useEffect(() => {
-  fetchProjects();
+  // 1️⃣ Check Active Session & Handle Recovery
+  useEffect(() => {
+    fetchProjects();
 
-  const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-    console.log("Auth Event:", event);
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setUpdatePasswordMode(true);
+        setIsForgotPassword(false);
+        setIsSignUp(false);
+        setCurrentMarketer(null);
+        setLoadingUser(false);
+        return;
+      }
 
-    // 🛑 1. التقاط حدث استعادة كلمة المرور مباشرة من Supabase
-    if (event === 'PASSWORD_RECOVERY') {
-      setUpdatePasswordMode(true);
-      setIsForgotPassword(false);
-      setIsSignUp(false);
-      setCurrentMarketer(null);
-      setLoadingUser(false);
-      return;
-    }
+      if (isUpdatePasswordRef.current) {
+        setLoadingUser(false);
+        return;
+      }
 
-    // 🛑 2. إذا كنا في وضع تعديل كلمة المرور، يمنع نهائياً جلب البروفايل أو التحويل للداشبورد
-    if (isUpdatePasswordRef.current) {
-      setLoadingUser(false);
-      return;
-    }
+      if (session?.user) {
+        fetchMarketerProfile(session.user.id);
+      } else {
+        setCurrentMarketer(null);
+        setLoadingUser(false);
+      }
+    });
 
-    // 🟢 3. الحالات العادية لتسجيل الدخول
-    if (session?.user) {
-      fetchMarketerProfile(session.user.id);
-    } else {
-      setCurrentMarketer(null);
-      setLoadingUser(false);
-    }
-  });
-
-  return () => {
-    authListener.subscription.unsubscribe();
-  };
- }, []);
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   // 2️⃣ Fetch Project Details & Listen for Realtime Cell Changes
   useEffect(() => {
@@ -171,22 +167,6 @@ export function MarketerDashboard() {
       supabase.removeChannel(matrixChannel);
     };
   }, [selectedProjectId]);
-
-  const checkCurrentUser = async () => {
-    try {
-      if (isUpdatePasswordRef.current) return;
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user && !isUpdatePasswordRef.current) {
-        await fetchMarketerProfile(session.user.id);
-      } else {
-        setCurrentMarketer(null);
-      }
-    } catch (err) {
-      console.error('Auth check error:', err);
-    } finally {
-      setLoadingUser(false);
-    }
-  };
 
   const fetchProjects = async () => {
     setLoadingProjects(true);
@@ -274,10 +254,10 @@ export function MarketerDashboard() {
       .eq('project_id', projectId);
 
     if (!error && data) {
-      const matrixMap: Record<string, UnitStatus> = {};
+      const matrixMap: Record<string, string> = {};
       data.forEach((item: any) => {
         const key = `${item.floor_name}___${item.unit_type_id}`;
-        matrixMap[key] = item.status as UnitStatus;
+        matrixMap[key] = item.status;
       });
       setMatrix(matrixMap);
     }
@@ -363,7 +343,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // إرسال رابط استعادة كلمة المرور
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -395,7 +374,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // حفظ كلمة المرور الجديدة وتحديث الحالة في قاعدة البيانات إلى pending
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -409,7 +387,6 @@ export function MarketerDashboard() {
     setAuthLoading(true);
 
     try {
-      // 1️⃣ تحديث كلمة المرور في Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -421,7 +398,6 @@ export function MarketerDashboard() {
       }
 
       if (authData?.user) {
-        // 2️⃣ تعديل حقل status فقط إلى pending
         const { error: dbError } = await supabase
           .from('marketers')
           .update({
@@ -430,13 +406,11 @@ export function MarketerDashboard() {
           .eq('id', authData.user.id);
 
         if (dbError) {
-          console.error('Database Update Error:', dbError);
           setAuthError(`❌ Failed to update status in Database: ${dbError.message}`);
           setAuthLoading(false);
           return;
         }
 
-        // 3️⃣ تنظيف الـ URL وتسجيل الخروج والعودة لشاشة الدخول
         window.history.replaceState(null, '', window.location.pathname);
         await supabase.auth.signOut();
 
@@ -494,7 +468,6 @@ export function MarketerDashboard() {
         ]);
 
         if (dbError) {
-          console.error('Error inserting marketer:', dbError);
           setAuthError(`⚠️ Account created, but database record failed: ${dbError.message}`);
         } else {
           setAuthSuccess(
@@ -519,20 +492,22 @@ export function MarketerDashboard() {
     setCurrentMarketer(null);
   };
 
-  const handleCellClick = (floorName: string, unitType: UnitType, status: UnitStatus) => {
+  // 🟢 التحكم بضغطات الخلايا بما فيها النصوص المخصصة
+  const handleCellClick = (floorName: string, unitType: UnitType, status: string) => {
     const key = `${floorName}___${unitType.id}`;
     const label = `${floorName} Floor [${unitType.title} (${unitType.area}m²)]`;
+    const statusLower = (status || '').toLowerCase().trim();
 
-    if (status === 'available') {
+    if (statusLower === 'available') {
       setSelectedUnitKey(key);
       setSelectedFloorName(floorName);
       setSelectedUnitTypeId(unitType.id);
       setSelectedUnitLabel(label);
       setSelectedUnitDetails(unitType);
-    } else if (status === 'reserved') {
+    } else if (statusLower === 'reserved') {
       alert(`🟡 Unit on ${floorName} floor (${unitType.title}) is already RESERVED.`);
     } else {
-      alert(`🔴 Unit on ${floorName} floor (${unitType.title}) is NOT available.`);
+      alert(`🔴 Unit on ${floorName} floor (${unitType.title}) is marked as "${status.toUpperCase()}" and is NOT available.`);
     }
   };
 
@@ -574,7 +549,6 @@ export function MarketerDashboard() {
       .select();
 
     if (leadError) {
-      console.error('Error saving lead:', leadError);
       alert(`❌ Failed to save lead! Database error: ${leadError.message}`);
       return;
     }
@@ -591,7 +565,6 @@ export function MarketerDashboard() {
     );
 
     if (matrixError) {
-      console.error('Error updating unit cell status:', matrixError);
       alert(`⚠️ Lead saved, but unit status update failed: ${matrixError.message}`);
     } else {
       await fetchMatrixData(selectedProjectId);
@@ -624,7 +597,7 @@ export function MarketerDashboard() {
     );
   }
 
-  // SCREEN 1: LOGIN / SIGN UP / FORGOT PASSWORD / NEW PASSWORD FORM
+  // SCREEN 1: AUTHENTICATION FORMS
   if (!currentMarketer || isUpdatePassword) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4" dir="ltr">
@@ -698,13 +671,10 @@ export function MarketerDashboard() {
             </div>
           )}
 
-          {/* 🔑 UPDATE PASSWORD FORM */}
           {isUpdatePassword ? (
             <form onSubmit={handleSetNewPassword} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  New Password *
-                </label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">New Password *</label>
                 <input
                   type="password"
                   required
@@ -716,9 +686,7 @@ export function MarketerDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Confirm New Password *
-                </label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm New Password *</label>
                 <input
                   type="password"
                   required
@@ -738,7 +706,6 @@ export function MarketerDashboard() {
               </button>
             </form>
           ) : isForgotPassword ? (
-            /* FORGOT PASSWORD FORM */
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
@@ -773,7 +740,6 @@ export function MarketerDashboard() {
               </button>
             </form>
           ) : !isSignUp ? (
-            /* LOGIN FORM */
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
@@ -821,7 +787,6 @@ export function MarketerDashboard() {
               </button>
             </form>
           ) : (
-            /* REGISTER FORM */
             <form onSubmit={handleSignUp} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name *</label>
@@ -872,9 +837,7 @@ export function MarketerDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Confirm Password *
-                </label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm Password *</label>
                 <input
                   type="password"
                   required
@@ -1021,30 +984,42 @@ export function MarketerDashboard() {
 
                         {unitTypes.map((ut) => {
                           const key = `${floorObj.floor_name}___${ut.id}`;
-                          const status = matrix[key] || 'unavailable';
+                          const rawStatus = matrix[key] || 'unavailable';
+                          const statusLower = rawStatus.toLowerCase().trim();
                           const isSelected = selectedUnitKey === key;
 
-                          let bgClass = 'bg-[#ff0000] cursor-not-allowed';
-                          if (status === 'available') {
-                            bgClass = 'bg-[#00b050] hover:bg-green-600 cursor-pointer';
-                          } else if (status === 'reserved') {
-                            bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer';
+                          let bgClass = 'bg-[#ff0000] text-white cursor-not-allowed';
+                          let cellContent: React.ReactNode = null;
+
+                          if (statusLower === 'available') {
+                            bgClass = 'bg-[#00b050] hover:bg-green-600 cursor-pointer text-white';
+                            if (isSelected) {
+                              cellContent = (
+                                <span className="text-[10px] bg-black text-white px-1 py-0.5 rounded">
+                                  Selected
+                                </span>
+                              );
+                            }
+                          } else if (statusLower === 'reserved') {
+                            bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer text-black';
+                          } else if (statusLower === 'unavailable') {
+                            bgClass = 'bg-[#ff0000] text-white cursor-not-allowed';
+                          } else {
+                            // 🟢 في حال وجود نص مخصص مثل OFFICE, SHOPS, BUSINESS, GYM الخ...
+                            bgClass = 'bg-[#ff0000] text-white font-extrabold text-[11px] uppercase tracking-wider cursor-not-allowed';
+                            cellContent = rawStatus.toUpperCase();
                           }
 
                           return (
                             <td
                               key={ut.id}
-                              onClick={() => handleCellClick(floorObj.floor_name, ut, status)}
+                              onClick={() => handleCellClick(floorObj.floor_name, ut, rawStatus)}
                               className={`border border-black p-3 font-bold transition-all ${bgClass} ${
                                 isSelected ? 'ring-4 ring-blue-600 scale-95' : ''
                               }`}
-                              title={`Floor ${floorObj.floor_name} - ${ut.title} (${status.toUpperCase()})`}
+                              title={`Floor ${floorObj.floor_name} - ${ut.title} (${rawStatus.toUpperCase()})`}
                             >
-                              {isSelected && (
-                                <span className="text-[10px] bg-black text-white px-1 py-0.5 rounded">
-                                  Selected
-                                </span>
-                              )}
+                              {cellContent}
                             </td>
                           );
                         })}
