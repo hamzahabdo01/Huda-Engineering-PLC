@@ -2,8 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 
 // --- Types & Interfaces ---
-// 👈 تم تحديث نوع الحالة لدعم النصوص المخصصة مثل office و business
-export type UnitStatus = 'available' | 'reserved' | 'unavailable' | 'office' | 'business' | 'shop' | string;
+export type UnitStatus =
+  | 'available'
+  | 'reserved'
+  | 'unavailable'
+  | 'office'
+  | 'business'
+  | 'shop'
+  | string;
 
 export interface PaymentPlan {
   total_price?: number;
@@ -38,13 +44,18 @@ export interface Project {
 
 export interface MarketerClient {
   id: string;
-  marketer_name: string;
-  client_name: string;
+  marketer_name?: string;
+  marketerName?: string;
+  client_name?: string;
+  name?: string;
   phone: string;
   project_name?: string;
   unit_title?: string;
+  apartment_id?: string;
+  apartmentId?: string;
   status?: string;
   source?: string;
+  lead_source?: string;
   created_at?: string;
 }
 
@@ -87,7 +98,7 @@ export function AdminDashboardd() {
   const [newUnitYears, setNewUnitYears] = useState<number | ''>(5);
 
   const [activeCellKey, setActiveCellKey] = useState<string | null>(null);
-  const [customCellText, setCustomCellText] = useState<string>(''); // 👈 نص مخصص للخلية
+  const [customCellText, setCustomCellText] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'matrix' | 'pricing' | 'clients' | 'marketers'>('matrix');
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
@@ -324,7 +335,7 @@ export function AdminDashboardd() {
     }
   };
 
-  // 4. حذف نوع الوحدة (اختياري)
+  // 4. حذف نوع الوحدة
   const handleDeleteUnitType = async (unitId: string) => {
     if (!confirm('Are you sure you want to delete this unit type?')) return;
 
@@ -338,7 +349,7 @@ export function AdminDashboardd() {
     }
   };
 
-  // 🔹 دالة مساعدة لتحويل رقم الطابق إلى اسم ترتيبي (First Floor, Second Floor... إلخ)
+  // 🔹 دالة تحويل رقم الطابق إلى اسم ترتيبي (First Floor, Second Floor...)
   const getOrdinalFloorName = (num: number): string => {
     const ordinals = [
       'First', 'Second', 'Third', 'Fourth', 'Fifth',
@@ -350,10 +361,9 @@ export function AdminDashboardd() {
     ];
 
     if (num <= ordinals.length) {
-      return `${ordinals[num - 1]} Floor`; // يمكنك إزالة ' Floor' إذا أردتها الكلمة فقط
+      return `${ordinals[num - 1]} Floor`;
     }
 
-    // fallback للأرقام الكبيرة جداً (مثال: 31st Floor)
     const j = num % 10, k = num % 100;
     if (j === 1 && k !== 11) return `${num}st Floor`;
     if (j === 2 && k !== 12) return `${num}nd Floor`;
@@ -361,17 +371,15 @@ export function AdminDashboardd() {
     return `${num}th Floor`;
   };
 
-
-const handleAddFloors = async (e: React.FormEvent) => {
+  const handleAddFloors = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProjectId) return;
 
-    let floorsToCreate: { project_id: string; floor_name: string }[] = [];
+    const floorsToCreate: { project_id: string; floor_name: string }[] = [];
 
     if (typicalFloorCount && Number(typicalFloorCount) > 0) {
       const count = Number(typicalFloorCount);
       for (let i = 1; i <= count; i++) {
-        // 👈 استخدام التسمية الترتيبية بدلاً من "Floor 1"
         const name = getOrdinalFloorName(i);
 
         if (!floors.some((f) => f.floor_name.toLowerCase() === name.toLowerCase())) {
@@ -474,7 +482,7 @@ const handleAddFloors = async (e: React.FormEvent) => {
     }
   };
 
-const handleCellClick = (floorName: string, unitTypeId: string) => {
+  const handleCellClick = (floorName: string, unitTypeId: string) => {
     const key = `${floorName}-${unitTypeId}`;
     const currentStatus = matrix[key] || 'unavailable';
 
@@ -483,7 +491,7 @@ const handleCellClick = (floorName: string, unitTypeId: string) => {
     if (currentStatus === 'available') nextStatus = 'reserved';
     else if (currentStatus === 'reserved') nextStatus = 'unavailable';
     else if (currentStatus === 'unavailable') nextStatus = 'available';
-    else nextStatus = 'available'; // إذا كان الخلية بها نص مخصص، تعود لـ available عند الضغط
+    else nextStatus = 'available';
 
     // 2️⃣ تحديد الخلية الحالية وتحديث النص
     setActiveCellKey(key);
@@ -749,7 +757,7 @@ const handleCellClick = (floorName: string, unitTypeId: string) => {
                 </form>
               </div>
 
-              {/* 👈 لوحة التحكم بالخلية المحددة (تم تطويرها لدعم الأنشطة والنصوص المخصصة) */}
+              {/* لوحة التحكم بالخلية المحددة */}
               {activeCellKey && (
                 <div className="bg-amber-50 p-4 rounded-xl border border-amber-300 shadow-sm space-y-3">
                   <p className="text-xs font-bold text-amber-900">
@@ -760,47 +768,47 @@ const handleCellClick = (floorName: string, unitTypeId: string) => {
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleExplicitStatusChange('available')}
-                      className="bg-[#00b050] text-white py-1.5 rounded text-[10px] font-bold shadow-sm"
+                      className="bg-[#00b050] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
                       🟢 Available
                     </button>
                     <button
                       onClick={() => handleExplicitStatusChange('reserved')}
-                      className="bg-[#f2b827] text-black py-1.5 rounded text-[10px] font-bold shadow-sm"
+                      className="bg-[#f2b827] text-black py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
                       🟡 Reserved
                     </button>
                     <button
                       onClick={() => handleExplicitStatusChange('unavailable')}
-                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm"
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
                       🔴 Sold/Off
                     </button>
                   </div>
 
-                  {/* أزرار الأنشطة والتجارية (مثل صورة العميل) */}
+                  {/* أزرار الأنشطة والتجارية */}
                   <div className="grid grid-cols-3 gap-2 pt-1 border-t border-amber-200">
                     <button
-                      onClick={() => handleExplicitStatusChange('Buisness')}
-                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm"
+                      onClick={() => handleExplicitStatusChange('Business')}
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
-                      🏢 Buisness
+                      🏢 Business
                     </button>
                     <button
                       onClick={() => handleExplicitStatusChange('office')}
-                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm"
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
                       💼 Office
                     </button>
                     <button
                       onClick={() => handleExplicitStatusChange('Shops')}
-                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm"
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
                       🛍️ Shops
                     </button>
                   </div>
 
-                  {/* إمكانية كتابة نص حر */}
+                  {/* نص حر */}
                   <form onSubmit={handleApplyCustomText} className="flex gap-2 pt-1">
                     <input
                       type="text"
@@ -811,7 +819,7 @@ const handleCellClick = (floorName: string, unitTypeId: string) => {
                     />
                     <button
                       type="submit"
-                      className="bg-amber-800 text-white px-3 py-1 rounded text-xs font-bold hover:bg-amber-900"
+                      className="bg-amber-800 text-white px-3 py-1 rounded text-xs font-bold hover:bg-amber-900 transition"
                     >
                       Apply Text
                     </button>
@@ -861,7 +869,6 @@ const handleCellClick = (floorName: string, unitTypeId: string) => {
                           const status = matrix[key] || 'unavailable';
                           const isActive = activeCellKey === key;
 
-                          // 👈 تنسيق اللون والنص حسب الحالة (بما في ذلك Buisness و Office تماماً كالصورة)
                           let bgClass = 'bg-[#ff0000] text-white';
                           let cellContent: React.ReactNode = null;
 
@@ -875,7 +882,7 @@ const handleCellClick = (floorName: string, unitTypeId: string) => {
                             bgClass = 'bg-[#ff0000] text-white';
                             cellContent = '🔴';
                           } else {
-                            // نصوص مخصصة مثل Buisness أو office بخلفية حمراء ونص أبيض عريض
+                            // نصوص مخصصة مثل Business أو Office بخلفية حمراء ونشطة
                             bgClass = 'bg-[#ff0000] text-white font-extrabold';
                             cellContent = status;
                           }
@@ -905,7 +912,7 @@ const handleCellClick = (floorName: string, unitTypeId: string) => {
         </>
       )}
 
-{/* TAB 2: PRICING & PAYMENT PLAN MANAGER */}
+      {/* TAB 2: PRICING & PAYMENT PLAN MANAGER */}
       {activeTab === 'pricing' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
           <div className="flex justify-between items-center mb-4">
@@ -942,7 +949,6 @@ const handleCellClick = (floorName: string, unitTypeId: string) => {
                     const isEditing = editingUnitId === ut.id;
 
                     if (isEditing) {
-                      // حساب القسط الشري المستقبلي تلقائياً أثناء الكتابة
                       const currentPrice = Number(editUnitForm.total_price) || 0;
                       const currentDown = Number(editUnitForm.down_payment) || 0;
                       const currentYears = Number(editUnitForm.installment_years) || 1;
@@ -1073,7 +1079,7 @@ const handleCellClick = (floorName: string, unitTypeId: string) => {
                     </td>
                   </tr>
                 ) : (
-                  marketerClients.map((client: any) => (
+                  marketerClients.map((client) => (
                     <tr key={client.id} className="border-b hover:bg-gray-50">
                       <td className="p-3 border font-bold text-blue-800">
                         {client.marketer_name || client.marketerName || 'Unknown'}
@@ -1117,7 +1123,7 @@ const handleCellClick = (floorName: string, unitTypeId: string) => {
             </div>
             <button
               onClick={fetchMarketerAccounts}
-              className="px-3 py-1 bg-gray-100 hover:bg-gray-200 border rounded text-xs font-bold text-gray-700"
+              className="px-3 py-1 bg-gray-100 hover:bg-gray-200 border rounded text-xs font-bold text-gray-700 transition"
             >
               🔄 Refresh Requests
             </button>
