@@ -19,7 +19,6 @@ export interface UnitType {
   monthlyInstallment?: number;
 }
 
-// 🟢 دعم النصوص المخصصة مثل OFFICE, SHOPS, BUSINESS ...
 export type UnitStatus = 'available' | 'unavailable' | 'reserved' | string;
 
 export interface Project {
@@ -247,6 +246,7 @@ export function MarketerDashboard() {
     }
   };
 
+  // 🟢 تحديث دالة جلب المصفوفة لربط كافة المفاتيح المحتملة (ID + Title)
   const fetchMatrixData = async (projectId: string) => {
     const { data, error } = await supabase
       .from('srm_matrix_cells')
@@ -256,8 +256,23 @@ export function MarketerDashboard() {
     if (!error && data) {
       const matrixMap: Record<string, string> = {};
       data.forEach((item: any) => {
-        const key = `${item.floor_name}___${item.unit_type_id}`;
-        matrixMap[key] = item.status;
+        const floorClean = (item.floor_name || '').trim();
+        const uId = item.unit_type_id || item.unit_id || '';
+        const uTitle = (item.unit_type_title || item.unit_title || item.title || '').trim();
+
+        if (floorClean) {
+          // الربط بالـ ID
+          if (uId) {
+            matrixMap[`${floorClean}___${uId}`] = item.status;
+            if (item.floor_name) matrixMap[`${item.floor_name}___${uId}`] = item.status;
+          }
+
+          // الربط بالـ Title (العنوان)
+          if (uTitle) {
+            matrixMap[`${floorClean}___${uTitle}`] = item.status;
+            if (item.floor_name) matrixMap[`${item.floor_name}___${uTitle}`] = item.status;
+          }
+        }
       });
       setMatrix(matrixMap);
     }
@@ -492,7 +507,6 @@ export function MarketerDashboard() {
     setCurrentMarketer(null);
   };
 
-  // 🟢 التحكم بضغطات الخلايا بما فيها النصوص المخصصة
   const handleCellClick = (floorName: string, unitType: UnitType, status: string) => {
     const key = `${floorName}___${unitType.id}`;
     const label = `${floorName} Floor [${unitType.title} (${unitType.area}m²)]`;
@@ -983,10 +997,20 @@ export function MarketerDashboard() {
                         </td>
 
                         {unitTypes.map((ut) => {
-                          const key = `${floorObj.floor_name}___${ut.id}`;
-                          const rawStatus = matrix[key] || 'unavailable';
-                          const statusLower = rawStatus.toLowerCase().trim();
-                          const isSelected = selectedUnitKey === key;
+                          const fName = (floorObj.floor_name || '').trim();
+                          const utId = ut.id;
+                          const utTitle = (ut.title || '').trim();
+
+                          // 🟢 فحص متعدد الاحتمالات لمطابقة الخلية بالـ ID أو Title
+                          const rawStatus =
+                            matrix[`${fName}___${utId}`] ||
+                            matrix[`${fName}___${utTitle}`] ||
+                            matrix[`${floorObj.floor_name}___${ut.id}`] ||
+                            matrix[`${floorObj.floor_name}___${ut.title}`] ||
+                            'unavailable';
+
+                          const statusLower = (rawStatus || '').toLowerCase().trim();
+                          const isSelected = selectedUnitKey === `${fName}___${utId}`;
 
                           let bgClass = 'bg-[#ff0000] text-white cursor-not-allowed';
                           let cellContent: React.ReactNode = null;
@@ -1002,10 +1026,12 @@ export function MarketerDashboard() {
                             }
                           } else if (statusLower === 'reserved') {
                             bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer text-black';
-                          } else if (statusLower === 'unavailable') {
+                            cellContent = <span className="font-bold text-[10px] uppercase">RESERVED</span>;
+                          } else if (statusLower === 'unavailable' || !rawStatus) {
                             bgClass = 'bg-[#ff0000] text-white cursor-not-allowed';
+                            cellContent = null;
                           } else {
-                            // 🟢 في حال وجود نص مخصص مثل OFFICE, SHOPS, BUSINESS, GYM الخ...
+                            // 🟢 عرض النص المخصص القادم من الأدمن (مثل SHOPS, OFFICE, BUSINESS ...)
                             bgClass = 'bg-[#ff0000] text-white font-extrabold text-[11px] uppercase tracking-wider cursor-not-allowed';
                             cellContent = rawStatus.toUpperCase();
                           }
