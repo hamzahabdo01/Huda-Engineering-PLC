@@ -213,7 +213,8 @@ export function AdminDashboardd() {
     if (!error && data) {
       const matrixMap: Record<string, UnitStatus> = {};
       data.forEach((item) => {
-        const key = `${item.floor_name}-${item.unit_type_id}`;
+        // تم تغيير الفاصل هنا إلى __ لحماية الـ UUID
+        const key = `${item.floor_name}__${item.unit_type_id}`;
         matrixMap[key] = item.status as UnitStatus;
       });
       setMatrix(matrixMap);
@@ -290,19 +291,16 @@ export function AdminDashboardd() {
     }
   };
 
-  // 1. لبدء وضع التعديل
   const handleEditUnitClick = (ut: UnitType) => {
     setEditingUnitId(ut.id);
     setEditUnitForm(ut);
   };
 
-  // 2. إلغاء التعديل
   const handleCancelEdit = () => {
     setEditingUnitId(null);
     setEditUnitForm({});
   };
 
-  // 3. حفظ التعديل في Supabase
   const handleSaveUnitPricing = async (unitId: string) => {
     const totalPrice = Number(editUnitForm.total_price) || 0;
     const downPayment = Number(editUnitForm.down_payment) || 0;
@@ -335,7 +333,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // 4. حذف نوع الوحدة
   const handleDeleteUnitType = async (unitId: string) => {
     if (!confirm('Are you sure you want to delete this unit type?')) return;
 
@@ -349,7 +346,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // 🔹 دالة تحويل رقم الطابق إلى اسم ترتيبي (First Floor, Second Floor...)
   const getOrdinalFloorName = (num: number): string => {
     const ordinals = [
       'First', 'Second', 'Third', 'Fourth', 'Fifth',
@@ -460,7 +456,7 @@ export function AdminDashboardd() {
   };
 
   const saveStatusToSupabase = async (floorName: string, unitTypeId: string, newStatus: UnitStatus) => {
-    const key = `${floorName}-${unitTypeId}`;
+    const key = `${floorName}__${unitTypeId}`;
 
     setMatrix((prev) => ({ ...prev, [key]: newStatus }));
 
@@ -477,23 +473,21 @@ export function AdminDashboardd() {
 
     if (error) {
       console.error('Failed to update matrix status:', error);
-      alert('Could not update status on server.');
+      alert('Could not update status on server: ' + error.message);
       fetchMatrixData(selectedProjectId);
     }
   };
 
   const handleCellClick = (floorName: string, unitTypeId: string) => {
-    const key = `${floorName}-${unitTypeId}`;
+    const key = `${floorName}__${unitTypeId}`;
     const currentStatus = matrix[key] || 'unavailable';
 
-    // 1️⃣ تحديد الحالة التالية بالتناوب عند الضغط المباشر
     let nextStatus: UnitStatus = 'available';
     if (currentStatus === 'available') nextStatus = 'reserved';
     else if (currentStatus === 'reserved') nextStatus = 'unavailable';
     else if (currentStatus === 'unavailable') nextStatus = 'available';
     else nextStatus = 'available';
 
-    // 2️⃣ تحديد الخلية الحالية وتحديث النص
     setActiveCellKey(key);
     if (!['available', 'reserved', 'unavailable'].includes(currentStatus)) {
       setCustomCellText(currentStatus);
@@ -501,13 +495,13 @@ export function AdminDashboardd() {
       setCustomCellText('');
     }
 
-    // 3️⃣ حفظ التغيير فوراً في Supabase
     saveStatusToSupabase(floorName, unitTypeId, nextStatus);
   };
 
   const handleExplicitStatusChange = (status: UnitStatus) => {
     if (!activeCellKey) return;
-    const [floorName, unitTypeId] = activeCellKey.split('-');
+    // التقسيم الآمن بواسطة __ للحفاظ على سلامة الـ UUID
+    const [floorName, unitTypeId] = activeCellKey.split('__');
     if (floorName && unitTypeId) {
       saveStatusToSupabase(floorName, unitTypeId, status);
     }
@@ -527,7 +521,7 @@ export function AdminDashboardd() {
 
   floors.forEach((f) => {
     unitTypes.forEach((ut) => {
-      const key = `${f.floor_name}-${ut.id}`;
+      const key = `${f.floor_name}__${ut.id}`;
       const st = matrix[key] || 'unavailable';
       if (st === 'available') availableCount++;
       else if (st === 'reserved') reservedCount++;
@@ -757,14 +751,13 @@ export function AdminDashboardd() {
                 </form>
               </div>
 
-              {/* لوحة التحكم بالخلية المحددة */}
+              {/* Selected Cell Panel */}
               {activeCellKey && (
                 <div className="bg-amber-50 p-4 rounded-xl border border-amber-300 shadow-sm space-y-3">
                   <p className="text-xs font-bold text-amber-900">
-                    Selected Cell: <span className="underline">{activeCellKey}</span>
+                    Selected Cell: <span className="underline">{activeCellKey.replace('__', ' / ')}</span>
                   </p>
                   
-                  {/* أزرار الحالات العادية */}
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleExplicitStatusChange('available')}
@@ -786,7 +779,6 @@ export function AdminDashboardd() {
                     </button>
                   </div>
 
-                  {/* أزرار الأنشطة والتجارية */}
                   <div className="grid grid-cols-3 gap-2 pt-1 border-t border-amber-200">
                     <button
                       onClick={() => handleExplicitStatusChange('Business')}
@@ -808,7 +800,6 @@ export function AdminDashboardd() {
                     </button>
                   </div>
 
-                  {/* نص حر */}
                   <form onSubmit={handleApplyCustomText} className="flex gap-2 pt-1">
                     <input
                       type="text"
@@ -865,7 +856,7 @@ export function AdminDashboardd() {
                           {f.floor_name}
                         </td>
                         {unitTypes.map((ut) => {
-                          const key = `${f.floor_name}-${ut.id}`;
+                          const key = `${f.floor_name}__${ut.id}`;
                           const status = matrix[key] || 'unavailable';
                           const isActive = activeCellKey === key;
 
@@ -882,7 +873,6 @@ export function AdminDashboardd() {
                             bgClass = 'bg-[#ff0000] text-white';
                             cellContent = '🔴';
                           } else {
-                            // نصوص مخصصة مثل Business أو Office بخلفية حمراء ونشطة
                             bgClass = 'bg-[#ff0000] text-white font-extrabold';
                             cellContent = status;
                           }
