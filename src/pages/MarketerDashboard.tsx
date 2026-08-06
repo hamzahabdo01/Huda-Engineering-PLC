@@ -61,6 +61,18 @@ export interface SelectedUnit {
   details: UnitType;
 }
 
+// قائمة مفاتيح الدول الشهيرة
+const COUNTRY_CODES = [
+  { code: '+251', label: '🇪🇹 Ethiopia (+251)' },
+  { code: '+966', label: '🇸🇦 Saudi Arabia (+966)' },
+  { code: '+971', label: '🇦🇪 UAE (+971)' },
+  { code: '+965', label: '🇰🇼 Kuwait (+965)' },
+  { code: '+974', label: '🇶🇦 Qatar (+974)' },
+  { code: '+20', label: '🇪🇬 Egypt (+20)' },
+  { code: '+1', label: '🇺🇸 USA/Canada (+1)' },
+  { code: '+44', label: '🇬🇧 UK (+44)' },
+];
+
 export function MarketerDashboard() {
   // --- Auth & User State ---
   const [currentMarketer, setCurrentMarketer] = useState<MarketerProfile | null>(null);
@@ -117,14 +129,25 @@ export function MarketerDashboard() {
   const [installmentPlan, setInstallmentPlan] = useState<string>('');
   const [memo, setMemo] = useState<string>('');
 
-  // Leads State
+  // Leads State & Country Code State
   const [leads, setLeads] = useState<Lead[]>([]);
   const [clientName, setClientName] = useState('');
+  const [countryCode, setCountryCode] = useState('+251');
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
 
+  // Leads Filter Tabs State
+  const [leadTab, setLeadTab] = useState<'All' | 'New' | 'Qualified' | 'Negotiation' | 'Closed'>('All');
+
   // ✏️ Edit Mode State
   const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
+
+  // 🛠️ دالة لتنسيق اسم الطابق وتفادي تكرار كلمة Floor
+  const formatFloorName = (name: string) => {
+    const clean = (name || '').trim();
+    if (!clean) return '';
+    return clean.toLowerCase().endsWith('floor') ? clean : `${clean} Floor`;
+  };
 
   // 1️⃣ Check Active Session & Handle Recovery
   useEffect(() => {
@@ -526,6 +549,7 @@ export function MarketerDashboard() {
     setEditingLeadId(null);
     setClientName('');
     setClientPhone('');
+    setCountryCode('+251');
     setClientSource('Facebook boost');
     setActionStatus('New');
     setSelectedUnits([]);
@@ -538,7 +562,18 @@ export function MarketerDashboard() {
   const handleEditLead = (lead: Lead) => {
     setEditingLeadId(lead.id);
     setClientName(lead.name || '');
-    setClientPhone(lead.phone || '');
+
+    // استخراج مفتاح الدولة ورقم الهاتف
+    let phoneNum = lead.phone || '';
+    const matchedCountry = COUNTRY_CODES.find((c) => phoneNum.startsWith(c.code));
+    if (matchedCountry) {
+      setCountryCode(matchedCountry.code);
+      phoneNum = phoneNum.replace(matchedCountry.code, '').trim();
+    } else {
+      setCountryCode('+251');
+    }
+    setClientPhone(phoneNum);
+
     setClientSource(lead.source || 'Facebook boost');
     setActionStatus((lead.status as any) || 'New');
     setTotalPayment(lead.total_payment ? lead.total_payment.toString() : '');
@@ -562,7 +597,7 @@ export function MarketerDashboard() {
               key: k,
               floorName,
               unitTypeId,
-              label: `${floorName} Floor [${matchedUt.title} (${matchedUt.area}m²)]`,
+              label: `${formatFloorName(floorName)} [${matchedUt.title} (${matchedUt.area}m²)]`,
               details: matchedUt,
             });
           }
@@ -577,7 +612,7 @@ export function MarketerDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🟢 النقر على الخلية مع دعم اختيار وحدات متعددة
+  // 🟢 النقر على الخلية مع دعم اختيار وحدات متعددة وإصلاح تكرار Floor
   const handleCellClick = (floorName: string, unitType: UnitType, status: string) => {
     if (actionStatus === 'New') {
       alert('ℹ️ Action Status is set to "New". Unit selection is not required for New leads.');
@@ -585,7 +620,8 @@ export function MarketerDashboard() {
     }
 
     const key = `${floorName}___${unitType.id}`;
-    const label = `${floorName} Floor [${unitType.title} (${unitType.area}m²)]`;
+    const formattedFloor = formatFloorName(floorName);
+    const label = `${formattedFloor} [${unitType.title} (${unitType.area}m²)]`;
     const statusLower = (status || '').toLowerCase().trim();
 
     if (statusLower === 'available') {
@@ -602,13 +638,13 @@ export function MarketerDashboard() {
         }
       });
     } else if (statusLower === 'reserved') {
-      alert(`🟡 Unit on ${floorName} floor (${unitType.title}) is already RESERVED.`);
+      alert(`🟡 Unit on ${formattedFloor} (${unitType.title}) is already RESERVED.`);
     } else {
-      alert(`🔴 Unit on ${floorName} floor (${unitType.title}) is marked as "${status.toUpperCase()}" and is NOT available.`);
+      alert(`🔴 Unit on ${formattedFloor} (${unitType.title}) is marked as "${status.toUpperCase()}" and is NOT available.`);
     }
   };
 
-  // 🟢 معالجة الحفظ والتحديث حسب الحالة
+  // 🟢 معالجة الحفظ والتحديث مع دمج مفتاح الدولة
   const handleSaveLeadWithAction = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
@@ -628,12 +664,13 @@ export function MarketerDashboard() {
       return;
     }
 
+    const fullPhoneNumber = `${countryCode} ${cleanPhone}`;
     const apartmentLabels = selectedUnits.map((u) => u.label).join(' | ');
     const unitKeys = selectedUnits.map((u) => u.key).join(' | ');
 
     const leadPayload: any = {
       name: clientName,
-      phone: cleanPhone,
+      phone: fullPhoneNumber,
       source: clientSource,
       apartment_id: apartmentLabels || null,
       unit_key: unitKeys || null,
@@ -703,6 +740,11 @@ export function MarketerDashboard() {
     alert(`✅ Lead successfully ${editingLeadId ? 'updated' : 'saved'} as "${actionStatus}"!`);
     resetForm();
   };
+
+  // تصفية العملاء حسب التبويب المحدد
+  const filteredLeads = leadTab === 'All'
+    ? leads
+    : leads.filter((l) => (l.status || '').toLowerCase() === leadTab.toLowerCase());
 
   if (loadingUser) {
     return (
@@ -1166,7 +1208,7 @@ export function MarketerDashboard() {
             </div>
           </div>
 
-          {/* DYNAMIC ACTION FORM COLUMN */}
+          {/* DYNAMIC ACTION FORM COLUMN & TABS */}
           <div className="lg:col-span-1 space-y-6">
             <div className={`p-5 rounded-xl shadow-sm border transition-all ${editingLeadId ? 'bg-amber-50/60 border-amber-300' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center justify-between mb-3">
@@ -1264,18 +1306,33 @@ export function MarketerDashboard() {
                   />
                 </div>
 
+                {/* 📞 COUNTRY CODE + PHONE INPUT */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Phone Number *
                   </label>
-                  <input
-                    type="tel"
-                    placeholder="05xxxxxxxx / 09xxxxxxxx"
-                    value={clientPhone}
-                    onChange={(e) => setClientPhone(e.target.value)}
-                    className="w-full p-2.5 border rounded-lg text-xs border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="p-2.5 border border-gray-300 rounded-lg text-xs bg-gray-50 font-medium text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"
+                    >
+                      {COUNTRY_CODES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <input
+                      type="tel"
+                      placeholder="9xxxxxxx / 5xxxxxxx"
+                      value={clientPhone}
+                      onChange={(e) => setClientPhone(e.target.value)}
+                      className="flex-1 p-2.5 border rounded-lg text-xs border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -1369,88 +1426,128 @@ export function MarketerDashboard() {
               </form>
             </div>
 
-            {/* LEADS LIST DISPLAY */}
+            {/* LEADS LIST DISPLAY WITH TABS */}
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
               <h2 className="font-bold text-gray-800 mb-3 text-md">
                 Your Recorded Leads ({leads.length})
               </h2>
-              {leads.length === 0 ? (
-                <p className="text-gray-400 text-xs">No leads recorded yet.</p>
-              ) : (
-                <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                  {leads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className={`p-3 border rounded-lg flex flex-col gap-1.5 text-xs transition ${
-                        editingLeadId === lead.id
-                          ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-400'
-                          : 'bg-gray-50/80 border-gray-200'
+
+              {/* 📑 TAB NAVIGATION */}
+              <div className="flex border-b border-gray-200 mb-4 overflow-x-auto gap-1">
+                {(['All', 'New', 'Qualified', 'Negotiation', 'Closed'] as const).map((tab) => {
+                  const count = tab === 'All'
+                    ? leads.length
+                    : leads.filter((l) => (l.status || '').toLowerCase() === tab.toLowerCase()).length;
+
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setLeadTab(tab)}
+                      className={`py-1.5 px-3 text-xs font-bold whitespace-nowrap border-b-2 transition-all ${
+                        leadTab === tab
+                          ? 'border-blue-600 text-blue-600 bg-blue-50/60 rounded-t-lg'
+                          : 'border-transparent text-gray-500 hover:text-gray-800'
                       }`}
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-bold text-gray-800">{lead.name}</p>
-                          <p className="text-gray-500">{lead.phone}</p>
+                      {tab} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+
+              {filteredLeads.length === 0 ? (
+                <p className="text-gray-400 text-xs py-4 text-center">No leads found in "{leadTab}".</p>
+              ) : (
+                <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                  {filteredLeads.map((lead) => {
+                    const matchedProj = projects.find((p) => p.id === lead.project_id) || selectedProject;
+
+                    return (
+                      <div
+                        key={lead.id}
+                        className={`p-3 border rounded-lg flex flex-col gap-1.5 text-xs transition ${
+                          editingLeadId === lead.id
+                            ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-400'
+                            : 'bg-gray-50/80 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-bold text-gray-800">{lead.name}</p>
+                            <p className="text-gray-500 font-mono text-[11px]">{lead.phone}</p>
+                          </div>
+                          
+                          {/* 🟢 DYNAMIC STATUS BADGE */}
+                          <span
+                            className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
+                              lead.status === 'New'
+                                ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                : lead.status === 'Qualified'
+                                ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                                : lead.status === 'Negotiation'
+                                ? 'bg-indigo-100 text-indigo-900 border border-indigo-200'
+                                : lead.status === 'Closed'
+                                ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                                : 'bg-gray-200 text-gray-800'
+                            }`}
+                          >
+                            {lead.status}
+                          </span>
                         </div>
-                        <span
-                          className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap ${
-                            lead.status === 'New'
-                              ? 'bg-blue-100 text-blue-800'
-                              : lead.status === 'Qualified'
-                              ? 'bg-amber-100 text-amber-900'
-                              : lead.status === 'Negotiation'
-                              ? 'bg-indigo-100 text-indigo-900'
-                              : 'bg-emerald-100 text-emerald-900'
-                          }`}
-                        >
-                          {lead.status}
-                        </span>
-                      </div>
 
-                      {lead.source && (
-                        <span className="inline-block bg-gray-200 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded w-fit">
-                          📍 Source: {lead.source}
-                        </span>
-                      )}
+                        {/* 🏗️ DISPLAY PROJECT NAME */}
+                        {matchedProj && (
+                          <span className="inline-block bg-blue-50 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 w-fit">
+                            🏗️ Project: {matchedProj.name}
+                          </span>
+                        )}
 
-                      {lead.apartment_id && (
-                        <p className="text-[11px] text-amber-800 font-semibold">
-                          🏢 Units: {lead.apartment_id}
-                        </p>
-                      )}
+                        {lead.source && (
+                          <span className="inline-block bg-gray-200 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded w-fit">
+                            📍 Source: {lead.source}
+                          </span>
+                        )}
 
-                      {lead.status === 'Negotiation' && (
-                        <div className="mt-1 p-2 bg-white rounded border border-gray-200 text-[11px] space-y-0.5">
-                          {lead.total_payment && (
-                            <p>
-                              <strong>Total Payment:</strong> ${lead.total_payment.toLocaleString()}
-                            </p>
-                          )}
-                          {lead.installment_plan && (
-                            <p>
-                              <strong>Plan:</strong> {lead.installment_plan}
-                            </p>
-                          )}
-                          {lead.memo && (
-                            <p className="text-gray-600 italic">
-                              <strong>Memo:</strong> "{lead.memo}"
-                            </p>
-                          )}
+                        {lead.apartment_id && (
+                          <p className="text-[11px] text-amber-800 font-semibold">
+                            🏢 Units: {lead.apartment_id}
+                          </p>
+                        )}
+
+                        {lead.status === 'Negotiation' && (
+                          <div className="mt-1 p-2 bg-white rounded border border-gray-200 text-[11px] space-y-0.5">
+                            {lead.total_payment && (
+                              <p>
+                                <strong>Total Payment:</strong> ${lead.total_payment.toLocaleString()}
+                              </p>
+                            )}
+                            {lead.installment_plan && (
+                              <p>
+                                <strong>Plan:</strong> {lead.installment_plan}
+                              </p>
+                            )}
+                            {lead.memo && (
+                              <p className="text-gray-600 italic">
+                                <strong>Memo:</strong> "{lead.memo}"
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ✏️ BUTTON TO TRIGGER EDIT */}
+                        <div className="mt-1 pt-2 border-t border-gray-200 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleEditLead(lead)}
+                            className="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[11px] font-bold px-2.5 py-1 rounded transition flex items-center gap-1 shadow-sm"
+                          >
+                            ✏️ Edit Lead / Change Status
+                          </button>
                         </div>
-                      )}
-
-                      {/* ✏️ BUTTON TO TRIGGER EDIT */}
-                      <div className="mt-1 pt-2 border-t border-gray-200 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => handleEditLead(lead)}
-                          className="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[11px] font-bold px-2.5 py-1 rounded transition flex items-center gap-1 shadow-sm"
-                        >
-                          ✏️ Edit Lead / Change Status
-                        </button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
