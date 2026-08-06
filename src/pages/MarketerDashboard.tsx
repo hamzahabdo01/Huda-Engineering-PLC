@@ -123,6 +123,9 @@ export function MarketerDashboard() {
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
 
+  // ✏️ Edit Mode State
+  const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
+
   // 1️⃣ Check Active Session & Handle Recovery
   useEffect(() => {
     fetchProjects();
@@ -518,7 +521,63 @@ export function MarketerDashboard() {
     setCurrentMarketer(null);
   };
 
-  // 🟢 النقر على الخلية مع دعم اختيار وحدات متعددة إذا كان الوضع Qualified / Negotiation / Closed
+  // 🟢 تفريغ جميع حقول النموذج
+  const resetForm = () => {
+    setEditingLeadId(null);
+    setClientName('');
+    setClientPhone('');
+    setClientSource('Facebook boost');
+    setActionStatus('New');
+    setSelectedUnits([]);
+    setTotalPayment('');
+    setInstallmentPlan('');
+    setMemo('');
+  };
+
+  // ✏️ إرجاع بيانات الـ Lead للحقول للتعديل
+  const handleEditLead = (lead: Lead) => {
+    setEditingLeadId(lead.id);
+    setClientName(lead.name || '');
+    setClientPhone(lead.phone || '');
+    setClientSource(lead.source || 'Facebook boost');
+    setActionStatus((lead.status as any) || 'New');
+    setTotalPayment(lead.total_payment ? lead.total_payment.toString() : '');
+    setInstallmentPlan(lead.installment_plan || '');
+    setMemo(lead.memo || '');
+
+    // استرجاع الوحدات المحجوزة للـ Lead إذا وجدت
+    if (lead.unit_key) {
+      const keys = lead.unit_key.split(' | ');
+      const restoredUnits: SelectedUnit[] = [];
+
+      keys.forEach((k) => {
+        const parts = k.split('___');
+        if (parts.length === 2) {
+          const floorName = parts[0];
+          const unitTypeId = parts[1];
+          const matchedUt = unitTypes.find((ut) => ut.id === unitTypeId);
+
+          if (matchedUt) {
+            restoredUnits.push({
+              key: k,
+              floorName,
+              unitTypeId,
+              label: `${floorName} Floor [${matchedUt.title} (${matchedUt.area}m²)]`,
+              details: matchedUt,
+            });
+          }
+        }
+      });
+      setSelectedUnits(restoredUnits);
+    } else {
+      setSelectedUnits([]);
+    }
+
+    // التمرير السلس لأعلى الصفحة نحو النموذج
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 🟢 النقر على الخلية مع دعم اختيار وحدات متعددة
   const handleCellClick = (floorName: string, unitType: UnitType, status: string) => {
     if (actionStatus === 'New') {
       alert('ℹ️ Action Status is set to "New". Unit selection is not required for New leads.');
@@ -530,17 +589,14 @@ export function MarketerDashboard() {
     const statusLower = (status || '').toLowerCase().trim();
 
     if (statusLower === 'available') {
-      // إذا كانت الوحدة محددة مسبقاً يلغي تحديدها، وإلا يضيفها للقائمة
       setSelectedUnits((prev) => {
         const exists = prev.some((u) => u.key === key);
         if (exists) {
           return prev.filter((u) => u.key !== key);
         } else {
-          // في حال كان الوضع Qualified يمكن تحديد أكثر من وحدة
           if (actionStatus === 'Qualified') {
             return [...prev, { key, floorName, unitTypeId: unitType.id, label, details: unitType }];
           } else {
-            // للأنواع الأخرى نكتفي بوحدة واحدة أو يمكن السماح بالربط المتعدد
             return [{ key, floorName, unitTypeId: unitType.id, label, details: unitType }];
           }
         }
@@ -552,7 +608,7 @@ export function MarketerDashboard() {
     }
   };
 
-  // 🟢 معالجة الحفظ والطلب بحسب حالة الـ Action
+  // 🟢 معالجة الحفظ والتحديث حسب الحالة
   const handleSaveLeadWithAction = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
@@ -567,18 +623,15 @@ export function MarketerDashboard() {
       return;
     }
 
-    // التحقق من اختيار الوحدات إذا لم تكن الحالة New
     if (actionStatus !== 'New' && selectedUnits.length === 0) {
       alert(`Please select at least one available GREEN unit for status "${actionStatus}".`);
       return;
     }
 
-    // تجميع تفاصيل الوحدات المحددة
     const apartmentLabels = selectedUnits.map((u) => u.label).join(' | ');
     const unitKeys = selectedUnits.map((u) => u.key).join(' | ');
 
-    // تجهيز كائن البيانات المراد إدخاله
-    const leadInsertPayload: any = {
+    const leadPayload: any = {
       name: clientName,
       phone: cleanPhone,
       source: clientSource,
@@ -588,27 +641,45 @@ export function MarketerDashboard() {
       marketer_id: currentMarketer?.id,
       marketer_name: currentMarketer?.name,
       status: actionStatus,
+      total_payment: actionStatus === 'Negotiation' && totalPayment ? parseFloat(totalPayment) : null,
+      installment_plan: actionStatus === 'Negotiation' && installmentPlan ? installmentPlan : null,
+      memo: actionStatus === 'Negotiation' && memo ? memo : null,
     };
 
-    // إضافة الحقول الإضافية إذا كان الإجراء Negotiation
-    if (actionStatus === 'Negotiation') {
-      if (totalPayment) leadInsertPayload.total_payment = parseFloat(totalPayment);
-      if (installmentPlan) leadInsertPayload.installment_plan = installmentPlan;
-      if (memo) leadInsertPayload.memo = memo;
+    if (editingLeadId) {
+      // 🔄 1️⃣ وضع التحديث (EDIT MODE)
+      const { data: updatedData, error: updateError } = await supabase
+        .from('leads')
+        .update(leadPayload)
+        .eq('id', editingLeadId)
+        .select();
+
+      if (updateError) {
+        alert(`❌ Failed to update lead! Database error: ${updateError.message}`);
+        return;
+      }
+
+      if (updatedData && updatedData[0]) {
+        setLeads((prev) => prev.map((l) => (l.id === editingLeadId ? updatedData[0] : l)));
+      }
+    } else {
+      // ➕ 2️⃣ وضع الإضافة (NEW LEAD MODE)
+      const { data: leadData, error: leadError } = await supabase
+        .from('leads')
+        .insert([leadPayload])
+        .select();
+
+      if (leadError) {
+        alert(`❌ Failed to save lead! Database error: ${leadError.message}`);
+        return;
+      }
+
+      if (leadData && leadData[0]) {
+        setLeads((prev) => [leadData[0], ...prev]);
+      }
     }
 
-    // 1️⃣ حفظ بيانات الـ Lead في قاعدة البيانات
-    const { data: leadData, error: leadError } = await supabase
-      .from('leads')
-      .insert([leadInsertPayload])
-      .select();
-
-    if (leadError) {
-      alert(`❌ Failed to save lead! Database error: ${leadError.message}`);
-      return;
-    }
-
-    // 2️⃣ تحويل حالة الوحدات في الماتريكس إلى reserved في حال حجز وحدات (Qualified / Negotiation / Closed)
+    // 3️⃣ تحويل حالة الوحدات في الماتريكس إلى reserved إذا تم اختيار وحدات
     if (selectedUnits.length > 0 && actionStatus !== 'New') {
       for (const unit of selectedUnits) {
         const { error: matrixError } = await supabase.from('srm_matrix_cells').upsert(
@@ -629,20 +700,8 @@ export function MarketerDashboard() {
       await fetchMatrixData(selectedProjectId);
     }
 
-    if (leadData && leadData[0]) {
-      setLeads((prev) => [leadData[0], ...prev]);
-    }
-
-    // تفريغ المدخلات بعد النجاح
-    setClientName('');
-    setClientPhone('');
-    setClientSource('Facebook boost');
-    setSelectedUnits([]);
-    setTotalPayment('');
-    setInstallmentPlan('');
-    setMemo('');
-
-    alert(`✅ Lead successfully saved as "${actionStatus}"!`);
+    alert(`✅ Lead successfully ${editingLeadId ? 'updated' : 'saved'} as "${actionStatus}"!`);
+    resetForm();
   };
 
   if (loadingUser) {
@@ -1109,13 +1168,25 @@ export function MarketerDashboard() {
 
           {/* DYNAMIC ACTION FORM COLUMN */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-              <h2 className="font-bold text-gray-800 mb-2 text-md flex items-center justify-between">
-                <span>📌 Add Lead & Take Action</span>
-                <span className="text-xs bg-blue-100 text-blue-800 font-extrabold px-2.5 py-0.5 rounded-full">
-                  {actionStatus}
-                </span>
-              </h2>
+            <div className={`p-5 rounded-xl shadow-sm border transition-all ${editingLeadId ? 'bg-amber-50/60 border-amber-300' : 'bg-white border-gray-200'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-bold text-gray-800 text-md flex items-center gap-2">
+                  <span>{editingLeadId ? '✏️ Edit Lead Record' : '📌 Add Lead & Take Action'}</span>
+                  <span className="text-xs bg-blue-100 text-blue-800 font-extrabold px-2.5 py-0.5 rounded-full">
+                    {actionStatus}
+                  </span>
+                </h2>
+
+                {editingLeadId && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-2 py-1 rounded transition"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
 
               <form onSubmit={handleSaveLeadWithAction} className="space-y-4">
                 {/* 🔵 ACTION BUTTON DROPDOWN MENU */}
@@ -1282,7 +1353,9 @@ export function MarketerDashboard() {
                 <button
                   type="submit"
                   className={`w-full font-extrabold py-3 rounded-lg text-xs transition shadow-md text-white ${
-                    actionStatus === 'New'
+                    editingLeadId
+                      ? 'bg-amber-600 hover:bg-amber-700'
+                      : actionStatus === 'New'
                       ? 'bg-blue-600 hover:bg-blue-700'
                       : actionStatus === 'Qualified'
                       ? 'bg-amber-600 hover:bg-amber-700'
@@ -1291,7 +1364,7 @@ export function MarketerDashboard() {
                       : 'bg-emerald-600 hover:bg-emerald-700'
                   }`}
                 >
-                  Save Lead as "{actionStatus}"
+                  {editingLeadId ? `Update Lead Record` : `Save Lead as "${actionStatus}"`}
                 </button>
               </form>
             </div>
@@ -1308,7 +1381,11 @@ export function MarketerDashboard() {
                   {leads.map((lead) => (
                     <div
                       key={lead.id}
-                      className="p-3 border rounded-lg bg-gray-50/80 border-gray-200 flex flex-col gap-1 text-xs"
+                      className={`p-3 border rounded-lg flex flex-col gap-1.5 text-xs transition ${
+                        editingLeadId === lead.id
+                          ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-400'
+                          : 'bg-gray-50/80 border-gray-200'
+                      }`}
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -1361,6 +1438,17 @@ export function MarketerDashboard() {
                           )}
                         </div>
                       )}
+
+                      {/* ✏️ BUTTON TO TRIGGER EDIT */}
+                      <div className="mt-1 pt-2 border-t border-gray-200 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleEditLead(lead)}
+                          className="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[11px] font-bold px-2.5 py-1 rounded transition flex items-center gap-1 shadow-sm"
+                        >
+                          ✏️ Edit Lead / Change Status
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
