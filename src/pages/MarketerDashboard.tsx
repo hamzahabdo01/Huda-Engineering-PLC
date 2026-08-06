@@ -39,6 +39,9 @@ export interface Lead {
   marketer_id?: string;
   marketer_name?: string;
   status: string;
+  total_payment?: number;
+  installment_plan?: string;
+  memo?: string;
   created_at?: string;
 }
 
@@ -48,6 +51,14 @@ export interface MarketerProfile {
   email: string;
   phone?: string;
   status?: string;
+}
+
+export interface SelectedUnit {
+  key: string;
+  floorName: string;
+  unitTypeId: string;
+  label: string;
+  details: UnitType;
 }
 
 export function MarketerDashboard() {
@@ -95,12 +106,16 @@ export function MarketerDashboard() {
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
-  // Selection States
-  const [selectedUnitKey, setSelectedUnitKey] = useState<string>('');
-  const [selectedFloorName, setSelectedFloorName] = useState<string>('');
-  const [selectedUnitTypeId, setSelectedUnitTypeId] = useState<string>('');
-  const [selectedUnitLabel, setSelectedUnitLabel] = useState<string>('');
-  const [selectedUnitDetails, setSelectedUnitDetails] = useState<UnitType | null>(null);
+  // Dynamic Selection States (Multiple Units Support)
+  const [selectedUnits, setSelectedUnits] = useState<SelectedUnit[]>([]);
+
+  // Action / Status Dropdown State
+  const [actionStatus, setActionStatus] = useState<'New' | 'Qualified' | 'Negotiation' | 'Closed'>('New');
+
+  // Negotiation Extra Fields State
+  const [totalPayment, setTotalPayment] = useState<string>('');
+  const [installmentPlan, setInstallmentPlan] = useState<string>('');
+  const [memo, setMemo] = useState<string>('');
 
   // Leads State
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -246,7 +261,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // 🟢 تحديث دالة جلب المصفوفة لربط كافة المفاتيح المحتملة (ID + Title)
   const fetchMatrixData = async (projectId: string) => {
     const { data, error } = await supabase
       .from('srm_matrix_cells')
@@ -261,13 +275,10 @@ export function MarketerDashboard() {
         const uTitle = (item.unit_type_title || item.unit_title || item.title || '').trim();
 
         if (floorClean) {
-          // الربط بالـ ID
           if (uId) {
             matrixMap[`${floorClean}___${uId}`] = item.status;
             if (item.floor_name) matrixMap[`${item.floor_name}___${uId}`] = item.status;
           }
-
-          // الربط بالـ Title (العنوان)
           if (uTitle) {
             matrixMap[`${floorClean}___${uTitle}`] = item.status;
             if (item.floor_name) matrixMap[`${item.floor_name}___${uTitle}`] = item.status;
@@ -507,17 +518,33 @@ export function MarketerDashboard() {
     setCurrentMarketer(null);
   };
 
+  // 🟢 النقر على الخلية مع دعم اختيار وحدات متعددة إذا كان الوضع Qualified / Negotiation / Closed
   const handleCellClick = (floorName: string, unitType: UnitType, status: string) => {
+    if (actionStatus === 'New') {
+      alert('ℹ️ Action Status is set to "New". Unit selection is not required for New leads.');
+      return;
+    }
+
     const key = `${floorName}___${unitType.id}`;
     const label = `${floorName} Floor [${unitType.title} (${unitType.area}m²)]`;
     const statusLower = (status || '').toLowerCase().trim();
 
     if (statusLower === 'available') {
-      setSelectedUnitKey(key);
-      setSelectedFloorName(floorName);
-      setSelectedUnitTypeId(unitType.id);
-      setSelectedUnitLabel(label);
-      setSelectedUnitDetails(unitType);
+      // إذا كانت الوحدة محددة مسبقاً يلغي تحديدها، وإلا يضيفها للقائمة
+      setSelectedUnits((prev) => {
+        const exists = prev.some((u) => u.key === key);
+        if (exists) {
+          return prev.filter((u) => u.key !== key);
+        } else {
+          // في حال كان الوضع Qualified يمكن تحديد أكثر من وحدة
+          if (actionStatus === 'Qualified') {
+            return [...prev, { key, floorName, unitTypeId: unitType.id, label, details: unitType }];
+          } else {
+            // للأنواع الأخرى نكتفي بوحدة واحدة أو يمكن السماح بالربط المتعدد
+            return [{ key, floorName, unitTypeId: unitType.id, label, details: unitType }];
+          }
+        }
+      });
     } else if (statusLower === 'reserved') {
       alert(`🟡 Unit on ${floorName} floor (${unitType.title}) is already RESERVED.`);
     } else {
@@ -525,15 +552,10 @@ export function MarketerDashboard() {
     }
   };
 
-  // Reserve Unit & Save Lead
-  const handleReserveAndSaveLead = async (e: React.FormEvent) => {
+  // 🟢 معالجة الحفظ والطلب بحسب حالة الـ Action
+  const handleSaveLeadWithAction = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
-
-    if (!selectedUnitKey || !selectedFloorName || !selectedUnitTypeId) {
-      alert('Please click on an available GREEN unit in the matrix first.');
-      return;
-    }
 
     if (!clientName || !cleanPhone) {
       alert('Please fill in both client name and phone number.');
@@ -545,21 +567,40 @@ export function MarketerDashboard() {
       return;
     }
 
+    // التحقق من اختيار الوحدات إذا لم تكن الحالة New
+    if (actionStatus !== 'New' && selectedUnits.length === 0) {
+      alert(`Please select at least one available GREEN unit for status "${actionStatus}".`);
+      return;
+    }
+
+    // تجميع تفاصيل الوحدات المحددة
+    const apartmentLabels = selectedUnits.map((u) => u.label).join(' | ');
+    const unitKeys = selectedUnits.map((u) => u.key).join(' | ');
+
+    // تجهيز كائن البيانات المراد إدخاله
+    const leadInsertPayload: any = {
+      name: clientName,
+      phone: cleanPhone,
+      source: clientSource,
+      apartment_id: apartmentLabels || null,
+      unit_key: unitKeys || null,
+      project_id: selectedProjectId,
+      marketer_id: currentMarketer?.id,
+      marketer_name: currentMarketer?.name,
+      status: actionStatus,
+    };
+
+    // إضافة الحقول الإضافية إذا كان الإجراء Negotiation
+    if (actionStatus === 'Negotiation') {
+      if (totalPayment) leadInsertPayload.total_payment = parseFloat(totalPayment);
+      if (installmentPlan) leadInsertPayload.installment_plan = installmentPlan;
+      if (memo) leadInsertPayload.memo = memo;
+    }
+
+    // 1️⃣ حفظ بيانات الـ Lead في قاعدة البيانات
     const { data: leadData, error: leadError } = await supabase
       .from('leads')
-      .insert([
-        {
-          name: clientName,
-          phone: cleanPhone,
-          source: clientSource,
-          apartment_id: selectedUnitLabel,
-          unit_key: selectedUnitKey,
-          project_id: selectedProjectId,
-          marketer_id: currentMarketer?.id,
-          marketer_name: currentMarketer?.name,
-          status: 'Reserved',
-        },
-      ])
+      .insert([leadInsertPayload])
       .select();
 
     if (leadError) {
@@ -567,20 +608,24 @@ export function MarketerDashboard() {
       return;
     }
 
-    const { error: matrixError } = await supabase.from('srm_matrix_cells').upsert(
-      {
-        project_id: selectedProjectId,
-        floor_name: selectedFloorName,
-        unit_type_id: selectedUnitTypeId,
-        status: 'reserved',
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'project_id,floor_name,unit_type_id' }
-    );
+    // 2️⃣ تحويل حالة الوحدات في الماتريكس إلى reserved في حال حجز وحدات (Qualified / Negotiation / Closed)
+    if (selectedUnits.length > 0 && actionStatus !== 'New') {
+      for (const unit of selectedUnits) {
+        const { error: matrixError } = await supabase.from('srm_matrix_cells').upsert(
+          {
+            project_id: selectedProjectId,
+            floor_name: unit.floorName,
+            unit_type_id: unit.unitTypeId,
+            status: 'reserved',
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'project_id,floor_name,unit_type_id' }
+        );
 
-    if (matrixError) {
-      alert(`⚠️ Lead saved, but unit status update failed: ${matrixError.message}`);
-    } else {
+        if (matrixError) {
+          console.error(`⚠️ Failed to update cell ${unit.label}:`, matrixError.message);
+        }
+      }
       await fetchMatrixData(selectedProjectId);
     }
 
@@ -588,16 +633,16 @@ export function MarketerDashboard() {
       setLeads((prev) => [leadData[0], ...prev]);
     }
 
+    // تفريغ المدخلات بعد النجاح
     setClientName('');
     setClientPhone('');
     setClientSource('Facebook boost');
-    setSelectedUnitKey('');
-    setSelectedFloorName('');
-    setSelectedUnitTypeId('');
-    setSelectedUnitLabel('');
-    setSelectedUnitDetails(null);
+    setSelectedUnits([]);
+    setTotalPayment('');
+    setInstallmentPlan('');
+    setMemo('');
 
-    alert('✅ Unit reserved and lead saved successfully!');
+    alert(`✅ Lead successfully saved as "${actionStatus}"!`);
   };
 
   if (loadingUser) {
@@ -897,11 +942,7 @@ export function MarketerDashboard() {
                 value={selectedProjectId}
                 onChange={(e) => {
                   setSelectedProjectId(e.target.value);
-                  setSelectedUnitKey('');
-                  setSelectedFloorName('');
-                  setSelectedUnitTypeId('');
-                  setSelectedUnitLabel('');
-                  setSelectedUnitDetails(null);
+                  setSelectedUnits([]);
                 }}
                 className="p-2 bg-blue-50 border border-blue-300 font-semibold text-blue-900 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
               >
@@ -1001,7 +1042,6 @@ export function MarketerDashboard() {
                           const utId = ut.id;
                           const utTitle = (ut.title || '').trim();
 
-                          // 🟢 فحص متعدد الاحتمالات لمطابقة الخلية بالـ ID أو Title
                           const rawStatus =
                             matrix[`${fName}___${utId}`] ||
                             matrix[`${fName}___${utTitle}`] ||
@@ -1010,7 +1050,7 @@ export function MarketerDashboard() {
                             'unavailable';
 
                           const statusLower = (rawStatus || '').toLowerCase().trim();
-                          const isSelected = selectedUnitKey === `${fName}___${utId}`;
+                          const isSelected = selectedUnits.some((u) => u.key === `${fName}___${utId}`);
 
                           let bgClass = 'bg-[#ff0000] text-white cursor-not-allowed';
                           let cellContent: React.ReactNode = null;
@@ -1019,8 +1059,8 @@ export function MarketerDashboard() {
                             bgClass = 'bg-[#00b050] hover:bg-green-600 cursor-pointer text-white';
                             if (isSelected) {
                               cellContent = (
-                                <span className="text-[10px] bg-black text-white px-1 py-0.5 rounded">
-                                  Selected
+                                <span className="text-[10px] bg-black text-amber-300 px-1 py-0.5 rounded font-extrabold shadow">
+                                  ✓ Selected
                                 </span>
                               );
                             }
@@ -1031,7 +1071,6 @@ export function MarketerDashboard() {
                             bgClass = 'bg-[#ff0000] text-white cursor-not-allowed';
                             cellContent = null;
                           } else {
-                            // 🟢 عرض النص المخصص القادم من الأدمن (مثل SHOPS, OFFICE, BUSINESS ...)
                             bgClass = 'bg-[#ff0000] text-white font-extrabold text-[11px] uppercase tracking-wider cursor-not-allowed';
                             cellContent = rawStatus.toUpperCase();
                           }
@@ -1068,64 +1107,77 @@ export function MarketerDashboard() {
             </div>
           </div>
 
-          {/* Direct Unit Reservation Form */}
+          {/* DYNAMIC ACTION FORM COLUMN */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-              <h2 className="font-bold text-gray-800 mb-2 text-md">📌 Reserve Unit & Claim Lead</h2>
-              <p className="text-xs text-gray-500 mb-4">
-                Click any green cell in the matrix to view its{' '}
-                <span className="font-semibold text-blue-600">Payment Plan</span> and reserve it.
-              </p>
+              <h2 className="font-bold text-gray-800 mb-2 text-md flex items-center justify-between">
+                <span>📌 Add Lead & Take Action</span>
+                <span className="text-xs bg-blue-100 text-blue-800 font-extrabold px-2.5 py-0.5 rounded-full">
+                  {actionStatus}
+                </span>
+              </h2>
 
-              {selectedUnitDetails && (
-                <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3.5 mb-4 text-xs space-y-2">
-                  <div className="font-bold text-blue-900 border-b border-blue-200 pb-1.5 flex justify-between">
-                    <span>💳 PAYMENT PLAN DETAILS</span>
-                    <span className="text-blue-700">{selectedUnitDetails.area} m²</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-gray-700">
-                    <div>
-                      <span className="block text-[10px] text-gray-500">Total Price:</span>
-                      <strong className="text-gray-900">
-                        ${selectedUnitDetails.totalPrice?.toLocaleString() || 0}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-gray-500">Down Payment:</span>
-                      <strong className="text-emerald-700">
-                        ${selectedUnitDetails.downPayment?.toLocaleString() || 0}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-gray-500">Installment Period:</span>
-                      <strong className="text-gray-900">
-                        {selectedUnitDetails.installmentYears || 1} Years
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-gray-500">Monthly Installment:</span>
-                      <strong className="text-blue-700">
-                        ${selectedUnitDetails.monthlyInstallment?.toLocaleString() || 0}/mo
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <form onSubmit={handleReserveAndSaveLead} className="space-y-3">
+              <form onSubmit={handleSaveLeadWithAction} className="space-y-4">
+                {/* 🔵 ACTION BUTTON DROPDOWN MENU */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Selected Unit *
+                  <label className="block text-xs font-bold text-blue-900 mb-1">
+                    Action / Status *
                   </label>
-                  <input
-                    type="text"
-                    readOnly
-                    placeholder="← Click a GREEN cell in table"
-                    value={selectedUnitLabel}
-                    className="w-full p-2.5 border rounded-lg text-xs bg-amber-50 text-amber-900 font-bold border-amber-300 focus:outline-none"
-                    required
-                  />
+                  <select
+                    value={actionStatus}
+                    onChange={(e: any) => {
+                      setActionStatus(e.target.value);
+                      if (e.target.value === 'New') {
+                        setSelectedUnits([]);
+                      }
+                    }}
+                    className="w-full p-2.5 bg-blue-50 border-2 border-blue-500 rounded-lg text-xs font-bold text-blue-900 focus:ring-2 focus:ring-blue-600 outline-none cursor-pointer"
+                  >
+                    <option value="New">🟢 New (Save Lead without Unit)</option>
+                    <option value="Qualified">🟡 Qualified (Reserve Units - Single/Multiple)</option>
+                    <option value="Negotiation">🔵 Negotiation (Extra Fields: Payment/Plan/Memo)</option>
+                    <option value="Closed">🔴 Closed (Completed Deal)</option>
+                  </select>
                 </div>
+
+                {/* SHOW SELECTED UNITS SUMMARY IF NOT "NEW" */}
+                {actionStatus !== 'New' && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Selected Units ({selectedUnits.length}) *
+                    </label>
+                    {selectedUnits.length === 0 ? (
+                      <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg text-amber-900 text-xs font-semibold text-center">
+                        ← Click any GREEN cell in table to select units
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        {selectedUnits.map((u, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-emerald-50 border border-emerald-300 rounded-lg p-2 text-xs flex justify-between items-center"
+                          >
+                            <div>
+                              <span className="font-bold text-emerald-900">{u.label}</span>
+                              {u.details.totalPrice && (
+                                <span className="block text-[10px] text-emerald-700">
+                                  Price: ${u.details.totalPrice.toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedUnits((prev) => prev.filter((item) => item.key !== u.key))}
+                              className="text-red-500 font-bold hover:text-red-700 text-xs"
+                            >
+                              ✕ Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -1179,45 +1231,136 @@ export function MarketerDashboard() {
                   </select>
                 </div>
 
+                {/* 🔵 EXTRA FIELDS SPECIFICALLY FOR "NEGOTIATION" STATUS */}
+                {actionStatus === 'Negotiation' && (
+                  <div className="bg-blue-50/70 p-3.5 border border-blue-200 rounded-xl space-y-3">
+                    <h3 className="font-extrabold text-blue-900 text-xs border-b border-blue-200 pb-1">
+                      📝 Negotiation Details
+                    </h3>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                        Total Payment ($)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Agreed Total Payment"
+                        value={totalPayment}
+                        onChange={(e) => setTotalPayment(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                        Installment Plan
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 20% down, balance over 3 years"
+                        value={installmentPlan}
+                        onChange={(e) => setInstallmentPlan(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                        Memo / Notes
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="Write extra details or custom negotiation terms..."
+                        value={memo}
+                        onChange={(e) => setMemo(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-extrabold py-2.5 rounded-lg text-xs transition shadow-sm mt-2"
+                  className={`w-full font-extrabold py-3 rounded-lg text-xs transition shadow-md text-white ${
+                    actionStatus === 'New'
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : actionStatus === 'Qualified'
+                      ? 'bg-amber-600 hover:bg-amber-700'
+                      : actionStatus === 'Negotiation'
+                      ? 'bg-indigo-600 hover:bg-indigo-700'
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
                 >
-                  🔒 Save & Mark as Reserved (Yellow)
+                  Save Lead as "{actionStatus}"
                 </button>
               </form>
             </div>
 
+            {/* LEADS LIST DISPLAY */}
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
               <h2 className="font-bold text-gray-800 mb-3 text-md">
-                Your Reserved Units ({leads.length})
+                Your Recorded Leads ({leads.length})
               </h2>
               {leads.length === 0 ? (
-                <p className="text-gray-400 text-xs">No reserved units yet.</p>
+                <p className="text-gray-400 text-xs">No leads recorded yet.</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                   {leads.map((lead) => (
                     <div
                       key={lead.id}
-                      className="p-3 border rounded-lg bg-amber-50/50 border-amber-200 flex justify-between items-start text-xs"
+                      className="p-3 border rounded-lg bg-gray-50/80 border-gray-200 flex flex-col gap-1 text-xs"
                     >
-                      <div>
-                        <p className="font-bold text-gray-800">{lead.name}</p>
-                        <p className="text-gray-500">{lead.phone}</p>
-
-                        {lead.source && (
-                          <span className="inline-block bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded mt-1">
-                            📍 Source: {lead.source}
-                          </span>
-                        )}
-
-                        <p className="text-[11px] text-amber-800 font-medium mt-1">
-                          {lead.apartment_id}
-                        </p>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-bold text-gray-800">{lead.name}</p>
+                          <p className="text-gray-500">{lead.phone}</p>
+                        </div>
+                        <span
+                          className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap ${
+                            lead.status === 'New'
+                              ? 'bg-blue-100 text-blue-800'
+                              : lead.status === 'Qualified'
+                              ? 'bg-amber-100 text-amber-900'
+                              : lead.status === 'Negotiation'
+                              ? 'bg-indigo-100 text-indigo-900'
+                              : 'bg-emerald-100 text-emerald-900'
+                          }`}
+                        >
+                          {lead.status}
+                        </span>
                       </div>
-                      <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-2 py-1 rounded-full whitespace-nowrap">
-                        RESERVED
-                      </span>
+
+                      {lead.source && (
+                        <span className="inline-block bg-gray-200 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded w-fit">
+                          📍 Source: {lead.source}
+                        </span>
+                      )}
+
+                      {lead.apartment_id && (
+                        <p className="text-[11px] text-amber-800 font-semibold">
+                          🏢 Units: {lead.apartment_id}
+                        </p>
+                      )}
+
+                      {lead.status === 'Negotiation' && (
+                        <div className="mt-1 p-2 bg-white rounded border border-gray-200 text-[11px] space-y-0.5">
+                          {lead.total_payment && (
+                            <p>
+                              <strong>Total Payment:</strong> ${lead.total_payment.toLocaleString()}
+                            </p>
+                          )}
+                          {lead.installment_plan && (
+                            <p>
+                              <strong>Plan:</strong> {lead.installment_plan}
+                            </p>
+                          )}
+                          {lead.memo && (
+                            <p className="text-gray-600 italic">
+                              <strong>Memo:</strong> "{lead.memo}"
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
