@@ -657,7 +657,7 @@ export function MarketerDashboard() {
     }
   };
 
-  // 🟢 معالجة الحفظ والتحديث مع توحيد الحالة وتحديث הـ State الفوري
+// 🟢 معالجة الحفظ والتحديث مع توحيد الحالة
   const handleSaveLeadWithAction = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
@@ -672,10 +672,8 @@ export function MarketerDashboard() {
       return;
     }
 
-    // 💡 توحيد الحالة لمنع حفظها بصيغة غير متطابقة
     const targetStatus = normalizeStatus(actionStatus);
 
-    // 🔴 التحقق من اختيار وحدة عند تحويل الحالة إلى Qualified أو غيرها
     if (targetStatus !== 'New' && selectedUnits.length === 0) {
       alert(
         `⚠️ To change status to "${targetStatus}", please select at least one available GREEN unit from the inventory table first!`
@@ -704,7 +702,7 @@ export function MarketerDashboard() {
 
     try {
       if (editingLeadId) {
-        // 🔄 1️⃣ وضع التحديث (EDIT MODE)
+        // 🔄 1️⃣ التحديث في Supabase
         const { data: updatedData, error: updateError } = await supabase
           .from('leads')
           .update(leadPayload)
@@ -716,14 +714,18 @@ export function MarketerDashboard() {
           return;
         }
 
-        // 💡 ضمان تحديث الـ Local State فوراً حتى لو كانت استجابة Supabase فارغة
-        const updatedLeadObj: Lead = (updatedData && updatedData[0]) 
-          ? updatedData[0] 
-          : { id: editingLeadId, ...leadPayload, created_at: new Date().toISOString() };
+        // ⚠️ التأكد من أن قاعدة البيانات قامت بالتعديل فعلياً ولم ترجع قائمة فارغة
+        if (!updatedData || updatedData.length === 0) {
+          alert('❌ Database update failed! Check Supabase RLS policies for UPDATE on the "leads" table.');
+          return;
+        }
 
-        setLeads((prev) => prev.map((l) => (l.id === editingLeadId ? updatedLeadObj : l)));
+        // ✅ تحديث الـ State بالبيانات الحقيقية التي عادت من قاعدة البيانات
+        const savedLead = updatedData[0];
+        setLeads((prev) => prev.map((l) => (l.id === editingLeadId ? savedLead : l)));
+
       } else {
-        // ➕ 2️⃣ وضع الإضافة (NEW LEAD MODE)
+        // ➕ 2️⃣ إضافة عميل جديد
         const { data: leadData, error: leadError } = await supabase
           .from('leads')
           .insert([leadPayload])
@@ -739,10 +741,10 @@ export function MarketerDashboard() {
         }
       }
 
-      // 3️⃣ تحويل حالة الوحدات في الماتريكس إلى reserved إذا تم اختيار وحدات
+      // 3️⃣ تحويل حالة الوحدات في الماتريكس إلى reserved
       if (selectedUnits.length > 0 && targetStatus !== 'New') {
         for (const unit of selectedUnits) {
-          const { error: matrixError } = await supabase.from('srm_matrix_cells').upsert(
+          await supabase.from('srm_matrix_cells').upsert(
             {
               project_id: selectedProjectId,
               floor_name: unit.floorName,
@@ -752,17 +754,11 @@ export function MarketerDashboard() {
             },
             { onConflict: 'project_id,floor_name,unit_type_id' }
           );
-
-          if (matrixError) {
-            console.error(`⚠️ Failed to update cell ${unit.label}:`, matrixError.message);
-          }
         }
         await fetchMatrixData(selectedProjectId);
       }
 
       alert(`✅ Lead successfully ${editingLeadId ? 'updated' : 'saved'} as "${targetStatus}"!`);
-      
-      // التبديل التلقائي لتبويب الحالة الجديدة ورؤية النتيجة فوراً
       setLeadTab(targetStatus);
       resetForm();
     } catch (err: any) {
