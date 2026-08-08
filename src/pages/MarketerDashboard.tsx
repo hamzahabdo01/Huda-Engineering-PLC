@@ -644,23 +644,26 @@ export function MarketerDashboard() {
     }
   };
 
-  // 🟢 معالجة الحفظ والتحديث مع دمج مفتاح الدولة
+// 🟢 معالجة الحفظ والتحديث مع ضمان تحديث الـ State الفوري
   const handleSaveLeadWithAction = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
 
     if (!clientName || !cleanPhone) {
-      alert('Please fill in both client name and phone number.');
+      alert('⚠️ Please fill in both client name and phone number.');
       return;
     }
 
     if (!selectedProjectId) {
-      alert('No active project selected.');
+      alert('⚠️ No active project selected.');
       return;
     }
 
+    // 🔴 التحقق من اختيار وحدة عند تحويل الحالة إلى Qualified أو غيرها
     if (actionStatus !== 'New' && selectedUnits.length === 0) {
-      alert(`Please select at least one available GREEN unit for status "${actionStatus}".`);
+      alert(
+        `⚠️ To change status to "${actionStatus}", please select at least one available GREEN unit from the inventory table first!`
+      );
       return;
     }
 
@@ -683,62 +686,69 @@ export function MarketerDashboard() {
       memo: actionStatus === 'Negotiation' && memo ? memo : null,
     };
 
-    if (editingLeadId) {
-      // 🔄 1️⃣ وضع التحديث (EDIT MODE)
-      const { data: updatedData, error: updateError } = await supabase
-        .from('leads')
-        .update(leadPayload)
-        .eq('id', editingLeadId)
-        .select();
+    try {
+      if (editingLeadId) {
+        // 🔄 1️⃣ وضع التحديث (EDIT MODE)
+        const { data: updatedData, error: updateError } = await supabase
+          .from('leads')
+          .update(leadPayload)
+          .eq('id', editingLeadId)
+          .select();
 
-      if (updateError) {
-        alert(`❌ Failed to update lead! Database error: ${updateError.message}`);
-        return;
-      }
+        if (updateError) {
+          alert(`❌ Failed to update lead! Database error: ${updateError.message}`);
+          return;
+        }
 
-      if (updatedData && updatedData[0]) {
-        setLeads((prev) => prev.map((l) => (l.id === editingLeadId ? updatedData[0] : l)));
-      }
-    } else {
-      // ➕ 2️⃣ وضع الإضافة (NEW LEAD MODE)
-      const { data: leadData, error: leadError } = await supabase
-        .from('leads')
-        .insert([leadPayload])
-        .select();
+        // 💡 ضمان تحديث الـ Local State فوراً حتى لو كانت استجابة Supabase فارغة
+        const updatedLeadObj: Lead = (updatedData && updatedData[0]) 
+          ? updatedData[0] 
+          : { id: editingLeadId, ...leadPayload, created_at: new Date().toISOString() };
 
-      if (leadError) {
-        alert(`❌ Failed to save lead! Database error: ${leadError.message}`);
-        return;
-      }
+        setLeads((prev) => prev.map((l) => (l.id === editingLeadId ? updatedLeadObj : l)));
+      } else {
+        // ➕ 2️⃣ وضع الإضافة (NEW LEAD MODE)
+        const { data: leadData, error: leadError } = await supabase
+          .from('leads')
+          .insert([leadPayload])
+          .select();
 
-      if (leadData && leadData[0]) {
-        setLeads((prev) => [leadData[0], ...prev]);
-      }
-    }
+        if (leadError) {
+          alert(`❌ Failed to save lead! Database error: ${leadError.message}`);
+          return;
+        }
 
-    // 3️⃣ تحويل حالة الوحدات في الماتريكس إلى reserved إذا تم اختيار وحدات
-    if (selectedUnits.length > 0 && actionStatus !== 'New') {
-      for (const unit of selectedUnits) {
-        const { error: matrixError } = await supabase.from('srm_matrix_cells').upsert(
-          {
-            project_id: selectedProjectId,
-            floor_name: unit.floorName,
-            unit_type_id: unit.unitTypeId,
-            status: 'reserved',
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'project_id,floor_name,unit_type_id' }
-        );
-
-        if (matrixError) {
-          console.error(`⚠️ Failed to update cell ${unit.label}:`, matrixError.message);
+        if (leadData && leadData[0]) {
+          setLeads((prev) => [leadData[0], ...prev]);
         }
       }
-      await fetchMatrixData(selectedProjectId);
-    }
 
-    alert(`✅ Lead successfully ${editingLeadId ? 'updated' : 'saved'} as "${actionStatus}"!`);
-    resetForm();
+      // 3️⃣ تحويل حالة الوحدات في الماتريكس إلى reserved إذا تم اختيار وحدات
+      if (selectedUnits.length > 0 && actionStatus !== 'New') {
+        for (const unit of selectedUnits) {
+          const { error: matrixError } = await supabase.from('srm_matrix_cells').upsert(
+            {
+              project_id: selectedProjectId,
+              floor_name: unit.floorName,
+              unit_type_id: unit.unitTypeId,
+              status: 'reserved',
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'project_id,floor_name,unit_type_id' }
+          );
+
+          if (matrixError) {
+            console.error(`⚠️ Failed to update cell ${unit.label}:`, matrixError.message);
+          }
+        }
+        await fetchMatrixData(selectedProjectId);
+      }
+
+      alert(`✅ Lead successfully ${editingLeadId ? 'updated' : 'saved'} as "${actionStatus}"!`);
+      resetForm();
+    } catch (err: any) {
+      alert(`❌ Unexpected Error: ${err.message}`);
+    }
   };
 
   // تصفية العملاء حسب التبويب المحدد
