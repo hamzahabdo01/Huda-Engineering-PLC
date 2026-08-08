@@ -57,6 +57,10 @@ export interface MarketerClient {
   source?: string;
   lead_source?: string;
   created_at?: string;
+  // 🟢 إضافة بيانات التفاوض
+  total_payment?: number | string | null;
+  installment_plan?: string | null;
+  memo?: string | null;
 }
 
 export interface MarketerAccount {
@@ -213,7 +217,6 @@ export function AdminDashboardd() {
     if (!error && data) {
       const matrixMap: Record<string, UnitStatus> = {};
       data.forEach((item) => {
-        // تم تغيير الفاصل هنا إلى __ لحماية الـ UUID
         const key = `${item.floor_name}__${item.unit_type_id}`;
         matrixMap[key] = item.status as UnitStatus;
       });
@@ -500,7 +503,6 @@ export function AdminDashboardd() {
 
   const handleExplicitStatusChange = (status: UnitStatus) => {
     if (!activeCellKey) return;
-    // التقسيم الآمن بواسطة __ للحفاظ على سلامة الـ UUID
     const [floorName, unitTypeId] = activeCellKey.split('__');
     if (floorName && unitTypeId) {
       saveStatusToSupabase(floorName, unitTypeId, status);
@@ -1058,13 +1060,14 @@ export function AdminDashboardd() {
                   <th className="p-3 border">Unit / Details</th>
                   <th className="p-3 border">Source</th>
                   <th className="p-3 border">Status</th>
+                  <th className="p-3 border">Negotiation Details</th> {/* 👈 إضافة العمود الجديد */}
                   <th className="p-3 border">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {marketerClients.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500 font-semibold">
+                    <td colSpan={8} className="p-4 text-center text-gray-500 font-semibold">
                       No client leads found.
                     </td>
                   </tr>
@@ -1087,10 +1090,39 @@ export function AdminDashboardd() {
                         </span>
                       </td>
                       <td className="p-3 border">
-                        <span className="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full text-[10px]">
+                        <span className={`font-bold px-2.5 py-1 rounded-full text-[10px] ${
+                          client.status === 'Negotiation' ? 'bg-orange-100 text-orange-800' :
+                          client.status === 'Qualified' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
                           {client.status || 'Reserved'}
                         </span>
                       </td>
+
+                      {/* 📝 عرض كارت تفاصيل التفاوض */}
+                      <td className="p-3 border">
+                        {client.total_payment || client.installment_plan || client.memo ? (
+                          <div className="bg-slate-50 p-2 rounded border border-slate-200 space-y-1 min-w-[170px] text-[11px]">
+                            {client.total_payment && (
+                              <div className="font-semibold text-slate-800">
+                                💵 Total: <span className="text-emerald-600">${Number(client.total_payment).toLocaleString()}</span>
+                              </div>
+                            )}
+                            {client.installment_plan && (
+                              <div className="text-slate-600">
+                                📅 Plan: <span className="font-medium text-slate-700">{client.installment_plan}</span>
+                              </div>
+                            )}
+                            {client.memo && (
+                              <div className="text-slate-500 italic truncate max-w-[200px]" title={client.memo}>
+                                📝 {client.memo}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">—</span>
+                        )}
+                      </td>
+
                       <td className="p-3 border text-gray-500">
                         {client.created_at ? new Date(client.created_at).toLocaleDateString() : '-'}
                       </td>
