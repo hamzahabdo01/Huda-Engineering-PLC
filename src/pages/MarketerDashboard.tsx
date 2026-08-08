@@ -149,6 +149,16 @@ export function MarketerDashboard() {
     return clean.toLowerCase().endsWith('floor') ? clean : `${clean} Floor`;
   };
 
+  // 🛠️ دالة موحدة لتوحيد صيغ الحالات وتفادي مشاكل الحروف الكبيرة/الصغيرة
+  const normalizeStatus = (statusStr?: string): 'New' | 'Qualified' | 'Negotiation' | 'Closed' => {
+    if (!statusStr) return 'New';
+    const s = statusStr.trim().toLowerCase();
+    if (s === 'qualified') return 'Qualified';
+    if (s === 'negotiation') return 'Negotiation';
+    if (s === 'closed') return 'Closed';
+    return 'New';
+  };
+
   // 1️⃣ Check Active Session & Handle Recovery
   useEffect(() => {
     fetchProjects();
@@ -558,7 +568,7 @@ export function MarketerDashboard() {
     setMemo('');
   };
 
-  // ✏️ إرجاع بيانات الـ Lead للحقول للتعديل
+  // ✏️ إرجاع بيانات الـ Lead للحقول للتعديل مع توحيد الحالة
   const handleEditLead = (lead: Lead) => {
     setEditingLeadId(lead.id);
     setClientName(lead.name || '');
@@ -575,7 +585,10 @@ export function MarketerDashboard() {
     setClientPhone(phoneNum);
 
     setClientSource(lead.source || 'Facebook boost');
-    setActionStatus((lead.status as any) || 'New');
+    
+    // 💡 توحيد الحالة لضمان ظهور الخيار الصحيح في Dropdown
+    setActionStatus(normalizeStatus(lead.status));
+
     setTotalPayment(lead.total_payment ? lead.total_payment.toString() : '');
     setInstallmentPlan(lead.installment_plan || '');
     setMemo(lead.memo || '');
@@ -644,7 +657,7 @@ export function MarketerDashboard() {
     }
   };
 
-// 🟢 معالجة الحفظ والتحديث مع ضمان تحديث الـ State الفوري
+  // 🟢 معالجة الحفظ والتحديث مع توحيد الحالة وتحديث הـ State الفوري
   const handleSaveLeadWithAction = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
@@ -659,10 +672,13 @@ export function MarketerDashboard() {
       return;
     }
 
+    // 💡 توحيد الحالة لمنع حفظها بصيغة غير متطابقة
+    const targetStatus = normalizeStatus(actionStatus);
+
     // 🔴 التحقق من اختيار وحدة عند تحويل الحالة إلى Qualified أو غيرها
-    if (actionStatus !== 'New' && selectedUnits.length === 0) {
+    if (targetStatus !== 'New' && selectedUnits.length === 0) {
       alert(
-        `⚠️ To change status to "${actionStatus}", please select at least one available GREEN unit from the inventory table first!`
+        `⚠️ To change status to "${targetStatus}", please select at least one available GREEN unit from the inventory table first!`
       );
       return;
     }
@@ -680,10 +696,10 @@ export function MarketerDashboard() {
       project_id: selectedProjectId,
       marketer_id: currentMarketer?.id,
       marketer_name: currentMarketer?.name,
-      status: actionStatus,
-      total_payment: actionStatus === 'Negotiation' && totalPayment ? parseFloat(totalPayment) : null,
-      installment_plan: actionStatus === 'Negotiation' && installmentPlan ? installmentPlan : null,
-      memo: actionStatus === 'Negotiation' && memo ? memo : null,
+      status: targetStatus,
+      total_payment: targetStatus === 'Negotiation' && totalPayment ? parseFloat(totalPayment) : null,
+      installment_plan: targetStatus === 'Negotiation' && installmentPlan ? installmentPlan : null,
+      memo: targetStatus === 'Negotiation' && memo ? memo : null,
     };
 
     try {
@@ -724,7 +740,7 @@ export function MarketerDashboard() {
       }
 
       // 3️⃣ تحويل حالة الوحدات في الماتريكس إلى reserved إذا تم اختيار وحدات
-      if (selectedUnits.length > 0 && actionStatus !== 'New') {
+      if (selectedUnits.length > 0 && targetStatus !== 'New') {
         for (const unit of selectedUnits) {
           const { error: matrixError } = await supabase.from('srm_matrix_cells').upsert(
             {
@@ -744,17 +760,20 @@ export function MarketerDashboard() {
         await fetchMatrixData(selectedProjectId);
       }
 
-      alert(`✅ Lead successfully ${editingLeadId ? 'updated' : 'saved'} as "${actionStatus}"!`);
+      alert(`✅ Lead successfully ${editingLeadId ? 'updated' : 'saved'} as "${targetStatus}"!`);
+      
+      // التبديل التلقائي لتبويب الحالة الجديدة ورؤية النتيجة فوراً
+      setLeadTab(targetStatus);
       resetForm();
     } catch (err: any) {
       alert(`❌ Unexpected Error: ${err.message}`);
     }
   };
 
-  // تصفية العملاء حسب التبويب المحدد
+  // تصفية العملاء حسب التبويب المحدد مع توحيد الحالة
   const filteredLeads = leadTab === 'All'
     ? leads
-    : leads.filter((l) => (l.status || '').toLowerCase() === leadTab.toLowerCase());
+    : leads.filter((l) => normalizeStatus(l.status) === leadTab);
 
   if (loadingUser) {
     return (
@@ -1249,7 +1268,7 @@ export function MarketerDashboard() {
                   <select
                     value={actionStatus}
                     onChange={(e: any) => {
-                      setActionStatus(e.target.value);
+                      setActionStatus(normalizeStatus(e.target.value));
                       if (e.target.value === 'New') {
                         setSelectedUnits([]);
                       }
@@ -1447,7 +1466,7 @@ export function MarketerDashboard() {
                 {(['All', 'New', 'Qualified', 'Negotiation', 'Closed'] as const).map((tab) => {
                   const count = tab === 'All'
                     ? leads.length
-                    : leads.filter((l) => (l.status || '').toLowerCase() === tab.toLowerCase()).length;
+                    : leads.filter((l) => normalizeStatus(l.status) === tab).length;
 
                   return (
                     <button
@@ -1472,6 +1491,7 @@ export function MarketerDashboard() {
                 <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                   {filteredLeads.map((lead) => {
                     const matchedProj = projects.find((p) => p.id === lead.project_id) || selectedProject;
+                    const normalizedLeadStatus = normalizeStatus(lead.status);
 
                     return (
                       <div
@@ -1488,21 +1508,19 @@ export function MarketerDashboard() {
                             <p className="text-gray-500 font-mono text-[11px]">{lead.phone}</p>
                           </div>
                           
-                          {/* 🟢 DYNAMIC STATUS BADGE */}
+                          {/* 🟢 DYNAMIC STATUS BADGE (Normalized) */}
                           <span
                             className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
-                              lead.status === 'New'
+                              normalizedLeadStatus === 'New'
                                 ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                : lead.status === 'Qualified'
+                                : normalizedLeadStatus === 'Qualified'
                                 ? 'bg-amber-100 text-amber-900 border border-amber-200'
-                                : lead.status === 'Negotiation'
+                                : normalizedLeadStatus === 'Negotiation'
                                 ? 'bg-indigo-100 text-indigo-900 border border-indigo-200'
-                                : lead.status === 'Closed'
-                                ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
-                                : 'bg-gray-200 text-gray-800'
+                                : 'bg-emerald-100 text-emerald-900 border border-emerald-200'
                             }`}
                           >
-                            {lead.status}
+                            {normalizedLeadStatus}
                           </span>
                         </div>
 
@@ -1525,7 +1543,7 @@ export function MarketerDashboard() {
                           </p>
                         )}
 
-                        {lead.status === 'Negotiation' && (
+                        {normalizedLeadStatus === 'Negotiation' && (
                           <div className="mt-1 p-2 bg-white rounded border border-gray-200 text-[11px] space-y-0.5">
                             {lead.total_payment && (
                               <p>
