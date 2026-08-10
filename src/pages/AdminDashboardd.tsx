@@ -630,44 +630,11 @@ export function AdminDashboardd() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="font-bold text-blue-900 text-sm mb-3">🏢 1. Add New Project</h2>
-                <form onSubmit={handleCreateProject} className="space-y-3">
-                  <div>
-                    <label className="block text-[11px] font-medium text-gray-700 mb-1">Project Name *</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Imperial Plaza"
-                      value={newProjName}
-                      onChange={(e) => setNewProjName(e.target.value)}
-                      className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-gray-700 mb-1">Subtitle / Sub-Header</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. BOLE 24 AROUND IMPERIAL FEB,2026"
-                      value={newProjSubtitle}
-                      onChange={(e) => setNewProjSubtitle(e.target.value)}
-                      className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs transition"
-                  >
-                    + Create Project
-                  </button>
-                </form>
-              </div>
+
 
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                 <h2 className="font-bold text-gray-800 text-sm mb-1">
-                  📐 2. Add Floors to [{selectedProject?.name || selectedProject?.title}]
+                  📐 1. Add Floors to [{selectedProject?.name || selectedProject?.title}]
                 </h2>
                 <form onSubmit={handleAddFloors} className="space-y-3 mt-3">
                   <div className="grid grid-cols-2 gap-2">
@@ -708,7 +675,7 @@ export function AdminDashboardd() {
               </div>
 
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="font-bold text-gray-800 text-sm mb-3">🏠 3. Add House Type & Pricing</h2>
+                <h2 className="font-bold text-gray-800 text-sm mb-3">🏠 2. Add House Type & Pricing</h2>
                 <form onSubmit={handleAddUnitType} className="space-y-3">
                   <div>
                     <label className="block text-[11px] font-medium text-gray-700 mb-1">House Title *</label>
