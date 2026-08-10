@@ -83,6 +83,9 @@ export function AdminDashboardd() {
   const [marketerAccounts, setMarketerAccounts] = useState<MarketerAccount[]>([]);
   const [marketersFetchError, setMarketersFetchError] = useState<string | null>(null);
 
+  // State for filtering clients by marketer name
+  const [selectedMarketerFilter, setSelectedMarketerFilter] = useState<string>('all');
+
   const [loading, setLoading] = useState<boolean>(true);
 
   // Floor Form States
@@ -484,6 +487,22 @@ export function AdminDashboardd() {
     handleExplicitStatusChange(customCellText.trim());
   };
 
+  // Extract unique marketer names from accounts and leads
+  const marketerOptions = Array.from(
+    new Set([
+      ...marketerAccounts.map((m) => m.name).filter(Boolean),
+      ...marketerClients.map((c) => c.marketer_name || c.marketerName || '').filter(Boolean),
+    ])
+  );
+
+  // Filter clients based on selected marketer
+  const filteredClients =
+    selectedMarketerFilter === 'all'
+      ? marketerClients
+      : marketerClients.filter(
+          (c) => (c.marketer_name || c.marketerName) === selectedMarketerFilter
+        );
+
   // Stats
   const totalCells = floors.length * unitTypes.length;
   let availableCount = 0;
@@ -560,7 +579,7 @@ export function AdminDashboardd() {
             activeTab === 'clients' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
           }`}
         >
-          👥 Marketer Clients ({marketerClients.length})
+          👥 Marketers & Clients ({marketerClients.length})
         </button>
         <button
           onClick={() => setActiveTab('marketers')}
@@ -982,10 +1001,38 @@ export function AdminDashboardd() {
         </div>
       )}
 
-      {/* TAB 3: MARKETER CLIENTS LIST */}
+      {/* TAB 3: MARKETERS & CLIENTS FILTER */}
       {activeTab === 'clients' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">👥 Marketer Registered Clients</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">👥 Marketer Registered Clients</h2>
+              <p className="text-xs text-gray-500">Filter clients by selecting a specific marketer</p>
+            </div>
+
+            {/* Marketer Selector Dropdown */}
+            <div className="flex items-center gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-300">
+              <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Select Marketer:</label>
+              <select
+                value={selectedMarketerFilter}
+                onChange={(e) => setSelectedMarketerFilter(e.target.value)}
+                className="p-2 bg-white border border-gray-300 font-bold text-gray-800 text-xs rounded-md outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="all">-- All Marketers ({marketerClients.length} clients) --</option>
+                {marketerOptions.map((name) => {
+                  const count = marketerClients.filter(
+                    (c) => (c.marketer_name || c.marketerName) === name
+                  ).length;
+                  return (
+                    <option key={name} value={name}>
+                      👤 {name} ({count} clients)
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border border-gray-200">
               <thead className="bg-gray-100 text-gray-700 uppercase font-bold">
@@ -1001,14 +1048,16 @@ export function AdminDashboardd() {
                 </tr>
               </thead>
               <tbody>
-                {marketerClients.length === 0 ? (
+                {filteredClients.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-4 text-center text-gray-500 font-semibold">
-                      No client leads found.
+                    <td colSpan={8} className="p-6 text-center text-gray-500 font-semibold">
+                      {selectedMarketerFilter === 'all'
+                        ? 'No client leads found.'
+                        : `No client leads found for marketer "${selectedMarketerFilter}".`}
                     </td>
                   </tr>
                 ) : (
-                  marketerClients.map((client) => (
+                  filteredClients.map((client) => (
                     <tr key={client.id} className="border-b hover:bg-gray-50">
                       <td className="p-3 border font-bold text-blue-800">
                         {client.marketer_name || client.marketerName || 'Unknown'}
