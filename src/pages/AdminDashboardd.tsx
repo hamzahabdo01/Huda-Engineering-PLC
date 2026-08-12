@@ -132,42 +132,41 @@ export function AdminDashboardd() {
   }, []);
 
   // 2. Fetch Project Specific Data
-useEffect(() => {
-  if (!selectedProjectId) return;
+  useEffect(() => {
+    if (!selectedProjectId) return;
 
-  // Move function definition inside the hook
-  const fetchProjectDetails = async (projectId: string) => {
-    setLoading(true);
-    await Promise.all([
-      fetchFloors(projectId),
-      fetchUnitTypes(projectId),
-      fetchMatrixData(projectId),
-    ]);
-    setLoading(false);
-  };
+    const fetchProjectDetails = async (projectId: string) => {
+      setLoading(true);
+      await Promise.all([
+        fetchFloors(projectId),
+        fetchUnitTypes(projectId),
+        fetchMatrixData(projectId),
+      ]);
+      setLoading(false);
+    };
 
-  fetchProjectDetails(selectedProjectId);
+    fetchProjectDetails(selectedProjectId);
 
-  const channel = supabase
-    .channel('schema-db-changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'srm_matrix_cells',
-        filter: `project_id=eq.${selectedProjectId}`,
-      },
-      () => {
-        fetchMatrixData(selectedProjectId);
-      }
-    )
-    .subscribe();
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'srm_matrix_cells',
+          filter: `project_id=eq.${selectedProjectId}`,
+        },
+        () => {
+          fetchMatrixData(selectedProjectId);
+        }
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [selectedProjectId]); // ✅ Warning resolved!
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedProjectId]);
 
   // --- Supabase API Calls ---
 
@@ -180,16 +179,6 @@ useEffect(() => {
       setProjects(data);
       setSelectedProjectId(data[0].id);
     }
-    setLoading(false);
-  };
-
-  const fetchProjectDetails = async (projectId: string) => {
-    setLoading(true);
-    await Promise.all([
-      fetchFloors(projectId),
-      fetchUnitTypes(projectId),
-      fetchMatrixData(projectId),
-    ]);
     setLoading(false);
   };
 
@@ -1051,6 +1040,7 @@ useEffect(() => {
                   <th className="p-3 border">Marketer Name</th>
                   <th className="p-3 border">Client Name</th>
                   <th className="p-3 border">Phone</th>
+                  <th className="p-3 border">Project Name</th>
                   <th className="p-3 border">Unit / Details</th>
                   <th className="p-3 border">Source</th>
                   <th className="p-3 border">Status</th>
@@ -1061,7 +1051,7 @@ useEffect(() => {
               <tbody>
                 {filteredClients.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-gray-500 font-semibold">
+                    <td colSpan={9} className="p-6 text-center text-gray-500 font-semibold">
                       {selectedMarketerFilter === 'all'
                         ? 'No client leads found.'
                         : `No client leads found for marketer "${selectedMarketerFilter}".`}
@@ -1077,6 +1067,9 @@ useEffect(() => {
                         {client.name || client.client_name}
                       </td>
                       <td className="p-3 border">{client.phone}</td>
+                      <td className="p-3 border font-semibold text-gray-800">
+                        {client.project_name || '-'}
+                      </td>
                       <td className="p-3 border font-medium text-amber-900">
                         {client.apartment_id || client.apartmentId || '-'}
                       </td>
