@@ -324,7 +324,7 @@ export function MarketerDashboard() {
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
-    } fontally {
+    } finally {
       setLoadingUser(false);
     }
   }, [fetchLeadsForMarketer]);
