@@ -241,7 +241,6 @@ export function AdminDashboardd() {
       }));
       setMarketerClients(formattedData);
     } else if (error) {
-      // محاولة بديلة للجلب العادي إذا لم تكن العلاقات محددة بـ foreign keys في قاعدة البيانات
       const { data: rawData } = await supabase
         .from('leads')
         .select('*')
@@ -502,7 +501,6 @@ export function AdminDashboardd() {
     handleExplicitStatusChange(customCellText.trim());
   };
 
-  // ✅ دالة ذكية لإرجاع اسم المشروع للعميل بشكل موثوق
   const getProjectName = (client: MarketerClient) => {
     if (client.project_name && client.project_name !== '-') {
       return client.project_name;
@@ -514,7 +512,6 @@ export function AdminDashboardd() {
     return '-';
   };
 
-  // Extract unique marketer names from accounts and leads
   const marketerOptions = Array.from(
     new Set([
       ...marketerAccounts.map((m) => m.name).filter(Boolean),
@@ -522,7 +519,6 @@ export function AdminDashboardd() {
     ])
   );
 
-  // Filter clients based on selected marketer
   const filteredClients =
     selectedMarketerFilter === 'all'
       ? marketerClients
@@ -530,7 +526,6 @@ export function AdminDashboardd() {
           (c) => (c.marketer_name || c.marketerName) === selectedMarketerFilter
         );
 
-  // Stats
   const totalCells = floors.length * unitTypes.length;
   let availableCount = 0;
   let reservedCount = 0;
@@ -565,7 +560,6 @@ export function AdminDashboardd() {
           </p>
         </div>
 
-        {/* Project Selector Switcher */}
         <div className="flex items-center gap-2">
           <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Active Project:</label>
           <select
@@ -1037,7 +1031,6 @@ export function AdminDashboardd() {
               <p className="text-xs text-gray-500">Filter clients by selecting a specific marketer</p>
             </div>
 
-            {/* Marketer Selector Dropdown */}
             <div className="flex items-center gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-300">
               <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Select Marketer:</label>
               <select
@@ -1072,7 +1065,7 @@ export function AdminDashboardd() {
                   <th className="p-3 border">Source</th>
                   <th className="p-3 border">Status</th>
                   <th className="p-3 border">Negotiation Details</th>
-                  <th className="p-3 border">Date</th>
+                  <th className="p-3 border">Date & Time</th>
                 </tr>
               </thead>
               <tbody>
@@ -1094,7 +1087,6 @@ export function AdminDashboardd() {
                         {client.name || client.client_name}
                       </td>
                       <td className="p-3 border">{client.phone}</td>
-                      {/* ✅ لعرض اسم المشروع بدقة بدلاً من علامة "-" */}
                       <td className="p-3 border font-semibold text-gray-800">
                         {getProjectName(client)}
                       </td>
@@ -1139,8 +1131,18 @@ export function AdminDashboardd() {
                         )}
                       </td>
 
-                      <td className="p-3 border text-gray-500">
-                        {client.created_at ? new Date(client.created_at).toLocaleDateString() : '-'}
+                      {/* 🕒 عمود التاريخ والساعة المحدث */}
+                      <td className="p-3 border text-gray-500 whitespace-nowrap">
+                        {client.created_at
+                          ? new Date(client.created_at).toLocaleString('en-US', {
+                              year: 'numeric',
+                              month: 'numeric',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true,
+                            })
+                          : '-'}
                       </td>
                     </tr>
                   ))
