@@ -726,6 +726,34 @@ export function MarketerDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // 🗑️ دالة حذف العميل
+  const handleDeleteLead = async (leadId: string) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this client/lead?');
+    if (!confirmDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', leadId);
+
+      if (error) {
+        alert(`❌ Failed to delete lead! Database error: ${error.message}`);
+        return;
+      }
+
+      setLeads((prev) => prev.filter((l) => l.id !== leadId));
+
+      if (editingLeadId === leadId) {
+        resetForm();
+      }
+
+      alert('✅ Client deleted successfully!');
+    } catch (err: any) {
+      alert(`❌ Unexpected Error: ${err.message}`);
+    }
+  };
+
   const handleCellClick = (floorName: string, unitType: UnitType, status: string) => {
     if (actionStatus === 'New') {
       alert('ℹ️ Action Status is set to "New". Unit selection is not required for New leads.');
@@ -1672,7 +1700,15 @@ export function MarketerDashboard() {
                           </div>
                         )}
 
-                        <div className="mt-1 pt-2 border-t border-gray-200 flex justify-end">
+                        {/* 🔘 أزرار التعديل والحذف */}
+                        <div className="mt-1 pt-2 border-t border-gray-200 flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLead(lead.id)}
+                            className="bg-red-100 hover:bg-red-200 text-red-900 border border-red-300 text-[11px] font-bold px-2.5 py-1 rounded transition flex items-center gap-1 shadow-sm"
+                          >
+                            🗑️ Delete
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleEditLead(lead)}
