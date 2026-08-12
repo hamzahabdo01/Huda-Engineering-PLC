@@ -1,5 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
+import {
+  Building2,
+  LayoutGrid,
+  CreditCard,
+  Users,
+  KeyRound,
+  ChevronDown,
+  Layers,
+  Home,
+  Plus,
+  Pencil,
+  Trash2,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Clock3,
+  Check,
+  X,
+  DollarSign,
+  CalendarDays,
+  StickyNote,
+  Tag,
+  AlertTriangle,
+  Loader2,
+  MousePointerClick,
+  Briefcase,
+  Building,
+  Store,
+} from 'lucide-react';
 
 // --- Types & Interfaces ---
 export type UnitStatus =
@@ -156,6 +186,7 @@ export function AdminDashboardd() {
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProjectId]);
 
   // --- Supabase API Calls ---
@@ -524,72 +555,105 @@ export function AdminDashboardd() {
   ).length;
 
   if (loading && projects.length === 0) {
-    return <div className="p-10 text-center font-bold text-gray-600">⏳ Loading Matrix Data...</div>;
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+          <p className="text-sm font-semibold text-slate-500">Loading matrix data…</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen text-left" dir="ltr">
+    <div className="p-4 sm:p-6 bg-slate-50 min-h-screen text-left" dir="ltr">
       {/* Title Bar */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">⚙️ Admin Portal - Real Estate Manager</h1>
-          <p className="text-xs text-gray-500">
-            Manage floors, unit types, pricing & payment plans, and manage marketer requests
-          </p>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-slate-900 flex items-center justify-center shrink-0">
+            <Building2 className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+              Admin Portal <span className="text-slate-400 font-semibold">— Real Estate Manager</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500">
+              Manage floors, unit types, pricing & payment plans, and manage marketer requests
+            </p>
+          </div>
         </div>
 
         {/* Project Selector Switcher */}
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Active Project:</label>
-          <select
-            value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="p-2 bg-blue-50 border border-blue-300 font-bold text-blue-900 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name || p.title || 'Untitled Project'}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <label className="text-xs font-semibold text-slate-500 whitespace-nowrap hidden sm:block">
+            Active Project
+          </label>
+          <div className="relative w-full md:w-auto">
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="w-full appearance-none pl-3 pr-9 py-2.5 bg-indigo-50 border border-indigo-200 font-semibold text-indigo-900 text-sm rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name || p.title || 'Untitled Project'}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-4 h-4 text-indigo-600 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-300 pb-2">
+      <div className="inline-flex flex-wrap gap-1 mb-6 bg-white border border-slate-200 rounded-xl p-1.5 shadow-sm">
         <button
           onClick={() => setActiveTab('matrix')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
-            activeTab === 'matrix' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
+            activeTab === 'matrix' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          📊 Matrix & Floors Stock
+          <LayoutGrid className="w-4 h-4" />
+          Matrix &amp; Floors Stock
         </button>
         <button
           onClick={() => setActiveTab('pricing')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
-            activeTab === 'pricing' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
+            activeTab === 'pricing' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          💳 Pricing & Payment Plans
+          <CreditCard className="w-4 h-4" />
+          Pricing &amp; Payment Plans
         </button>
         <button
           onClick={() => setActiveTab('clients')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
-            activeTab === 'clients' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
+            activeTab === 'clients' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          👥 Marketers & Clients ({marketerClients.length})
+          <Users className="w-4 h-4" />
+          Marketers &amp; Clients
+          <span className={`inline-flex items-center justify-center min-w-[20px] px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+            activeTab === 'clients' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+          }`}>
+            {marketerClients.length}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab('marketers')}
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2 ${
-            activeTab === 'marketers' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+          className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
+            activeTab === 'marketers' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          🔑 Marketers & Approvals ({marketerAccounts.length})
+          <KeyRound className="w-4 h-4" />
+          Marketers &amp; Approvals
+          <span className={`inline-flex items-center justify-center min-w-[20px] px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+            activeTab === 'marketers' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+          }`}>
+            {marketerAccounts.length}
+          </span>
           {pendingMarketersCount > 0 && (
-            <span className="bg-amber-500 text-black text-[10px] px-2 py-0.5 rounded-full font-black animate-pulse">
+            <span className="bg-amber-400 text-slate-900 text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">
               {pendingMarketersCount} Pending
             </span>
           )}
@@ -599,35 +663,58 @@ export function AdminDashboardd() {
       {/* TAB 1: MATRIX & FLOORS STOCK */}
       {activeTab === 'matrix' && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
-              <p className="text-gray-500 text-xs font-semibold">Total Matrix Units</p>
-              <p className="text-2xl font-bold text-gray-800">{totalCells}</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex items-start justify-between">
+              <div>
+                <p className="text-slate-500 text-[11px] font-semibold uppercase tracking-wide">Total Matrix Units</p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 tabular-nums">{totalCells}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                <LayoutGrid className="w-5 h-5 text-slate-600" />
+              </div>
             </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-emerald-500">
-              <p className="text-emerald-600 text-xs font-semibold">🟢 Available</p>
-              <p className="text-2xl font-bold text-emerald-700">{availableCount}</p>
+            <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex items-start justify-between">
+              <div>
+                <p className="text-emerald-600 text-[11px] font-semibold uppercase tracking-wide">Available</p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 tabular-nums">{availableCount}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              </div>
             </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
-              <p className="text-amber-600 text-xs font-semibold">🟡 Reserved</p>
-              <p className="text-2xl font-bold text-amber-700">{reservedCount}</p>
+            <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex items-start justify-between">
+              <div>
+                <p className="text-amber-600 text-[11px] font-semibold uppercase tracking-wide">Reserved</p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 tabular-nums">{reservedCount}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                <Clock3 className="w-5 h-5 text-amber-600" />
+              </div>
             </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500">
-              <p className="text-red-600 text-xs font-semibold">🔴 Sold / Unavailable</p>
-              <p className="text-2xl font-bold text-red-700">{unavailableCount}</p>
+            <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex items-start justify-between">
+              <div>
+                <p className="text-rose-600 text-[11px] font-semibold uppercase tracking-wide">Sold / Unavailable</p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 tabular-nums">{unavailableCount}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+                <XCircle className="w-5 h-5 text-rose-600" />
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="font-bold text-gray-800 text-sm mb-1">
-                  📐 1. Add Floors to [{selectedProject?.name || selectedProject?.title}]
-                </h2>
-                <form onSubmit={handleAddFloors} className="space-y-3 mt-3">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Layers className="w-4 h-4 text-slate-500" />
+                  <h2 className="font-bold text-slate-800 text-sm">
+                    Add Floors <span className="font-normal text-slate-400">to {selectedProject?.name || selectedProject?.title}</span>
+                  </h2>
+                </div>
+                <form onSubmit={handleAddFloors} className="space-y-3">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-600 mb-1">Single Floor Name</label>
+                      <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1">Single Floor Name</label>
                       <input
                         type="text"
                         placeholder="e.g. Ground / First"
@@ -636,11 +723,11 @@ export function AdminDashboardd() {
                           setNewFloorName(e.target.value);
                           if (e.target.value) setTypicalFloorCount('');
                         }}
-                        className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full p-2 border border-slate-200 bg-slate-50 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-blue-700 mb-1">Typical Count</label>
+                      <label className="block text-[10px] font-semibold text-indigo-600 uppercase tracking-wide mb-1">Typical Count</label>
                       <input
                         type="number"
                         placeholder="e.g. 10"
@@ -649,111 +736,119 @@ export function AdminDashboardd() {
                           setTypicalFloorCount(e.target.value ? Number(e.target.value) : '');
                           if (e.target.value) setNewFloorName('');
                         }}
-                        className="w-full p-2 border border-blue-400 bg-blue-50 rounded-lg text-xs outline-none focus:ring-1 focus:ring-blue-500 font-bold"
+                        className="w-full p-2 border border-indigo-200 bg-indigo-50 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
                       />
                     </div>
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-gray-800 hover:bg-black text-white font-bold py-2 rounded-lg text-xs transition"
+                    className="w-full inline-flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg text-xs transition"
                   >
-                    + {typicalFloorCount ? `Generate ${typicalFloorCount} Typical Floors` : 'Add Single Floor'}
+                    <Plus className="w-3.5 h-3.5" />
+                    {typicalFloorCount ? `Generate ${typicalFloorCount} Typical Floors` : 'Add Single Floor'}
                   </button>
                 </form>
               </div>
 
-              <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="font-bold text-gray-800 text-sm mb-3">🏠 2. Add House Type & Pricing</h2>
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Home className="w-4 h-4 text-slate-500" />
+                  <h2 className="font-bold text-slate-800 text-sm">Add House Type &amp; Pricing</h2>
+                </div>
                 <form onSubmit={handleAddUnitType} className="space-y-3">
                   <div>
-                    <label className="block text-[11px] font-medium text-gray-700 mb-1">House Title *</label>
+                    <label className="block text-[11px] font-medium text-slate-600 mb-1">House Title *</label>
                     <input
                       type="text"
                       placeholder="e.g. 3 Bed Room"
                       value={newUnitTitle}
                       onChange={(e) => setNewUnitTitle(e.target.value)}
-                      className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full p-2 border border-slate-200 bg-slate-50 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
                       required
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[11px] font-medium text-gray-700 mb-1">Area (m²) *</label>
+                      <label className="block text-[11px] font-medium text-slate-600 mb-1">Area (m²) *</label>
                       <input
                         type="number"
                         placeholder="e.g. 120"
                         value={newUnitArea}
                         onChange={(e) => setNewUnitArea(e.target.value ? Number(e.target.value) : '')}
-                        className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full p-2 border border-slate-200 bg-slate-50 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-medium text-gray-700 mb-1">Total Price ($)</label>
+                      <label className="block text-[11px] font-medium text-slate-600 mb-1">Total Price ($)</label>
                       <input
                         type="number"
                         placeholder="e.g. 150000"
                         value={newUnitPrice}
                         onChange={(e) => setNewUnitPrice(e.target.value ? Number(e.target.value) : '')}
-                        className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full p-2 border border-slate-200 bg-slate-50 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
                       />
                     </div>
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs transition"
+                    className="w-full inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-xs transition"
                   >
-                    + Add House Type Column
+                    <Plus className="w-3.5 h-3.5" />
+                    Add House Type Column
                   </button>
                 </form>
               </div>
 
               {/* Selected Cell Panel */}
               {activeCellKey && (
-                <div className="bg-amber-50 p-4 rounded-xl border border-amber-300 shadow-sm space-y-3">
-                  <p className="text-xs font-bold text-amber-900">
-                    Selected Cell: <span className="underline">{activeCellKey.replace('__', ' / ')}</span>
-                  </p>
-                  
+                <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-200 shadow-sm space-y-3">
+                  <div className="flex items-center gap-1.5">
+                    <MousePointerClick className="w-3.5 h-3.5 text-indigo-600" />
+                    <p className="text-xs font-bold text-indigo-900">
+                      Selected Cell: <span className="underline decoration-indigo-400">{activeCellKey.replace('__', ' / ')}</span>
+                    </p>
+                  </div>
+
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleExplicitStatusChange('available')}
-                      className="bg-[#00b050] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                      className="inline-flex items-center justify-center gap-1 bg-emerald-500 text-white py-1.5 rounded-lg text-[10px] font-bold shadow-sm hover:bg-emerald-600 transition"
                     >
-                      🟢 Available
+                      <Check className="w-3 h-3" /> Available
                     </button>
                     <button
                       onClick={() => handleExplicitStatusChange('reserved')}
-                      className="bg-[#f2b827] text-black py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                      className="inline-flex items-center justify-center gap-1 bg-amber-400 text-slate-900 py-1.5 rounded-lg text-[10px] font-bold shadow-sm hover:bg-amber-500 transition"
                     >
-                      🟡 Reserved
+                      <Clock className="w-3 h-3" /> Reserved
                     </button>
                     <button
                       onClick={() => handleExplicitStatusChange('unavailable')}
-                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                      className="inline-flex items-center justify-center gap-1 bg-rose-500 text-white py-1.5 rounded-lg text-[10px] font-bold shadow-sm hover:bg-rose-600 transition"
                     >
-                      🔴 Sold/Off
+                      <X className="w-3 h-3" /> Sold/Off
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 pt-1 border-t border-amber-200">
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-indigo-200">
                     <button
                       onClick={() => handleExplicitStatusChange('Business')}
-                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                      className="inline-flex items-center justify-center gap-1 bg-slate-700 text-white py-1.5 rounded-lg text-[10px] font-bold shadow-sm hover:bg-slate-800 transition"
                     >
-                      🏢 Business
+                      <Briefcase className="w-3 h-3" /> Business
                     </button>
                     <button
                       onClick={() => handleExplicitStatusChange('office')}
-                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                      className="inline-flex items-center justify-center gap-1 bg-slate-700 text-white py-1.5 rounded-lg text-[10px] font-bold shadow-sm hover:bg-slate-800 transition"
                     >
-                      💼 Office
+                      <Building className="w-3 h-3" /> Office
                     </button>
                     <button
                       onClick={() => handleExplicitStatusChange('Shops')}
-                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                      className="inline-flex items-center justify-center gap-1 bg-slate-700 text-white py-1.5 rounded-lg text-[10px] font-bold shadow-sm hover:bg-slate-800 transition"
                     >
-                      🛍️ Shops
+                      <Store className="w-3 h-3" /> Shops
                     </button>
                   </div>
 
@@ -763,11 +858,11 @@ export function AdminDashboardd() {
                       placeholder="Or enter custom text (e.g. Gym)"
                       value={customCellText}
                       onChange={(e) => setCustomCellText(e.target.value)}
-                      className="flex-1 p-1.5 text-xs border border-amber-400 rounded outline-none focus:ring-1 focus:ring-amber-600 bg-white"
+                      className="flex-1 p-1.5 text-xs border border-indigo-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                     />
                     <button
                       type="submit"
-                      className="bg-amber-800 text-white px-3 py-1 rounded text-xs font-bold hover:bg-amber-900 transition"
+                      className="bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-indigo-800 transition"
                     >
                       Apply Text
                     </button>
@@ -777,31 +872,47 @@ export function AdminDashboardd() {
             </div>
 
             {/* Matrix Render Table */}
-            <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
-              <div className="flex flex-col items-center justify-center mb-6">
-                <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
-                  AVAILABLE STOCKS (ADMIN MATRIX)
-                </div>
-                <div className="bg-[#00474b] text-white text-xs sm:text-sm font-semibold uppercase px-6 py-1.5 rounded-md mt-2 shadow-sm">
-                  {selectedProject?.subtitle || 'PROJECT DETAILS'}
+            <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-5 pb-4 border-b border-slate-100">
+                <div className="flex flex-col items-center justify-center gap-2 text-center">
+                  <div className="inline-flex items-center gap-2 bg-slate-900 text-white text-sm sm:text-base font-bold uppercase px-6 py-2 rounded-lg tracking-wide">
+                    <LayoutGrid className="w-4 h-4" />
+                    Available Stocks — Admin Matrix
+                  </div>
+                  <p className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wide">
+                    {selectedProject?.subtitle || 'Project Details'}
+                  </p>
+                  <div className="flex items-center gap-4 pt-1">
+                    <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Available
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> Reserved
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Sold / Off
+                    </span>
+                  </div>
                 </div>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-center text-xs font-sans">
                   <thead>
-                    <tr className="bg-[#00474b] text-white">
-                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[90px]">Floor</th>
-                      <th colSpan={unitTypes.length || 1} className="border border-gray-400 p-1.5 font-bold italic text-sm">
+                    <tr className="bg-slate-900 text-white">
+                      <th rowSpan={2} className="sticky left-0 z-10 bg-slate-900 border border-slate-700 p-2 font-bold min-w-[100px]">
+                        Floor
+                      </th>
+                      <th colSpan={unitTypes.length || 1} className="border border-slate-700 p-1.5 font-bold text-sm">
                         Type of Houses
                       </th>
-                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[80px]">Remark</th>
+                      <th rowSpan={2} className="border border-slate-700 p-2 font-bold min-w-[80px]">Remark</th>
                     </tr>
-                    <tr className="bg-[#00474b] text-white">
+                    <tr className="bg-slate-800 text-white">
                       {unitTypes.map((ut) => (
-                        <th key={ut.id} className="border border-gray-400 p-2 font-semibold">
+                        <th key={ut.id} className="border border-slate-700 p-2 font-semibold min-w-[90px]">
                           {ut.title} <br />
-                          <span className="font-normal text-[11px]">[area={ut.area}]</span>
+                          <span className="font-normal text-[10px] text-slate-300">area = {ut.area}m²</span>
                         </th>
                       ))}
                     </tr>
@@ -809,7 +920,7 @@ export function AdminDashboardd() {
                   <tbody>
                     {floors.map((f) => (
                       <tr key={f.id}>
-                        <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
+                        <td className="sticky left-0 z-10 bg-slate-50 border border-slate-200 text-slate-800 font-bold p-2 text-xs">
                           {f.floor_name}
                         </td>
                         {unitTypes.map((ut) => {
@@ -817,38 +928,40 @@ export function AdminDashboardd() {
                           const status = matrix[key] || 'unavailable';
                           const isActive = activeCellKey === key;
 
-                          let bgClass = 'bg-[#ff0000] text-white';
-                          let cellContent: React.ReactNode = null;
+                          let bgClass = 'bg-rose-500 hover:bg-rose-600 text-white';
+                          let cellContent: React.ReactNode = <X className="w-3.5 h-3.5 mx-auto" />;
 
                           if (status === 'available') {
-                            bgClass = 'bg-[#00b050] text-black';
-                            cellContent = '🟢';
+                            bgClass = 'bg-emerald-500 hover:bg-emerald-600 text-white';
+                            cellContent = <Check className="w-3.5 h-3.5 mx-auto" />;
                           } else if (status === 'reserved') {
-                            bgClass = 'bg-[#f2b827] text-black';
-                            cellContent = '🟡';
+                            bgClass = 'bg-amber-400 hover:bg-amber-500 text-slate-900';
+                            cellContent = <Clock className="w-3.5 h-3.5 mx-auto" />;
                           } else if (status === 'unavailable') {
-                            bgClass = 'bg-[#ff0000] text-white';
-                            cellContent = '🔴';
+                            bgClass = 'bg-rose-500 hover:bg-rose-600 text-white';
+                            cellContent = <X className="w-3.5 h-3.5 mx-auto" />;
                           } else {
-                            bgClass = 'bg-[#ff0000] text-white font-extrabold';
-                            cellContent = status;
+                            bgClass = 'bg-slate-700 hover:bg-slate-800 text-white font-extrabold';
+                            cellContent = (
+                              <span className="text-[10px] uppercase tracking-wider font-black break-words">
+                                {status}
+                              </span>
+                            );
                           }
 
                           return (
                             <td
                               key={ut.id}
                               onClick={() => handleCellClick(f.floor_name, ut.id)}
-                              className={`border border-black p-2 font-bold transition-all cursor-pointer hover:opacity-80 select-none ${bgClass} ${
-                                isActive ? 'ring-4 ring-blue-600 scale-95 z-10' : ''
+                              className={`border border-slate-200 p-2 font-bold transition-all cursor-pointer select-none ${bgClass} ${
+                                isActive ? 'ring-2 ring-inset ring-indigo-500' : ''
                               }`}
                             >
-                              <span className="text-[11px] uppercase tracking-wider font-black break-words">
-                                {cellContent}
-                              </span>
+                              {cellContent}
                             </td>
                           );
                         })}
-                        <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">-</td>
+                        <td className="border border-slate-200 bg-white text-slate-400 p-1 text-[11px]">—</td>
                       </tr>
                     ))}
                   </tbody>
@@ -861,33 +974,36 @@ export function AdminDashboardd() {
 
       {/* TAB 2: PRICING & PAYMENT PLAN MANAGER */}
       {activeTab === 'pricing' && (
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
+        <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div className="flex justify-between items-center mb-5">
             <div>
-              <h2 className="text-lg font-bold text-gray-800">
-                💳 Pricing & Payment Plans for [{selectedProject?.name || selectedProject?.title}]
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-indigo-600" />
+                Pricing &amp; Payment Plans
               </h2>
-              <p className="text-xs text-gray-500">Edit prices, down payments, and installment duration dynamically</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {selectedProject?.name || selectedProject?.title} — edit prices, down payments, and installment duration dynamically
+              </p>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border border-gray-200">
-              <thead className="bg-gray-800 text-white uppercase font-bold">
-                <tr>
-                  <th className="p-3 border">House Title</th>
-                  <th className="p-3 border">Area (m²)</th>
-                  <th className="p-3 border">Total Price ($)</th>
-                  <th className="p-3 border">Down Payment ($)</th>
-                  <th className="p-3 border">Installment Years</th>
-                  <th className="p-3 border">Est. Monthly Payment</th>
-                  <th className="p-3 border text-center">Actions</th>
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wide">
+                  <th className="p-3 border-b border-slate-200">House Title</th>
+                  <th className="p-3 border-b border-slate-200">Area (m²)</th>
+                  <th className="p-3 border-b border-slate-200">Total Price ($)</th>
+                  <th className="p-3 border-b border-slate-200">Down Payment ($)</th>
+                  <th className="p-3 border-b border-slate-200">Installment Years</th>
+                  <th className="p-3 border-b border-slate-200">Est. Monthly Payment</th>
+                  <th className="p-3 border-b border-slate-200 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {unitTypes.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500 font-semibold">
+                    <td colSpan={7} className="p-8 text-center text-slate-400 font-medium">
                       No unit types found for this project.
                     </td>
                   </tr>
@@ -903,61 +1019,61 @@ export function AdminDashboardd() {
                       const calcMonthly = currentYears > 0 ? Math.round(rem / (currentYears * 12)) : 0;
 
                       return (
-                        <tr key={ut.id} className="bg-blue-50 border-b border-blue-200">
-                          <td className="p-2 border">
+                        <tr key={ut.id} className="bg-indigo-50/70 border-b border-indigo-100">
+                          <td className="p-2 border-b border-indigo-100">
                             <input
                               type="text"
                               value={editUnitForm.title || ''}
                               onChange={(e) => setEditUnitForm({ ...editUnitForm, title: e.target.value })}
-                              className="w-full p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full p-1.5 border border-slate-200 rounded-md text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                             />
                           </td>
-                          <td className="p-2 border">
+                          <td className="p-2 border-b border-indigo-100">
                             <input
                               type="number"
                               value={editUnitForm.area || ''}
                               onChange={(e) => setEditUnitForm({ ...editUnitForm, area: Number(e.target.value) })}
-                              className="w-20 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-20 p-1.5 border border-slate-200 rounded-md text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                             />
                           </td>
-                          <td className="p-2 border">
+                          <td className="p-2 border-b border-indigo-100">
                             <input
                               type="number"
                               value={editUnitForm.total_price || ''}
                               onChange={(e) => setEditUnitForm({ ...editUnitForm, total_price: Number(e.target.value) })}
-                              className="w-28 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500 font-bold text-emerald-700"
+                              className="w-28 p-1.5 border border-slate-200 rounded-md text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-emerald-700 bg-white"
                             />
                           </td>
-                          <td className="p-2 border">
+                          <td className="p-2 border-b border-indigo-100">
                             <input
                               type="number"
                               value={editUnitForm.down_payment || ''}
                               onChange={(e) => setEditUnitForm({ ...editUnitForm, down_payment: Number(e.target.value) })}
-                              className="w-28 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-28 p-1.5 border border-slate-200 rounded-md text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                             />
                           </td>
-                          <td className="p-2 border">
+                          <td className="p-2 border-b border-indigo-100">
                             <input
                               type="number"
                               value={editUnitForm.installment_years || ''}
                               onChange={(e) => setEditUnitForm({ ...editUnitForm, installment_years: Number(e.target.value) })}
-                              className="w-16 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-16 p-1.5 border border-slate-200 rounded-md text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                             />
                           </td>
-                          <td className="p-2 border font-bold text-blue-700">
+                          <td className="p-2 border-b border-indigo-100 font-bold text-indigo-700">
                             ${calcMonthly.toLocaleString()} / mo
                           </td>
-                          <td className="p-2 border text-center">
-                            <div className="flex items-center justify-center gap-1">
+                          <td className="p-2 border-b border-indigo-100 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
                               <button
                                 onClick={() => handleSaveUnitPricing(ut.id)}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[11px]"
+                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md text-[11px] transition"
                               >
                                 Save
                               </button>
                               <button
                                 onClick={handleCancelEdit}
-                                className="px-2.5 py-1 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded text-[11px]"
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-md text-[11px] transition"
                               >
                                 Cancel
                               </button>
@@ -968,26 +1084,26 @@ export function AdminDashboardd() {
                     }
 
                     return (
-                      <tr key={ut.id} className="border-b hover:bg-gray-50">
-                        <td className="p-3 border font-bold">{ut.title}</td>
-                        <td className="p-3 border">{ut.area} m²</td>
-                        <td className="p-3 border font-semibold text-emerald-700">${ut.total_price?.toLocaleString() || 0}</td>
-                        <td className="p-3 border">${ut.down_payment?.toLocaleString() || 0}</td>
-                        <td className="p-3 border">{ut.installment_years || 0} Years</td>
-                        <td className="p-3 border font-bold text-blue-700">${ut.monthly_installment?.toLocaleString() || 0} / mo</td>
-                        <td className="p-3 border text-center">
-                          <div className="flex items-center justify-center gap-2">
+                      <tr key={ut.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                        <td className="p-3 font-bold text-slate-800">{ut.title}</td>
+                        <td className="p-3 text-slate-600">{ut.area} m²</td>
+                        <td className="p-3 font-semibold text-emerald-700">${ut.total_price?.toLocaleString() || 0}</td>
+                        <td className="p-3 text-slate-600">${ut.down_payment?.toLocaleString() || 0}</td>
+                        <td className="p-3 text-slate-600">{ut.installment_years || 0} Years</td>
+                        <td className="p-3 font-bold text-indigo-700">${ut.monthly_installment?.toLocaleString() || 0} / mo</td>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => handleEditUnitClick(ut)}
-                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold text-[11px]"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md font-semibold text-[11px] transition"
                             >
-                              ✏️ Edit
+                              <Pencil className="w-3 h-3" /> Edit
                             </button>
                             <button
                               onClick={() => handleDeleteUnitType(ut.id)}
-                              className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-[11px]"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md font-semibold text-[11px] transition"
                             >
-                              🗑️
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
                         </td>
@@ -1003,54 +1119,60 @@ export function AdminDashboardd() {
 
       {/* TAB 3: MARKETERS & CLIENTS FILTER */}
       {activeTab === 'clients' && (
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
             <div>
-              <h2 className="text-lg font-bold text-gray-800">👥 Marketer Registered Clients</h2>
-              <p className="text-xs text-gray-500">Filter clients by selecting a specific marketer</p>
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-indigo-600" />
+                Marketer Registered Clients
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">Filter clients by selecting a specific marketer</p>
             </div>
 
             {/* Marketer Selector Dropdown */}
-            <div className="flex items-center gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-300">
-              <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Select Marketer:</label>
-              <select
-                value={selectedMarketerFilter}
-                onChange={(e) => setSelectedMarketerFilter(e.target.value)}
-                className="p-2 bg-white border border-gray-300 font-bold text-gray-800 text-xs rounded-md outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              >
-                <option value="all">-- All Marketers ({marketerClients.length} clients) --</option>
-                {marketerOptions.map((name) => {
-                  const count = marketerClients.filter(
-                    (c) => (c.marketer_name || c.marketerName) === name
-                  ).length;
-                  return (
-                    <option key={name} value={name}>
-                      👤 {name} ({count} clients)
-                    </option>
-                  );
-                })}
-              </select>
+            <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+              <label className="text-xs font-semibold text-slate-600 whitespace-nowrap pl-1">Select Marketer:</label>
+              <div className="relative">
+                <select
+                  value={selectedMarketerFilter}
+                  onChange={(e) => setSelectedMarketerFilter(e.target.value)}
+                  className="appearance-none pl-2 pr-7 py-1.5 bg-white border border-slate-200 font-semibold text-slate-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                >
+                  <option value="all">All Marketers ({marketerClients.length} clients)</option>
+                  {marketerOptions.map((name) => {
+                    const count = marketerClients.filter(
+                      (c) => (c.marketer_name || c.marketerName) === name
+                    ).length;
+                    return (
+                      <option key={name} value={name}>
+                        {name} ({count} clients)
+                      </option>
+                    );
+                  })}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border border-gray-200">
-              <thead className="bg-gray-100 text-gray-700 uppercase font-bold">
-                <tr>
-                  <th className="p-3 border">Marketer Name</th>
-                  <th className="p-3 border">Client Name</th>
-                  <th className="p-3 border">Phone</th>
-                  <th className="p-3 border">Unit / Details</th>
-                  <th className="p-3 border">Source</th>
-                  <th className="p-3 border">Status</th>
-                  <th className="p-3 border">Negotiation Details</th>
-                  <th className="p-3 border">Date</th>
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wide">
+                  <th className="p-3 border-b border-slate-200">Marketer Name</th>
+                  <th className="p-3 border-b border-slate-200">Client Name</th>
+                  <th className="p-3 border-b border-slate-200">Phone</th>
+                  <th className="p-3 border-b border-slate-200">Unit / Details</th>
+                  <th className="p-3 border-b border-slate-200">Source</th>
+                  <th className="p-3 border-b border-slate-200">Status</th>
+                  <th className="p-3 border-b border-slate-200">Negotiation Details</th>
+                  <th className="p-3 border-b border-slate-200">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredClients.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-gray-500 font-semibold">
+                    <td colSpan={8} className="p-8 text-center text-slate-400 font-medium">
                       {selectedMarketerFilter === 'all'
                         ? 'No client leads found.'
                         : `No client leads found for marketer "${selectedMarketerFilter}".`}
@@ -1058,23 +1180,24 @@ export function AdminDashboardd() {
                   </tr>
                 ) : (
                   filteredClients.map((client) => (
-                    <tr key={client.id} className="border-b hover:bg-gray-50">
-                      <td className="p-3 border font-bold text-blue-800">
+                    <tr key={client.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                      <td className="p-3 font-bold text-indigo-700">
                         {client.marketer_name || client.marketerName || 'Unknown'}
                       </td>
-                      <td className="p-3 border font-semibold">
+                      <td className="p-3 font-semibold text-slate-800">
                         {client.name || client.client_name}
                       </td>
-                      <td className="p-3 border">{client.phone}</td>
-                      <td className="p-3 border font-medium text-amber-900">
+                      <td className="p-3 text-slate-600">{client.phone}</td>
+                      <td className="p-3 font-medium text-amber-800">
                         {client.apartment_id || client.apartmentId || '-'}
                       </td>
-                      <td className="p-3 border">
-                        <span className="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded text-[10px]">
+                      <td className="p-3">
+                        <span className="inline-flex items-center gap-1 bg-violet-50 text-violet-700 font-semibold px-2 py-0.5 rounded-full text-[10px]">
+                          <Tag className="w-2.5 h-2.5" />
                           {client.source || client.lead_source || 'Direct'}
                         </span>
                       </td>
-                      <td className="p-3 border">
+                      <td className="p-3">
                         <span className={`font-bold px-2.5 py-1 rounded-full text-[10px] ${
                           client.status === 'Negotiation' ? 'bg-orange-100 text-orange-800' :
                           client.status === 'Qualified' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
@@ -1083,31 +1206,34 @@ export function AdminDashboardd() {
                         </span>
                       </td>
 
-                      <td className="p-3 border">
+                      <td className="p-3">
                         {client.total_payment || client.installment_plan || client.memo ? (
-                          <div className="bg-slate-50 p-2 rounded border border-slate-200 space-y-1 min-w-[170px] text-[11px]">
+                          <div className="bg-slate-50 p-2 rounded-lg border border-slate-200 space-y-1 min-w-[170px] text-[11px]">
                             {client.total_payment && (
-                              <div className="font-semibold text-slate-800">
-                                💵 Total: <span className="text-emerald-600">${Number(client.total_payment).toLocaleString()}</span>
+                              <div className="flex items-center gap-1 font-semibold text-slate-700">
+                                <DollarSign className="w-3 h-3 text-emerald-600" />
+                                Total: <span className="text-emerald-600">${Number(client.total_payment).toLocaleString()}</span>
                               </div>
                             )}
                             {client.installment_plan && (
-                              <div className="text-slate-600">
-                                📅 Plan: <span className="font-medium text-slate-700">{client.installment_plan}</span>
+                              <div className="flex items-center gap-1 text-slate-600">
+                                <CalendarDays className="w-3 h-3 text-slate-400" />
+                                Plan: <span className="font-medium text-slate-700">{client.installment_plan}</span>
                               </div>
                             )}
                             {client.memo && (
-                              <div className="text-slate-500 italic truncate max-w-[200px]" title={client.memo}>
-                                📝 {client.memo}
+                              <div className="flex items-center gap-1 text-slate-500 italic truncate max-w-[200px]" title={client.memo}>
+                                <StickyNote className="w-3 h-3 shrink-0 text-slate-400" />
+                                {client.memo}
                               </div>
                             )}
                           </div>
                         ) : (
-                          <span className="text-gray-400 italic">—</span>
+                          <span className="text-slate-300 italic">—</span>
                         )}
                       </td>
 
-                      <td className="p-3 border text-gray-500">
+                      <td className="p-3 text-slate-400">
                         {client.created_at ? new Date(client.created_at).toLocaleDateString() : '-'}
                       </td>
                     </tr>
@@ -1121,41 +1247,48 @@ export function AdminDashboardd() {
 
       {/* TAB 4: MARKETERS & APPROVALS */}
       {activeTab === 'marketers' && (
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
+        <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div className="flex justify-between items-center mb-5">
             <div>
-              <h2 className="text-lg font-bold text-gray-800">🔑 Marketer Registration Approvals</h2>
-              <p className="text-xs text-gray-500">Approve or Reject new marketer signup requests</p>
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-indigo-600" />
+                Marketer Registration Approvals
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">Approve or Reject new marketer signup requests</p>
             </div>
             <button
               onClick={fetchMarketerAccounts}
-              className="px-3 py-1 bg-gray-100 hover:bg-gray-200 border rounded text-xs font-bold text-gray-700 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 transition shadow-sm"
             >
-              🔄 Refresh Requests
+              <RefreshCw className="w-3.5 h-3.5" />
+              Refresh Requests
             </button>
           </div>
 
           {marketersFetchError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-800 text-xs rounded">
-              ⚠️ <strong>Error Loading Data from Supabase:</strong> {marketersFetchError}
+            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div>
+                <strong>Error Loading Data from Supabase:</strong> {marketersFetchError}
+              </div>
             </div>
           )}
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border border-gray-200">
-              <thead className="bg-gray-800 text-white uppercase font-bold">
-                <tr>
-                  <th className="p-3 border">Marketer Name</th>
-                  <th className="p-3 border">Email</th>
-                  <th className="p-3 border">Phone</th>
-                  <th className="p-3 border">Status</th>
-                  <th className="p-3 border text-center">Actions</th>
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wide">
+                  <th className="p-3 border-b border-slate-200">Marketer Name</th>
+                  <th className="p-3 border-b border-slate-200">Email</th>
+                  <th className="p-3 border-b border-slate-200">Phone</th>
+                  <th className="p-3 border-b border-slate-200">Status</th>
+                  <th className="p-3 border-b border-slate-200 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {marketerAccounts.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-4 text-center text-gray-500 font-semibold">
+                    <td colSpan={5} className="p-8 text-center text-slate-400 font-medium">
                       No marketer accounts found in database.
                     </td>
                   </tr>
@@ -1163,33 +1296,52 @@ export function AdminDashboardd() {
                   marketerAccounts.map((marketer) => {
                     const status = marketer.status || 'pending';
                     return (
-                      <tr key={marketer.id} className="border-b hover:bg-gray-50">
-                        <td className="p-3 border font-bold text-gray-800">{marketer.name || 'Unnamed'}</td>
-                        <td className="p-3 border text-gray-600">{marketer.email}</td>
-                        <td className="p-3 border">{marketer.phone || '-'}</td>
-                        <td className="p-3 border">
+                      <tr key={marketer.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                        <td className="p-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">
+                              {(marketer.name || 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <span className="font-bold text-slate-800">{marketer.name || 'Unnamed'}</span>
+                          </div>
+                        </td>
+                        <td className="p-3 text-slate-600">{marketer.email}</td>
+                        <td className="p-3 text-slate-600">{marketer.phone || '-'}</td>
+                        <td className="p-3">
                           <span
-                            className={`px-2 py-1 rounded-full text-[10px] font-extrabold uppercase ${
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
                               status === 'approved'
-                                ? 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-emerald-100 text-emerald-700'
                                 : status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-amber-100 text-amber-800 animate-pulse'
+                                ? 'bg-rose-100 text-rose-700'
+                                : 'bg-amber-100 text-amber-700'
                             }`}
                           >
-                            {status === 'approved' && '✅ Approved'}
-                            {status === 'rejected' && '❌ Rejected'}
-                            {status === 'pending' && '⏳ Pending Approval'}
+                            {status === 'approved' && (
+                              <>
+                                <CheckCircle2 className="w-3 h-3" /> Approved
+                              </>
+                            )}
+                            {status === 'rejected' && (
+                              <>
+                                <XCircle className="w-3 h-3" /> Rejected
+                              </>
+                            )}
+                            {status === 'pending' && (
+                              <>
+                                <Clock3 className="w-3 h-3 animate-pulse" /> Pending Approval
+                              </>
+                            )}
                           </span>
                         </td>
-                        <td className="p-3 border text-center">
-                          <div className="flex items-center justify-center gap-2">
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => handleUpdateMarketerStatus(marketer.id, 'approved')}
                               disabled={status === 'approved'}
-                              className={`px-3 py-1 rounded text-xs font-bold transition ${
+                              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition ${
                                 status === 'approved'
-                                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                   : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                               }`}
                             >
@@ -1198,10 +1350,10 @@ export function AdminDashboardd() {
                             <button
                               onClick={() => handleUpdateMarketerStatus(marketer.id, 'rejected')}
                               disabled={status === 'rejected'}
-                              className={`px-3 py-1 rounded text-xs font-bold transition ${
+                              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition ${
                                 status === 'rejected'
-                                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                  : 'bg-red-600 hover:bg-red-700 text-white'
+                                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                  : 'bg-rose-600 hover:bg-rose-700 text-white'
                               }`}
                             >
                               Reject
