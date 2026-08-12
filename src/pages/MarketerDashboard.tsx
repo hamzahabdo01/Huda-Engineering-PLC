@@ -61,7 +61,7 @@ export interface SelectedUnit {
   details: UnitType;
 }
 
-// قائمة مفاتيح الدول الشهيرة
+// قائمة الدول ومفاتيح الاتصال
 const COUNTRY_CODES = [
   { code: '+251', label: '🇪🇹 Ethiopia (+251)' },
   { code: '+966', label: '🇸🇦 Saudi Arabia (+966)' },
@@ -71,7 +71,103 @@ const COUNTRY_CODES = [
   { code: '+20', label: '🇪🇬 Egypt (+20)' },
   { code: '+1', label: '🇺🇸 USA/Canada (+1)' },
   { code: '+44', label: '🇬🇧 UK (+44)' },
+  { code: '+212', label: '🇲🇦 Morocco (+212)' },
+  { code: '+213', label: '🇩🇿 Algeria (+213)' },
+  { code: '+216', label: '🇹🇳 Tunisia (+216)' },
+  { code: '+249', label: '🇸🇩 Sudan (+249)' },
+  { code: '+962', label: '🇯🇴 Jordan (+962)' },
+  { code: '+961', label: '🇱🇧 Lebanon (+961)' },
+  { code: '+968', label: '🇴🇲 Oman (+968)' },
+  { code: '+973', label: '🇧🇭 Bahrain (+973)' },
+  { code: '+964', label: '🇮🇶 Iraq (+964)' },
+  { code: '+90', label: '🇹🇷 Turkey (+90)' },
+  { code: '+49', label: '🇩🇪 Germany (+49)' },
+  { code: '+33', label: '🇫🇷 France (+33)' },
+  { code: '+39', label: '🇮🇹 Italy (+39)' },
+  { code: '+86', label: '🇨🇳 China (+86)' },
+  { code: '+91', label: '🇮🇳 India (+91)' },
 ];
+
+// 🔍 مكوّن البحث لاختيار الدولة (Searchable Dropdown Component)
+function SearchableCountrySelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (code: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const selected = COUNTRY_CODES.find((c) => c.code === value) || COUNTRY_CODES[0];
+
+  const filtered = COUNTRY_CODES.filter(
+    (c) =>
+      c.label.toLowerCase().includes(search.toLowerCase()) ||
+      c.code.includes(search)
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-2.5 border border-gray-300 rounded-xl text-xs bg-gray-50 font-semibold text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none flex items-center justify-between min-w-[130px] shadow-sm"
+      >
+        <span className="truncate">{selected.label}</span>
+        <span className="ml-1 text-[10px] text-gray-500">▼</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-2 max-h-60 overflow-y-auto left-0">
+          <input
+            type="text"
+            placeholder="🔍 Search country or code..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg text-xs mb-2 outline-none focus:ring-2 focus:ring-blue-500"
+            autoFocus
+          />
+          <div className="space-y-1">
+            {filtered.length > 0 ? (
+              filtered.map((c) => (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => {
+                    onChange(c.code);
+                    setIsOpen(false);
+                    setSearch('');
+                  }}
+                  className={`w-full text-left px-2.5 py-1.5 text-xs rounded-lg transition ${
+                    value === c.code
+                      ? 'bg-blue-600 text-white font-bold'
+                      : 'text-gray-700 hover:bg-blue-50'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))
+            ) : (
+              <div className="text-xs text-gray-400 p-2 text-center">No country found</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function MarketerDashboard() {
   // --- Auth & User State ---
@@ -98,7 +194,7 @@ export function MarketerDashboard() {
 
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
-  const [signupCountryCode, setSignupCountryCode] = useState('+251');
+  const [signupCountryCode, setSignupCountryCode] = useState('+251'); // الافتراضي Ethiopia
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
@@ -133,7 +229,7 @@ export function MarketerDashboard() {
   // Leads State & Country Code State
   const [leads, setLeads] = useState<Lead[]>([]);
   const [clientName, setClientName] = useState('');
-  const [countryCode, setCountryCode] = useState('+251');
+  const [countryCode, setCountryCode] = useState('+251'); // الافتراضي Ethiopia
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
 
@@ -143,14 +239,14 @@ export function MarketerDashboard() {
   // ✏️ Edit Mode State
   const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
 
-  // 🛠️ دالة لتنسيق اسم الطابق وتفادي تكرار كلمة Floor
+  // 🛠️ دالة لتنسيق اسم الطابق
   const formatFloorName = (name: string) => {
     const clean = (name || '').trim();
     if (!clean) return '';
     return clean.toLowerCase().endsWith('floor') ? clean : `${clean} Floor`;
   };
 
-  // 🛠️ دالة موحدة لتوحيد صيغ الحالات وتفادي مشاكل الحروف الكبيرة/الصغيرة
+  // 🛠️ دالة توحيد صيغ الحالات
   const normalizeStatus = (statusStr?: string): 'New' | 'Qualified' | 'Negotiation' | 'Closed' => {
     if (!statusStr) return 'New';
     const s = statusStr.trim().toLowerCase();
@@ -160,7 +256,7 @@ export function MarketerDashboard() {
     return 'New';
   };
 
-  // 📱 دالة تنظيف وتجهيز رقم الهاتف للاستخدام في الواتساب والاتصال
+  // 📱 دالة تنظيف وتجهيز رقم الهاتف
   const formatCleanPhone = (code: string, phone: string) => {
     const rawNumber = phone.replace(/[^0-9]/g, '').replace(/^0+/, '');
     return {
@@ -169,7 +265,6 @@ export function MarketerDashboard() {
     };
   };
 
-  // 🛠️ تغليف دوال الجلب بـ useCallback لتجنب مشاكل Re-render التحذير الخاص بـ ESLint
   const fetchProjects = useCallback(async () => {
     setLoadingProjects(true);
     try {
@@ -329,7 +424,6 @@ export function MarketerDashboard() {
     }
   }, [fetchLeadsForMarketer]);
 
-  // 1️⃣ Check Active Session & Handle Recovery
   useEffect(() => {
     fetchProjects();
 
@@ -361,7 +455,6 @@ export function MarketerDashboard() {
     };
   }, [fetchProjects, fetchMarketerProfile]);
 
-  // 2️⃣ Fetch Project Details & Listen for Realtime Cell Changes
   useEffect(() => {
     if (!selectedProjectId) return;
 
@@ -567,12 +660,11 @@ export function MarketerDashboard() {
     setCurrentMarketer(null);
   };
 
-  // 🟢 تفريغ جميع حقول النموذج
   const resetForm = () => {
     setEditingLeadId(null);
     setClientName('');
     setClientPhone('');
-    setCountryCode('+251');
+    setCountryCode('+251'); // إعادة للوضع الافتراضي إثيوبيا
     setClientSource('Facebook boost');
     setActionStatus('New');
     setSelectedUnits([]);
@@ -581,12 +673,10 @@ export function MarketerDashboard() {
     setMemo('');
   };
 
-  // 📱✏️ استخراج رقم الهاتف ومفتاح الدولة بذكاء عند تعديل العميل
   const handleEditLead = (lead: Lead) => {
     setEditingLeadId(lead.id);
     setClientName(lead.name || '');
 
-    // 📱 معالجة ذكية للتعرف على كود الدولة ورقم الهاتف
     let phoneNum = (lead.phone || '').trim();
     const matchedCountry = COUNTRY_CODES.find((c) => phoneNum.startsWith(c.code));
 
@@ -600,15 +690,12 @@ export function MarketerDashboard() {
     setClientPhone(phoneNum);
 
     setClientSource(lead.source || 'Facebook boost');
-    
-    // 💡 توحيد الحالة لضمان ظهور الخيار الصحيح في Dropdown
     setActionStatus(normalizeStatus(lead.status));
 
     setTotalPayment(lead.total_payment ? lead.total_payment.toString() : '');
     setInstallmentPlan(lead.installment_plan || '');
     setMemo(lead.memo || '');
 
-    // استرجاع الوحدات المحجوزة للـ Lead إذا وجدت
     if (lead.unit_key) {
       const keys = lead.unit_key.split(' | ');
       const restoredUnits: SelectedUnit[] = [];
@@ -636,11 +723,9 @@ export function MarketerDashboard() {
       setSelectedUnits([]);
     }
 
-    // التمرير السلس لأعلى الصفحة نحو النموذج
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🟢 النقر على الخلية مع دعم اختيار وحدات متعددة وإصلاح تكرار Floor
   const handleCellClick = (floorName: string, unitType: UnitType, status: string) => {
     if (actionStatus === 'New') {
       alert('ℹ️ Action Status is set to "New". Unit selection is not required for New leads.');
@@ -672,7 +757,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // 🟢 معالجة الحفظ والتحديث مع توحيد الحالة وتنسيق رقم الهاتف
   const handleSaveLeadWithAction = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
@@ -696,7 +780,6 @@ export function MarketerDashboard() {
       return;
     }
 
-    // 📱 تنظيف وتشكيل رقم الهاتف بالصيغة الدولية الموحدة
     const { fullPhone } = formatCleanPhone(countryCode, cleanPhone);
 
     const apartmentLabels = selectedUnits.map((u) => u.label).join(' | ');
@@ -719,7 +802,6 @@ export function MarketerDashboard() {
 
     try {
       if (editingLeadId) {
-        // 🔄 1️⃣ التحديث في Supabase
         const { data: updatedData, error: updateError } = await supabase
           .from('leads')
           .update(leadPayload)
@@ -740,7 +822,6 @@ export function MarketerDashboard() {
         setLeads((prev) => prev.map((l) => (l.id === editingLeadId ? savedLead : l)));
 
       } else {
-        // ➕ 2️⃣ إضافة عميل جديد
         const { data: leadData, error: leadError } = await supabase
           .from('leads')
           .insert([leadPayload])
@@ -756,7 +837,6 @@ export function MarketerDashboard() {
         }
       }
 
-      // 3️⃣ تحويل حالة الوحدات في الماتريكس إلى reserved
       if (selectedUnits.length > 0 && targetStatus !== 'New') {
         for (const unit of selectedUnits) {
           await supabase.from('srm_matrix_cells').upsert(
@@ -781,7 +861,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // تصفية العملاء حسب التبويب المحدد مع توحيد الحالة
   const filteredLeads = leadTab === 'All'
     ? leads
     : leads.filter((l) => normalizeStatus(l.status) === leadTab);
@@ -1012,21 +1091,14 @@ export function MarketerDashboard() {
                 />
               </div>
 
-              {/* 📱 SIGNUP PHONE WITH COUNTRY CODE SELECTOR */}
+              {/* 📱 SEARCHABLE COUNTRY CODE SELECTOR IN SIGNUP */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Phone Number *</label>
                 <div className="flex gap-2">
-                  <select
+                  <SearchableCountrySelect
                     value={signupCountryCode}
-                    onChange={(e) => setSignupCountryCode(e.target.value)}
-                    className="p-2.5 border border-gray-300 rounded-xl text-xs bg-gray-50 font-medium text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"
-                  >
-                    {COUNTRY_CODES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(code) => setSignupCountryCode(code)}
+                  />
                   <input
                     type="tel"
                     required
@@ -1285,7 +1357,6 @@ export function MarketerDashboard() {
               </div>
 
               <form onSubmit={handleSaveLeadWithAction} className="space-y-4">
-                {/* 🔵 ACTION BUTTON DROPDOWN MENU */}
                 <div>
                   <label className="block text-xs font-bold text-blue-900 mb-1">
                     Action / Status *
@@ -1307,7 +1378,6 @@ export function MarketerDashboard() {
                   </select>
                 </div>
 
-                {/* SHOW SELECTED UNITS SUMMARY IF NOT "NEW" */}
                 {actionStatus !== 'New' && (
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -1360,23 +1430,16 @@ export function MarketerDashboard() {
                   />
                 </div>
 
-                {/* 📱 COUNTRY CODE + PHONE INPUT */}
+                {/* 📱 SEARCHABLE COUNTRY CODE + PHONE INPUT */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Phone Number *
                   </label>
                   <div className="flex gap-2">
-                    <select
+                    <SearchableCountrySelect
                       value={countryCode}
-                      onChange={(e) => setCountryCode(e.target.value)}
-                      className="p-2.5 border border-gray-300 rounded-lg text-xs bg-gray-50 font-medium text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      {COUNTRY_CODES.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(code) => setCountryCode(code)}
+                    />
 
                     <input
                       type="tel"
@@ -1413,7 +1476,6 @@ export function MarketerDashboard() {
                   </select>
                 </div>
 
-                {/* 🔵 EXTRA FIELDS SPECIFICALLY FOR "NEGOTIATION" STATUS */}
                 {actionStatus === 'Negotiation' && (
                   <div className="bg-blue-50/70 p-3.5 border border-blue-200 rounded-xl space-y-3">
                     <h3 className="font-extrabold text-blue-900 text-xs border-b border-blue-200 pb-1">
@@ -1486,7 +1548,6 @@ export function MarketerDashboard() {
                 Your Recorded Leads ({leads.length})
               </h2>
 
-              {/* 📑 TAB NAVIGATION */}
               <div className="flex border-b border-gray-200 mb-4 overflow-x-auto gap-1">
                 {(['All', 'New', 'Qualified', 'Negotiation', 'Closed'] as const).map((tab) => {
                   const count = tab === 'All'
@@ -1518,7 +1579,6 @@ export function MarketerDashboard() {
                     const matchedProj = projects.find((p) => p.id === lead.project_id) || selectedProject;
                     const normalizedLeadStatus = normalizeStatus(lead.status);
                     
-                    // 📱 تحضير أرقام الهاتف للاتصال المباشر والواتساب
                     const rawDigits = (lead.phone || '').replace(/[^0-9]/g, '');
 
                     return (
@@ -1534,7 +1594,6 @@ export function MarketerDashboard() {
                           <div>
                             <p className="font-bold text-gray-800">{lead.name}</p>
                             
-                            {/* 📱 عرض الهاتف مع إمكانية الاتصال المباشر والواتساب */}
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-gray-600 font-mono text-[11px] font-semibold">{lead.phone}</span>
                               {rawDigits && (
@@ -1560,7 +1619,6 @@ export function MarketerDashboard() {
                             </div>
                           </div>
                           
-                          {/* 🟢 DYNAMIC STATUS BADGE (Normalized) */}
                           <span
                             className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
                               normalizedLeadStatus === 'New'
@@ -1576,7 +1634,6 @@ export function MarketerDashboard() {
                           </span>
                         </div>
 
-                        {/* 🏗️ DISPLAY PROJECT NAME */}
                         {matchedProj && (
                           <span className="inline-block bg-blue-50 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200 w-fit">
                             🏗️ Project: {matchedProj.name}
@@ -1615,7 +1672,6 @@ export function MarketerDashboard() {
                           </div>
                         )}
 
-                        {/* ✏️ BUTTON TO TRIGGER EDIT */}
                         <div className="mt-1 pt-2 border-t border-gray-200 flex justify-end">
                           <button
                             type="button"
