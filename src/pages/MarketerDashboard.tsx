@@ -98,6 +98,7 @@ export function MarketerDashboard() {
 
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
+  const [signupCountryCode, setSignupCountryCode] = useState('+251');
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
@@ -157,6 +158,15 @@ export function MarketerDashboard() {
     if (s === 'negotiation') return 'Negotiation';
     if (s === 'closed') return 'Closed';
     return 'New';
+  };
+
+  // 📱 دالة تنظيف وتجهيز رقم الهاتف للاستخدام في الواتساب والاتصال
+  const formatCleanPhone = (code: string, phone: string) => {
+    const rawNumber = phone.replace(/[^0-9]/g, '').replace(/^0+/, '');
+    return {
+      fullPhone: `${code} ${rawNumber}`,
+      numericPhone: `${code.replace(/[^0-9]/g, '')}${rawNumber}`,
+    };
   };
 
   // 🛠️ تغليف دوال الجلب بـ useCallback لتجنب مشاكل Re-render التحذير الخاص بـ ESLint
@@ -314,7 +324,7 @@ export function MarketerDashboard() {
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
-    } finally {
+    } fontally {
       setLoadingUser(false);
     }
   }, [fetchLeadsForMarketer]);
@@ -502,6 +512,8 @@ export function MarketerDashboard() {
       return;
     }
 
+    const { fullPhone } = formatCleanPhone(signupCountryCode, signupPhone);
+
     setAuthLoading(true);
 
     try {
@@ -509,7 +521,7 @@ export function MarketerDashboard() {
         email: signupEmail,
         password: signupPassword,
         options: {
-          data: { name: signupName, phone: signupPhone },
+          data: { name: signupName, phone: fullPhone },
         },
       });
 
@@ -525,7 +537,7 @@ export function MarketerDashboard() {
             id: authData.user.id,
             name: signupName,
             email: signupEmail,
-            phone: signupPhone,
+            phone: fullPhone,
             status: 'pending',
           },
         ]);
@@ -569,19 +581,21 @@ export function MarketerDashboard() {
     setMemo('');
   };
 
-  // ✏️ إرجاع بيانات الـ Lead للحقول للتعديل مع توحيد الحالة
+  // 📱✏️ استخراج رقم الهاتف ومفتاح الدولة بذكاء عند تعديل العميل
   const handleEditLead = (lead: Lead) => {
     setEditingLeadId(lead.id);
     setClientName(lead.name || '');
 
-    // استخراج مفتاح الدولة ورقم الهاتف
-    let phoneNum = lead.phone || '';
+    // 📱 معالجة ذكية للتعرف على كود الدولة ورقم الهاتف
+    let phoneNum = (lead.phone || '').trim();
     const matchedCountry = COUNTRY_CODES.find((c) => phoneNum.startsWith(c.code));
+
     if (matchedCountry) {
       setCountryCode(matchedCountry.code);
-      phoneNum = phoneNum.replace(matchedCountry.code, '').trim();
+      phoneNum = phoneNum.slice(matchedCountry.code.length).trim().replace(/^0+/, '');
     } else {
       setCountryCode('+251');
+      phoneNum = phoneNum.replace(/^\+251/, '').trim().replace(/^0+/, '');
     }
     setClientPhone(phoneNum);
 
@@ -658,7 +672,7 @@ export function MarketerDashboard() {
     }
   };
 
-  // 🟢 معالجة الحفظ والتحديث مع توحيد الحالة
+  // 🟢 معالجة الحفظ والتحديث مع توحيد الحالة وتنسيق رقم الهاتف
   const handleSaveLeadWithAction = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
@@ -682,13 +696,15 @@ export function MarketerDashboard() {
       return;
     }
 
-    const fullPhoneNumber = `${countryCode} ${cleanPhone}`;
+    // 📱 تنظيف وتشكيل رقم الهاتف بالصيغة الدولية الموحدة
+    const { fullPhone } = formatCleanPhone(countryCode, cleanPhone);
+
     const apartmentLabels = selectedUnits.map((u) => u.label).join(' | ');
     const unitKeys = selectedUnits.map((u) => u.key).join(' | ');
 
     const leadPayload: any = {
       name: clientName,
-      phone: fullPhoneNumber,
+      phone: fullPhone,
       source: clientSource,
       apartment_id: apartmentLabels || null,
       unit_key: unitKeys || null,
@@ -996,16 +1012,30 @@ export function MarketerDashboard() {
                 />
               </div>
 
+              {/* 📱 SIGNUP PHONE WITH COUNTRY CODE SELECTOR */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Phone Number *</label>
-                <input
-                  type="tel"
-                  required
-                  value={signupPhone}
-                  onChange={(e) => setSignupPhone(e.target.value)}
-                  placeholder="+1234567890"
-                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+                <div className="flex gap-2">
+                  <select
+                    value={signupCountryCode}
+                    onChange={(e) => setSignupCountryCode(e.target.value)}
+                    className="p-2.5 border border-gray-300 rounded-xl text-xs bg-gray-50 font-medium text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    {COUNTRY_CODES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    required
+                    value={signupPhone}
+                    onChange={(e) => setSignupPhone(e.target.value)}
+                    placeholder="9xxxxxxx"
+                    className="flex-1 p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
               </div>
 
               <div>
@@ -1330,7 +1360,7 @@ export function MarketerDashboard() {
                   />
                 </div>
 
-                {/* 📞 COUNTRY CODE + PHONE INPUT */}
+                {/* 📱 COUNTRY CODE + PHONE INPUT */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Phone Number *
@@ -1487,6 +1517,9 @@ export function MarketerDashboard() {
                   {filteredLeads.map((lead) => {
                     const matchedProj = projects.find((p) => p.id === lead.project_id) || selectedProject;
                     const normalizedLeadStatus = normalizeStatus(lead.status);
+                    
+                    // 📱 تحضير أرقام الهاتف للاتصال المباشر والواتساب
+                    const rawDigits = (lead.phone || '').replace(/[^0-9]/g, '');
 
                     return (
                       <div
@@ -1500,7 +1533,31 @@ export function MarketerDashboard() {
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-bold text-gray-800">{lead.name}</p>
-                            <p className="text-gray-500 font-mono text-[11px]">{lead.phone}</p>
+                            
+                            {/* 📱 عرض الهاتف مع إمكانية الاتصال المباشر والواتساب */}
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-gray-600 font-mono text-[11px] font-semibold">{lead.phone}</span>
+                              {rawDigits && (
+                                <div className="flex items-center gap-1">
+                                  <a
+                                    href={`tel:+${rawDigits}`}
+                                    className="p-1 bg-green-100 hover:bg-green-200 text-green-800 rounded-full transition text-[10px]"
+                                    title="Call Phone"
+                                  >
+                                    📞
+                                  </a>
+                                  <a
+                                    href={`https://wa.me/${rawDigits}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-full transition text-[10px]"
+                                    title="Open WhatsApp"
+                                  >
+                                    💬
+                                  </a>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           
                           {/* 🟢 DYNAMIC STATUS BADGE (Normalized) */}
