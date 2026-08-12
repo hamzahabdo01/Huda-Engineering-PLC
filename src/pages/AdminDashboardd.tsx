@@ -49,6 +49,7 @@ export interface MarketerClient {
   client_name?: string;
   name?: string;
   phone: string;
+  project_id?: string;
   project_name?: string;
   unit_title?: string;
   apartment_id?: string;
@@ -222,16 +223,30 @@ export function AdminDashboardd() {
     }
   };
 
+  // ✅ جلب البيانات مع ربط اسم المشروع تلقائياً من DB
   const fetchMarketerClients = async () => {
     const { data, error } = await supabase
       .from('leads')
-      .select('*')
+      .select('*, projects(name, title)')
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      setMarketerClients(data);
+      const formattedData = data.map((item: any) => ({
+        ...item,
+        project_name:
+          item.project_name ||
+          item.projects?.name ||
+          item.projects?.title ||
+          null,
+      }));
+      setMarketerClients(formattedData);
     } else if (error) {
-      console.error('Error fetching leads:', error.message);
+      // محاولة بديلة للجلب العادي إذا لم تكن العلاقات محددة بـ foreign keys في قاعدة البيانات
+      const { data: rawData } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (rawData) setMarketerClients(rawData);
     }
   };
 
@@ -485,6 +500,18 @@ export function AdminDashboardd() {
     e.preventDefault();
     if (!activeCellKey || !customCellText.trim()) return;
     handleExplicitStatusChange(customCellText.trim());
+  };
+
+  // ✅ دالة ذكية لإرجاع اسم المشروع للعميل بشكل موثوق
+  const getProjectName = (client: MarketerClient) => {
+    if (client.project_name && client.project_name !== '-') {
+      return client.project_name;
+    }
+    if (client.project_id) {
+      const match = projects.find((p) => p.id === client.project_id);
+      if (match) return match.name || match.title || '-';
+    }
+    return '-';
   };
 
   // Extract unique marketer names from accounts and leads
@@ -1067,8 +1094,9 @@ export function AdminDashboardd() {
                         {client.name || client.client_name}
                       </td>
                       <td className="p-3 border">{client.phone}</td>
+                      {/* ✅ لعرض اسم المشروع بدقة بدلاً من علامة "-" */}
                       <td className="p-3 border font-semibold text-gray-800">
-                        {client.project_name || '-'}
+                        {getProjectName(client)}
                       </td>
                       <td className="p-3 border font-medium text-amber-900">
                         {client.apartment_id || client.apartmentId || '-'}
