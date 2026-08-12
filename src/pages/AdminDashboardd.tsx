@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../integrations/supabase/client';
 
 // --- Types & Interfaces ---
@@ -84,8 +84,18 @@ export function AdminDashboardd() {
   const [marketerAccounts, setMarketerAccounts] = useState<MarketerAccount[]>([]);
   const [marketersFetchError, setMarketersFetchError] = useState<string | null>(null);
 
-  // State for filtering clients by marketer name
+  // --- Clients Search, Filter & Sort States ---
   const [selectedMarketerFilter, setSelectedMarketerFilter] = useState<string>('all');
+  const [clientSearch, setClientSearch] = useState<string>('');
+  const [clientStatusFilter, setClientStatusFilter] = useState<string>('all');
+  const [clientSortField, setClientSortField] = useState<'created_at' | 'name' | 'marketer_name' | 'total_payment'>('created_at');
+  const [clientSortOrder, setClientSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // --- Marketers Search, Filter & Sort States ---
+  const [marketerSearch, setMarketerSearch] = useState<string>('');
+  const [marketerStatusFilter, setMarketerStatusFilter] = useState<string>('all');
+  const [marketerSortField, setMarketerSortField] = useState<'name' | 'email' | 'created_at' | 'status'>('created_at');
+  const [marketerSortOrder, setMarketerSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -223,7 +233,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // ✅ جلب البيانات مع ربط اسم المشروع تلقائياً من DB
   const fetchMarketerClients = async () => {
     const { data, error } = await supabase
       .from('leads')
@@ -519,12 +528,141 @@ export function AdminDashboardd() {
     ])
   );
 
-  const filteredClients =
-    selectedMarketerFilter === 'all'
-      ? marketerClients
-      : marketerClients.filter(
-          (c) => (c.marketer_name || c.marketerName) === selectedMarketerFilter
-        );
+  // --- Sorting & Filtering Logic for CLIENTS ---
+  const handleClientSortToggle = (field: typeof clientSortField) => {
+    if (clientSortField === field) {
+      setClientSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setClientSortField(field);
+      setClientSortOrder('asc');
+    }
+  };
+
+  const filteredAndSortedClients = useMemo(() => {
+    return marketerClients
+      .filter((c) => {
+        // Marketer Filter
+        if (selectedMarketerFilter !== 'all') {
+          const mName = c.marketer_name || c.marketerName || '';
+          if (mName !== selectedMarketerFilter) return false;
+        }
+
+        // Status Filter
+        if (clientStatusFilter !== 'all') {
+          const status = c.status || 'Reserved';
+          if (status.toLowerCase() !== clientStatusFilter.toLowerCase()) return false;
+        }
+
+        // Search Filter
+        if (clientSearch.trim() !== '') {
+          const query = clientSearch.toLowerCase();
+          const mName = (c.marketer_name || c.marketerName || '').toLowerCase();
+          const cName = (c.name || c.client_name || '').toLowerCase();
+          const phone = (c.phone || '').toLowerCase();
+          const projName = getProjectName(c).toLowerCase();
+          const source = (c.source || c.lead_source || '').toLowerCase();
+
+          const matches =
+            mName.includes(query) ||
+            cName.includes(query) ||
+            phone.includes(query) ||
+            projName.includes(query) ||
+            source.includes(query);
+
+          if (!matches) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        let valA: any = '';
+        let valB: any = '';
+
+        if (clientSortField === 'name') {
+          valA = (a.name || a.client_name || '').toLowerCase();
+          valB = (b.name || b.client_name || '').toLowerCase();
+        } else if (clientSortField === 'marketer_name') {
+          valA = (a.marketer_name || a.marketerName || '').toLowerCase();
+          valB = (b.marketer_name || b.marketerName || '').toLowerCase();
+        } else if (clientSortField === 'total_payment') {
+          valA = Number(a.total_payment) || 0;
+          valB = Number(b.total_payment) || 0;
+        } else {
+          valA = a.created_at || '';
+          valB = b.created_at || '';
+        }
+
+        if (valA < valB) return clientSortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return clientSortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+  }, [
+    marketerClients,
+    selectedMarketerFilter,
+    clientStatusFilter,
+    clientSearch,
+    clientSortField,
+    clientSortOrder,
+    projects,
+  ]);
+
+  // --- Sorting & Filtering Logic for MARKETERS ---
+  const handleMarketerSortToggle = (field: typeof marketerSortField) => {
+    if (marketerSortField === field) {
+      setMarketerSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setMarketerSortField(field);
+      setMarketerSortOrder('asc');
+    }
+  };
+
+  const filteredAndSortedMarketers = useMemo(() => {
+    return marketerAccounts
+      .filter((m) => {
+        // Status Filter
+        if (marketerStatusFilter !== 'all') {
+          const st = m.status || 'pending';
+          if (st.toLowerCase() !== marketerStatusFilter.toLowerCase()) return false;
+        }
+
+        // Search Filter
+        if (marketerSearch.trim() !== '') {
+          const query = marketerSearch.toLowerCase();
+          const name = (m.name || '').toLowerCase();
+          const email = (m.email || '').toLowerCase();
+          const phone = (m.phone || '').toLowerCase();
+
+          const matches =
+            name.includes(query) || email.includes(query) || phone.includes(query);
+
+          if (!matches) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        let valA: any = '';
+        let valB: any = '';
+
+        if (marketerSortField === 'name') {
+          valA = (a.name || '').toLowerCase();
+          valB = (b.name || '').toLowerCase();
+        } else if (marketerSortField === 'email') {
+          valA = (a.email || '').toLowerCase();
+          valB = (b.email || '').toLowerCase();
+        } else if (marketerSortField === 'status') {
+          valA = (a.status || 'pending').toLowerCase();
+          valB = (b.status || 'pending').toLowerCase();
+        } else {
+          valA = a.created_at || '';
+          valB = b.created_at || '';
+        }
+
+        if (valA < valB) return marketerSortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return marketerSortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+  }, [marketerAccounts, marketerStatusFilter, marketerSearch, marketerSortField, marketerSortOrder]);
 
   const totalCells = floors.length * unitTypes.length;
   let availableCount = 0;
@@ -1022,63 +1160,136 @@ export function AdminDashboardd() {
         </div>
       )}
 
-      {/* TAB 3: MARKETERS & CLIENTS FILTER */}
+      {/* TAB 3: MARKETERS & CLIENTS FILTER, SEARCH & SORT */}
       {activeTab === 'clients' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-lg font-bold text-gray-800">👥 Marketer Registered Clients</h2>
-              <p className="text-xs text-gray-500">Filter clients by selecting a specific marketer</p>
+              <p className="text-xs text-gray-500">
+                Search, filter by marketer or lead status, and sort clients easily
+              </p>
             </div>
 
-            <div className="flex items-center gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-300">
-              <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Select Marketer:</label>
-              <select
-                value={selectedMarketerFilter}
-                onChange={(e) => setSelectedMarketerFilter(e.target.value)}
-                className="p-2 bg-white border border-gray-300 font-bold text-gray-800 text-xs rounded-md outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              >
-                <option value="all">-- All Marketers ({marketerClients.length} clients) --</option>
-                {marketerOptions.map((name) => {
-                  const count = marketerClients.filter(
-                    (c) => (c.marketer_name || c.marketerName) === name
-                  ).length;
-                  return (
-                    <option key={name} value={name}>
-                      👤 {name} ({count} clients)
-                    </option>
-                  );
-                })}
-              </select>
+            <div className="flex flex-wrap items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-300">
+              {/* 🔍 Search Input */}
+              <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500">
+                <span className="text-gray-400 text-xs">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search client, phone, project..."
+                  value={clientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                  className="bg-transparent text-xs outline-none w-40 sm:w-48 text-gray-800"
+                />
+                {clientSearch && (
+                  <button
+                    onClick={() => setClientSearch('')}
+                    className="text-xs text-gray-400 hover:text-gray-600 font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* 👤 Select Marketer Filter */}
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={selectedMarketerFilter}
+                  onChange={(e) => setSelectedMarketerFilter(e.target.value)}
+                  className="p-1.5 bg-white border border-gray-300 font-bold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="all">-- All Marketers ({marketerClients.length}) --</option>
+                  {marketerOptions.map((name) => {
+                    const count = marketerClients.filter(
+                      (c) => (c.marketer_name || c.marketerName) === name
+                    ).length;
+                    return (
+                      <option key={name} value={name}>
+                        👤 {name} ({count})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* 📊 Status Filter */}
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={clientStatusFilter}
+                  onChange={(e) => setClientStatusFilter(e.target.value)}
+                  className="p-1.5 bg-white border border-gray-300 font-semibold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="New">New</option>
+                  <option value="Qualified">Qualified</option>
+                  <option value="Negotiation">Negotiation</option>
+                  <option value="Reserved">Reserved</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+
+              {/* 🔄 Reset Filters */}
+              {(clientSearch || selectedMarketerFilter !== 'all' || clientStatusFilter !== 'all') && (
+                <button
+                  onClick={() => {
+                    setClientSearch('');
+                    setSelectedMarketerFilter('all');
+                    setClientStatusFilter('all');
+                  }}
+                  className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 font-bold text-xs rounded-lg transition"
+                >
+                  Reset Filters
+                </button>
+              )}
             </div>
           </div>
 
+          {/* Table displaying Filtered & Sorted Clients */}
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border border-gray-200">
-              <thead className="bg-gray-100 text-gray-700 uppercase font-bold">
+              <thead className="bg-gray-100 text-gray-700 uppercase font-bold select-none">
                 <tr>
-                  <th className="p-3 border">Marketer Name</th>
-                  <th className="p-3 border">Client Name</th>
+                  <th
+                    onClick={() => handleClientSortToggle('marketer_name')}
+                    className="p-3 border cursor-pointer hover:bg-gray-200 transition"
+                  >
+                    Marketer Name {clientSortField === 'marketer_name' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                  <th
+                    onClick={() => handleClientSortToggle('name')}
+                    className="p-3 border cursor-pointer hover:bg-gray-200 transition"
+                  >
+                    Client Name {clientSortField === 'name' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
                   <th className="p-3 border">Phone</th>
                   <th className="p-3 border">Project Name</th>
                   <th className="p-3 border">Unit / Details</th>
                   <th className="p-3 border">Source</th>
                   <th className="p-3 border">Status</th>
-                  <th className="p-3 border">Negotiation Details</th>
-                  <th className="p-3 border">Date & Time</th>
+                  <th
+                    onClick={() => handleClientSortToggle('total_payment')}
+                    className="p-3 border cursor-pointer hover:bg-gray-200 transition"
+                  >
+                    Negotiation Details {clientSortField === 'total_payment' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                  <th
+                    onClick={() => handleClientSortToggle('created_at')}
+                    className="p-3 border cursor-pointer hover:bg-gray-200 transition"
+                  >
+                    Date & Time {clientSortField === 'created_at' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredClients.length === 0 ? (
+                {filteredAndSortedClients.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="p-6 text-center text-gray-500 font-semibold">
-                      {selectedMarketerFilter === 'all'
-                        ? 'No client leads found.'
-                        : `No client leads found for marketer "${selectedMarketerFilter}".`}
+                      No clients found matching current filter/search criteria.
                     </td>
                   </tr>
                 ) : (
-                  filteredClients.map((client) => (
+                  filteredAndSortedClients.map((client) => (
                     <tr key={client.id} className="border-b hover:bg-gray-50">
                       <td className="p-3 border font-bold text-blue-800">
                         {client.marketer_name || client.marketerName || 'Unknown'}
@@ -1101,7 +1312,8 @@ export function AdminDashboardd() {
                       <td className="p-3 border">
                         <span className={`font-bold px-2.5 py-1 rounded-full text-[10px] ${
                           client.status === 'Negotiation' ? 'bg-orange-100 text-orange-800' :
-                          client.status === 'Qualified' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                          client.status === 'Qualified' ? 'bg-amber-100 text-amber-800' :
+                          client.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
                         }`}>
                           {client.status || 'Reserved'}
                         </span>
@@ -1131,7 +1343,6 @@ export function AdminDashboardd() {
                         )}
                       </td>
 
-                      {/* 🕒 عمود التاريخ والساعة المحدث */}
                       <td className="p-3 border text-gray-500 whitespace-nowrap">
                         {client.created_at
                           ? new Date(client.created_at).toLocaleString('en-US', {
@@ -1153,20 +1364,55 @@ export function AdminDashboardd() {
         </div>
       )}
 
-      {/* TAB 4: MARKETERS & APPROVALS */}
+      {/* TAB 4: MARKETERS & APPROVALS (WITH SEARCH, FILTER & SORT) */}
       {activeTab === 'marketers' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-lg font-bold text-gray-800">🔑 Marketer Registration Approvals</h2>
-              <p className="text-xs text-gray-500">Approve or Reject new marketer signup requests</p>
+              <p className="text-xs text-gray-500">Search, filter, and manage marketer account requests</p>
             </div>
-            <button
-              onClick={fetchMarketerAccounts}
-              className="px-3 py-1 bg-gray-100 hover:bg-gray-200 border rounded text-xs font-bold text-gray-700 transition"
-            >
-              🔄 Refresh Requests
-            </button>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* 🔍 Search Input */}
+              <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500">
+                <span className="text-gray-400 text-xs">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search name, email, phone..."
+                  value={marketerSearch}
+                  onChange={(e) => setMarketerSearch(e.target.value)}
+                  className="bg-transparent text-xs outline-none w-40 sm:w-48 text-gray-800"
+                />
+                {marketerSearch && (
+                  <button
+                    onClick={() => setMarketerSearch('')}
+                    className="text-xs text-gray-400 hover:text-gray-600 font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* 📊 Status Filter */}
+              <select
+                value={marketerStatusFilter}
+                onChange={(e) => setMarketerStatusFilter(e.target.value)}
+                className="p-2 bg-gray-50 border border-gray-300 font-semibold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="all">All Approval Statuses</option>
+                <option value="pending">⏳ Pending</option>
+                <option value="approved">✅ Approved</option>
+                <option value="rejected">❌ Rejected</option>
+              </select>
+
+              <button
+                onClick={fetchMarketerAccounts}
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 border rounded-lg text-xs font-bold text-gray-700 transition"
+              >
+                🔄 Refresh
+              </button>
+            </div>
           </div>
 
           {marketersFetchError && (
@@ -1177,24 +1423,45 @@ export function AdminDashboardd() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border border-gray-200">
-              <thead className="bg-gray-800 text-white uppercase font-bold">
+              <thead className="bg-gray-800 text-white uppercase font-bold select-none">
                 <tr>
-                  <th className="p-3 border">Marketer Name</th>
-                  <th className="p-3 border">Email</th>
+                  <th
+                    onClick={() => handleMarketerSortToggle('name')}
+                    className="p-3 border cursor-pointer hover:bg-gray-700 transition"
+                  >
+                    Marketer Name {marketerSortField === 'name' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                  <th
+                    onClick={() => handleMarketerSortToggle('email')}
+                    className="p-3 border cursor-pointer hover:bg-gray-700 transition"
+                  >
+                    Email {marketerSortField === 'email' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
                   <th className="p-3 border">Phone</th>
-                  <th className="p-3 border">Status</th>
+                  <th
+                    onClick={() => handleMarketerSortToggle('status')}
+                    className="p-3 border cursor-pointer hover:bg-gray-700 transition"
+                  >
+                    Status {marketerSortField === 'status' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                  <th
+                    onClick={() => handleMarketerSortToggle('created_at')}
+                    className="p-3 border cursor-pointer hover:bg-gray-700 transition"
+                  >
+                    Created At {marketerSortField === 'created_at' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
                   <th className="p-3 border text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {marketerAccounts.length === 0 ? (
+                {filteredAndSortedMarketers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-4 text-center text-gray-500 font-semibold">
-                      No marketer accounts found in database.
+                    <td colSpan={6} className="p-4 text-center text-gray-500 font-semibold">
+                      No marketer accounts found matching criteria.
                     </td>
                   </tr>
                 ) : (
-                  marketerAccounts.map((marketer) => {
+                  filteredAndSortedMarketers.map((marketer) => {
                     const status = marketer.status || 'pending';
                     return (
                       <tr key={marketer.id} className="border-b hover:bg-gray-50">
@@ -1215,6 +1482,11 @@ export function AdminDashboardd() {
                             {status === 'rejected' && '❌ Rejected'}
                             {status === 'pending' && '⏳ Pending Approval'}
                           </span>
+                        </td>
+                        <td className="p-3 border text-gray-500 whitespace-nowrap">
+                          {marketer.created_at
+                            ? new Date(marketer.created_at).toLocaleDateString('en-US')
+                            : '-'}
                         </td>
                         <td className="p-3 border text-center">
                           <div className="flex items-center justify-center gap-2">
