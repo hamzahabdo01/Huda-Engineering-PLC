@@ -132,31 +132,42 @@ export function AdminDashboardd() {
   }, []);
 
   // 2. Fetch Project Specific Data
-  useEffect(() => {
-    if (!selectedProjectId) return;
+useEffect(() => {
+  if (!selectedProjectId) return;
 
-    fetchProjectDetails(selectedProjectId);
+  // Move function definition inside the hook
+  const fetchProjectDetails = async (projectId: string) => {
+    setLoading(true);
+    await Promise.all([
+      fetchFloors(projectId),
+      fetchUnitTypes(projectId),
+      fetchMatrixData(projectId),
+    ]);
+    setLoading(false);
+  };
 
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'srm_matrix_cells',
-          filter: `project_id=eq.${selectedProjectId}`,
-        },
-        () => {
-          fetchMatrixData(selectedProjectId);
-        }
-      )
-      .subscribe();
+  fetchProjectDetails(selectedProjectId);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [selectedProjectId]);
+  const channel = supabase
+    .channel('schema-db-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'srm_matrix_cells',
+        filter: `project_id=eq.${selectedProjectId}`,
+      },
+      () => {
+        fetchMatrixData(selectedProjectId);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [selectedProjectId]); // ✅ Warning resolved!
 
   // --- Supabase API Calls ---
 

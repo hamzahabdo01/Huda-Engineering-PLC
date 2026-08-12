@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../integrations/supabase/client';
 
 // --- Types & Interfaces ---
@@ -159,66 +159,8 @@ export function MarketerDashboard() {
     return 'New';
   };
 
-  // 1️⃣ Check Active Session & Handle Recovery
-  useEffect(() => {
-    fetchProjects();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setUpdatePasswordMode(true);
-        setIsForgotPassword(false);
-        setIsSignUp(false);
-        setCurrentMarketer(null);
-        setLoadingUser(false);
-        return;
-      }
-
-      if (isUpdatePasswordRef.current) {
-        setLoadingUser(false);
-        return;
-      }
-
-      if (session?.user) {
-        fetchMarketerProfile(session.user.id);
-      } else {
-        setCurrentMarketer(null);
-        setLoadingUser(false);
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-  // 2️⃣ Fetch Project Details & Listen for Realtime Cell Changes
-  useEffect(() => {
-    if (!selectedProjectId) return;
-
-    fetchProjectDetails(selectedProjectId);
-
-    const matrixChannel = supabase
-      .channel(`realtime-matrix-${selectedProjectId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'srm_matrix_cells',
-          filter: `project_id=eq.${selectedProjectId}`,
-        },
-        () => {
-          fetchMatrixData(selectedProjectId);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(matrixChannel);
-    };
-  }, [selectedProjectId]);
-
-  const fetchProjects = async () => {
+  // 🛠️ تغليف دوال الجلب بـ useCallback لتجنب مشاكل Re-render التحذير الخاص بـ ESLint
+  const fetchProjects = useCallback(async () => {
     setLoadingProjects(true);
     try {
       const { data, error } = await supabase
@@ -251,19 +193,9 @@ export function MarketerDashboard() {
     } finally {
       setLoadingProjects(false);
     }
-  };
+  }, []);
 
-  const fetchProjectDetails = async (projectId: string) => {
-    setLoadingDetails(true);
-    await Promise.all([
-      fetchFloors(projectId),
-      fetchUnitTypes(projectId),
-      fetchMatrixData(projectId),
-    ]);
-    setLoadingDetails(false);
-  };
-
-  const fetchFloors = async (projectId: string) => {
+  const fetchFloors = useCallback(async (projectId: string) => {
     const { data, error } = await supabase
       .from('srm_floors')
       .select('*')
@@ -273,9 +205,9 @@ export function MarketerDashboard() {
     if (!error && data) {
       setFloors(data);
     }
-  };
+  }, []);
 
-  const fetchUnitTypes = async (projectId: string) => {
+  const fetchUnitTypes = useCallback(async (projectId: string) => {
     const { data, error } = await supabase
       .from('srm_unit_types')
       .select('*')
@@ -295,9 +227,9 @@ export function MarketerDashboard() {
       }));
       setUnitTypes(formatted);
     }
-  };
+  }, []);
 
-  const fetchMatrixData = async (projectId: string) => {
+  const fetchMatrixData = useCallback(async (projectId: string) => {
     const { data, error } = await supabase
       .from('srm_matrix_cells')
       .select('*')
@@ -323,9 +255,35 @@ export function MarketerDashboard() {
       });
       setMatrix(matrixMap);
     }
-  };
+  }, []);
 
-  const fetchMarketerProfile = async (userId: string) => {
+  const fetchProjectDetails = useCallback(async (projectId: string) => {
+    setLoadingDetails(true);
+    await Promise.all([
+      fetchFloors(projectId),
+      fetchUnitTypes(projectId),
+      fetchMatrixData(projectId),
+    ]);
+    setLoadingDetails(false);
+  }, [fetchFloors, fetchUnitTypes, fetchMatrixData]);
+
+  const fetchLeadsForMarketer = useCallback(async (marketerId: string, marketerName: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .or(`marketer_id.eq.${marketerId},marketer_name.eq.${marketerName}`)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setLeads(data);
+      }
+    } catch (err) {
+      console.error('Error fetching leads:', err);
+    }
+  }, []);
+
+  const fetchMarketerProfile = useCallback(async (userId: string) => {
     if (isUpdatePasswordRef.current) return;
 
     try {
@@ -359,23 +317,66 @@ export function MarketerDashboard() {
     } finally {
       setLoadingUser(false);
     }
-  };
+  }, [fetchLeadsForMarketer]);
 
-  const fetchLeadsForMarketer = async (marketerId: string, marketerName: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .or(`marketer_id.eq.${marketerId},marketer_name.eq.${marketerName}`)
-        .order('created_at', { ascending: false });
+  // 1️⃣ Check Active Session & Handle Recovery
+  useEffect(() => {
+    fetchProjects();
 
-      if (!error && data) {
-        setLeads(data);
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setUpdatePasswordMode(true);
+        setIsForgotPassword(false);
+        setIsSignUp(false);
+        setCurrentMarketer(null);
+        setLoadingUser(false);
+        return;
       }
-    } catch (err) {
-      console.error('Error fetching leads:', err);
-    }
-  };
+
+      if (isUpdatePasswordRef.current) {
+        setLoadingUser(false);
+        return;
+      }
+
+      if (session?.user) {
+        fetchMarketerProfile(session.user.id);
+      } else {
+        setCurrentMarketer(null);
+        setLoadingUser(false);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [fetchProjects, fetchMarketerProfile]);
+
+  // 2️⃣ Fetch Project Details & Listen for Realtime Cell Changes
+  useEffect(() => {
+    if (!selectedProjectId) return;
+
+    fetchProjectDetails(selectedProjectId);
+
+    const matrixChannel = supabase
+      .channel(`realtime-matrix-${selectedProjectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'srm_matrix_cells',
+          filter: `project_id=eq.${selectedProjectId}`,
+        },
+        () => {
+          fetchMatrixData(selectedProjectId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(matrixChannel);
+    };
+  }, [selectedProjectId, fetchProjectDetails, fetchMatrixData]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -657,7 +658,7 @@ export function MarketerDashboard() {
     }
   };
 
-// 🟢 معالجة الحفظ والتحديث مع توحيد الحالة
+  // 🟢 معالجة الحفظ والتحديث مع توحيد الحالة
   const handleSaveLeadWithAction = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPhone = clientPhone.trim();
@@ -714,13 +715,11 @@ export function MarketerDashboard() {
           return;
         }
 
-        // ⚠️ التأكد من أن قاعدة البيانات قامت بالتعديل فعلياً ولم ترجع قائمة فارغة
         if (!updatedData || updatedData.length === 0) {
           alert('❌ Database update failed! Check Supabase RLS policies for UPDATE on the "leads" table.');
           return;
         }
 
-        // ✅ تحديث الـ State بالبيانات الحقيقية التي عادت من قاعدة البيانات
         const savedLead = updatedData[0];
         setLeads((prev) => prev.map((l) => (l.id === editingLeadId ? savedLead : l)));
 
