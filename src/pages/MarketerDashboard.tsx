@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../integrations/supabase/client';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
+  UserPlus,
+  Phone,
+  ShieldCheck,
+  ArrowRight,
+  Sparkles,
+  KeyRound,
+} from 'lucide-react';
 
 // --- Types & Interfaces ---
 export interface Floor {
@@ -88,13 +101,15 @@ const COUNTRY_CODES = [
   { code: '+91', label: '🇮🇳 India (+91)' },
 ];
 
-// 🔍 مكوّن البحث لاختيار الدولة (Searchable Dropdown Component)
+// 🔍 مكوّن البحث لاختيار الدولة (Searchable Dropdown Component - Support Light & Dark Modes)
 function SearchableCountrySelect({
   value,
   onChange,
+  isDark = false,
 }: {
   value: string;
   onChange: (code: string) => void;
+  isDark?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -123,20 +138,32 @@ function SearchableCountrySelect({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2.5 border border-gray-300 rounded-xl text-xs bg-gray-50 font-semibold text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none flex items-center justify-between min-w-[130px] shadow-sm"
+        className={`p-3.5 border rounded-xl text-xs font-semibold outline-none flex items-center justify-between min-w-[130px] shadow-sm transition-all ${
+          isDark
+            ? 'bg-slate-950/60 border-slate-800 text-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500'
+            : 'bg-gray-50 border-gray-300 text-gray-800 focus:ring-2 focus:ring-blue-500'
+        }`}
       >
         <span className="truncate">{selected.label}</span>
-        <span className="ml-1 text-[10px] text-gray-500">▼</span>
+        <span className={`ml-1 text-[10px] ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>▼</span>
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-2 max-h-60 overflow-y-auto left-0">
+        <div
+          className={`absolute z-50 mt-1 w-64 border rounded-xl shadow-2xl p-2 max-h-60 overflow-y-auto left-0 ${
+            isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-200 text-gray-800'
+          }`}
+        >
           <input
             type="text"
             placeholder="🔍 Search country or code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-lg text-xs mb-2 outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full p-2 border rounded-lg text-xs mb-2 outline-none ${
+              isDark
+                ? 'bg-slate-950 border-slate-800 text-white placeholder-slate-500 focus:border-teal-500'
+                : 'bg-white border-gray-300 text-gray-800 focus:ring-2 focus:ring-blue-500'
+            }`}
             autoFocus
           />
           <div className="space-y-1">
@@ -152,7 +179,9 @@ function SearchableCountrySelect({
                   }}
                   className={`w-full text-left px-2.5 py-1.5 text-xs rounded-lg transition ${
                     value === c.code
-                      ? 'bg-blue-600 text-white font-bold'
+                      ? 'bg-teal-600 text-white font-bold'
+                      : isDark
+                      ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
                       : 'text-gray-700 hover:bg-blue-50'
                   }`}
                 >
@@ -160,7 +189,9 @@ function SearchableCountrySelect({
                 </button>
               ))
             ) : (
-              <div className="text-xs text-gray-400 p-2 text-center">No country found</div>
+              <div className={`text-xs p-2 text-center ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                No country found
+              </div>
             )}
           </div>
         </div>
@@ -187,6 +218,8 @@ export function MarketerDashboard() {
   };
 
   const [authLoading, setAuthLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Auth Inputs
   const [loginEmail, setLoginEmail] = useState('');
@@ -895,282 +928,428 @@ export function MarketerDashboard() {
 
   if (loadingUser) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-xs">Loading application...</p>
+          <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-xs font-semibold text-slate-400">Loading application...</p>
         </div>
       </div>
     );
   }
 
-  // SCREEN 1: AUTHENTICATION FORMS
+  // SCREEN 1: LUXURY DARK AUTHENTICATION SCREEN
   if (!currentMarketer || isUpdatePassword) {
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4" dir="ltr">
-        <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200">
-          <div className="text-center mb-6">
-            <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-extrabold text-2xl mx-auto mb-3 shadow-lg shadow-blue-500/30">
-              🏢
+      <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 p-4 sm:p-6 lg:p-8 font-sans" dir="ltr">
+        {/* Main Container Card */}
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800/80">
+          
+          {/* Left Side: Visual Branding & Hero Panel */}
+          <div className="relative hidden lg:flex lg:col-span-5 flex-col justify-between p-10 overflow-hidden">
+            {/* Background Image with Overlay */}
+            <img
+              src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop"
+              alt="Luxury Architecture"
+              className="absolute inset-0 h-full w-full object-cover scale-105 transition-transform duration-1000 hover:scale-100"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-teal-950/80 to-teal-900/40" />
+
+            {/* Top Brand Header */}
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-teal-500/20 backdrop-blur-md border border-teal-400/30 text-teal-300 text-xs font-semibold uppercase tracking-wider mb-6">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Premium Sales Portal
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-400 flex items-center justify-center text-slate-950 font-black text-2xl shadow-lg shadow-amber-400/20">
+                  🏢
+                </div>
+                <div>
+                  <h2 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
+                    Marketer<span className="text-amber-400">Portal</span>
+                  </h2>
+                  <p className="text-xs text-teal-200/70 font-medium">Real Estate Intelligence</p>
+                </div>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              {isUpdatePassword
-                ? 'Set New Password'
-                : isForgotPassword
-                ? 'Reset Password'
-                : isSignUp
-                ? 'Create Marketer Account'
-                : 'Marketer Portal - Login'}
-            </h2>
-            <p className="text-xs text-gray-500 mt-1">
-              {isUpdatePassword
-                ? 'Enter your new password. Changes require Admin re-approval.'
-                : isForgotPassword
-                ? 'Enter your email address to receive a password reset link'
-                : isSignUp
-                ? 'Enter your details to submit an account request for admin review'
-                : 'Enter your credentials to access the sales portal'}
-            </p>
+
+            {/* Floating Glassmorphism Quote Card */}
+            <div className="relative z-10 bg-slate-900/60 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-2xl">
+              <div className="flex items-center gap-2 text-amber-400 mb-2">
+                <ShieldCheck className="w-5 h-5" />
+                <span className="text-xs font-bold uppercase tracking-wider">Trusted Ecosystem</span>
+              </div>
+              <p className="text-slate-200 text-sm font-medium leading-relaxed">
+                "Empowering real estate marketers with real-time analytics, inventory management, and seamless deal closing."
+              </p>
+            </div>
           </div>
 
-          {!isForgotPassword && !isUpdatePassword && (
-            <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(false);
-                  setIsForgotPassword(false);
-                  setAuthError('');
-                  setAuthSuccess('');
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                  !isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(true);
-                  setIsForgotPassword(false);
-                  setAuthError('');
-                  setAuthSuccess('');
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                  isSignUp ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
-                }`}
-              >
-                Register
-              </button>
+          {/* Right Side: Dynamic Form Panel */}
+          <div className="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center bg-slate-900">
+            
+            {/* Header & Subtitle */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-extrabold text-white tracking-tight">
+                {isUpdatePassword
+                  ? 'Set New Password'
+                  : isForgotPassword
+                  ? 'Reset Password'
+                  : isSignUp
+                  ? 'Create Marketer Account'
+                  : 'Welcome Back'}
+              </h1>
+              <p className="text-slate-400 text-sm mt-2">
+                {isUpdatePassword
+                  ? 'Enter your new password. Changes require Admin re-approval.'
+                  : isForgotPassword
+                  ? 'Enter your email address to receive a password reset link.'
+                  : isSignUp
+                  ? 'Register now to join our exclusive marketer network'
+                  : 'Enter your credentials to access your sales workspace'}
+              </p>
             </div>
-          )}
 
-          {authError && (
-            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded-lg text-xs mb-4">
-              {authError}
-            </div>
-          )}
-
-          {authSuccess && (
-            <div className="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-700 p-3 rounded-lg text-xs mb-4">
-              {authSuccess}
-            </div>
-          )}
-
-          {isUpdatePassword ? (
-            <form onSubmit={handleSetNewPassword} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">New Password *</label>
-                <input
-                  type="password"
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+            {/* Mode Switcher Tabs (Sign In / Register) */}
+            {!isForgotPassword && !isUpdatePassword && (
+              <div className="grid grid-cols-2 gap-1 p-1.5 bg-slate-950 rounded-2xl mb-8 border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignUp(false);
+                    setIsForgotPassword(false);
+                    setAuthError('');
+                    setAuthSuccess('');
+                  }}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 ${
+                    !isSignUp
+                      ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignUp(true);
+                    setIsForgotPassword(false);
+                    setAuthError('');
+                    setAuthSuccess('');
+                  }}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 ${
+                    isSignUp
+                      ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Register
+                </button>
               </div>
+            )}
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm New Password *</label>
-                <input
-                  type="password"
-                  required
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+            {/* Notification Messages */}
+            {authError && (
+              <div className="bg-red-500/10 border-l-4 border-red-500 text-red-300 p-3.5 rounded-xl text-xs mb-6 font-medium">
+                {authError}
               </div>
+            )}
 
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 rounded-xl text-sm transition shadow-lg shadow-emerald-600/30 disabled:opacity-50"
-              >
-                {authLoading ? 'Updating...' : '🔒 Update & Submit for Admin Approval'}
-              </button>
-            </form>
-          ) : isForgotPassword ? (
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="marketer@company.com"
-                  className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+            {authSuccess && (
+              <div className="bg-emerald-500/10 border-l-4 border-emerald-500 text-emerald-300 p-3.5 rounded-xl text-xs mb-6 font-medium">
+                {authSuccess}
               </div>
+            )}
 
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-black font-extrabold py-3.5 rounded-xl text-sm transition shadow-lg shadow-amber-500/30 disabled:opacity-50"
-              >
-                {authLoading ? 'Sending link...' : '📩 Send Reset Link'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsForgotPassword(false);
-                  setAuthError('');
-                  setAuthSuccess('');
-                }}
-                className="w-full text-center text-xs font-bold text-gray-600 hover:text-blue-600 pt-2 transition"
-              >
-                ← Back to Sign In
-              </button>
-            </form>
-          ) : !isSignUp ? (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="marketer@company.com"
-                  className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-xs font-semibold text-gray-700">Password</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsForgotPassword(true);
-                      setAuthError('');
-                      setAuthSuccess('');
-                    }}
-                    className="text-[11px] font-bold text-blue-600 hover:underline"
-                  >
-                    Forgot Password?
-                  </button>
+            {/* Dynamic Form Sections */}
+            {isUpdatePassword ? (
+              <form onSubmit={handleSetNewPassword} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    New Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
-                <input
-                  type="password"
-                  required
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
 
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-blue-600/30 disabled:opacity-50"
-              >
-                {authLoading ? 'Signing in...' : 'Sign In'}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleSignUp} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={signupName}
-                  onChange={(e) => setSignupName(e.target.value)}
-                  placeholder="John Doe"
-                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address *</label>
-                <input
-                  type="email"
-                  required
-                  value={signupEmail}
-                  onChange={(e) => setSignupEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-
-              {/* 📱 SEARCHABLE COUNTRY CODE SELECTOR IN SIGNUP */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Phone Number *</label>
-                <div className="flex gap-2">
-                  <SearchableCountrySelect
-                    value={signupCountryCode}
-                    onChange={(code) => setSignupCountryCode(code)}
-                  />
-                  <input
-                    type="tel"
-                    required
-                    value={signupPhone}
-                    onChange={(e) => setSignupPhone(e.target.value)}
-                    placeholder="9xxxxxxx"
-                    className="flex-1 p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Confirm New Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showConfirmPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Password *</label>
-                <input
-                  type="password"
-                  required
-                  value={signupPassword}
-                  onChange={(e) => setSignupPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full mt-2 py-4 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  <span>{authLoading ? 'Updating...' : 'Update & Submit for Admin Approval'}</span>
+                </button>
+              </form>
+            ) : isForgotPassword ? (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input
+                      type="email"
+                      required
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="marketer@company.com"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm Password *</label>
-                <input
-                  type="password"
-                  required
-                  value={signupConfirmPassword}
-                  onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full py-4 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <span>{authLoading ? 'Sending link...' : 'Send Reset Link'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
 
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-lg shadow-emerald-600/30 mt-2 disabled:opacity-50"
-              >
-                {authLoading ? 'Submitting...' : 'Submit Request'}
-              </button>
-            </form>
-          )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(false);
+                    setAuthError('');
+                    setAuthSuccess('');
+                  }}
+                  className="w-full text-center text-xs font-bold text-slate-400 hover:text-teal-400 pt-2 transition"
+                >
+                  ← Back to Sign In
+                </button>
+              </form>
+            ) : !isSignUp ? (
+              /* SIGN IN FORM */
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input
+                      type="email"
+                      required
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="marketer@company.com"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotPassword(true);
+                        setAuthError('');
+                        setAuthSuccess('');
+                      }}
+                      className="text-xs text-teal-400 font-semibold hover:text-teal-300 transition-colors"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full mt-2 py-4 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 group disabled:opacity-50"
+                >
+                  <span>{authLoading ? 'Signing in...' : 'Sign In to Workspace'}</span>
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </button>
+              </form>
+            ) : (
+              /* REGISTER FORM */
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Full Name *
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input
+                      type="text"
+                      required
+                      value={signupName}
+                      onChange={(e) => setSignupName(e.target.value)}
+                      placeholder="John Doe"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Email Address *
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input
+                      type="email"
+                      required
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      placeholder="name@company.com"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* SEARCHABLE COUNTRY CODE + PHONE INPUT */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Phone Number *
+                  </label>
+                  <div className="flex gap-2">
+                    <SearchableCountrySelect
+                      value={signupCountryCode}
+                      onChange={(code) => setSignupCountryCode(code)}
+                      isDark={true}
+                    />
+                    <div className="relative flex-1">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                      <input
+                        type="tel"
+                        required
+                        value={signupPhone}
+                        onChange={(e) => setSignupPhone(e.target.value)}
+                        placeholder="9xxxxxxx"
+                        className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Confirm Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      value={signupConfirmPassword}
+                      onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showConfirmPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full mt-2 py-4 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 group disabled:opacity-50"
+                >
+                  <span>{authLoading ? 'Submitting Request...' : 'Submit Registration'}</span>
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </button>
+              </form>
+            )}
+
+          </div>
         </div>
       </div>
     );
@@ -1458,7 +1637,7 @@ export function MarketerDashboard() {
                   />
                 </div>
 
-                {/* 📱 SEARCHABLE COUNTRY CODE + PHONE INPUT */}
+                {/* 📱 SEARCHABLE COUNTRY CODE + PHONE INPUT (LIGHT MODE IN DASHBOARD) */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Phone Number *
@@ -1467,6 +1646,7 @@ export function MarketerDashboard() {
                     <SearchableCountrySelect
                       value={countryCode}
                       onChange={(code) => setCountryCode(code)}
+                      isDark={false}
                     />
 
                     <input
