@@ -46,6 +46,8 @@ export interface MarketerClient {
   id: string;
   marketer_name?: string;
   marketerName?: string;
+  marketer_type?: string;
+  marketerType?: string;
   client_name?: string;
   name?: string;
   phone: string;
@@ -68,6 +70,8 @@ export interface MarketerAccount {
   name: string;
   email: string;
   phone?: string;
+  marketer_type?: string;
+  role?: string;
   status: 'pending' | 'approved' | 'rejected' | string;
   created_at?: string;
 }
@@ -1229,6 +1233,14 @@ export function AdminDashboardd() {
                 </select>
               </div>
 
+              {/* 🔄 Refresh Button */}
+              <button
+                onClick={fetchMarketerClients}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 transition flex items-center gap-1"
+              >
+                🔄 Refresh
+              </button>
+
               {/* 🔄 Reset Filters */}
               {(clientSearch || selectedMarketerFilter !== 'all' || clientStatusFilter !== 'all') && (
                 <button
@@ -1256,6 +1268,7 @@ export function AdminDashboardd() {
                   >
                     Marketer Name {clientSortField === 'marketer_name' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
                   </th>
+                  <th className="p-3 border">Marketer Type</th>
                   <th
                     onClick={() => handleClientSortToggle('name')}
                     className="p-3 border cursor-pointer hover:bg-gray-200 transition"
@@ -1284,7 +1297,7 @@ export function AdminDashboardd() {
               <tbody>
                 {filteredAndSortedClients.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="p-6 text-center text-gray-500 font-semibold">
+                    <td colSpan={10} className="p-6 text-center text-gray-500 font-semibold">
                       No clients found matching current filter/search criteria.
                     </td>
                   </tr>
@@ -1293,6 +1306,11 @@ export function AdminDashboardd() {
                     <tr key={client.id} className="border-b hover:bg-gray-50">
                       <td className="p-3 border font-bold text-blue-800">
                         {client.marketer_name || client.marketerName || 'Unknown'}
+                      </td>
+                      <td className="p-3 border">
+                        <span className="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-[10px] border border-blue-200">
+                          {client.marketer_type || client.marketerType || 'Standard'}
+                        </span>
                       </td>
                       <td className="p-3 border font-semibold">
                         {client.name || client.client_name}
@@ -1431,6 +1449,7 @@ export function AdminDashboardd() {
                   >
                     Marketer Name {marketerSortField === 'name' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
                   </th>
+                  <th className="p-3 border">Marketer Type</th>
                   <th
                     onClick={() => handleMarketerSortToggle('email')}
                     className="p-3 border cursor-pointer hover:bg-gray-700 transition"
@@ -1456,7 +1475,7 @@ export function AdminDashboardd() {
               <tbody>
                 {filteredAndSortedMarketers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-4 text-center text-gray-500 font-semibold">
+                    <td colSpan={7} className="p-4 text-center text-gray-500 font-semibold">
                       No marketer accounts found matching criteria.
                     </td>
                   </tr>
@@ -1466,6 +1485,11 @@ export function AdminDashboardd() {
                     return (
                       <tr key={marketer.id} className="border-b hover:bg-gray-50">
                         <td className="p-3 border font-bold text-gray-800">{marketer.name || 'Unnamed'}</td>
+                        <td className="p-3 border">
+                          <span className="bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded text-[10px] border border-indigo-200">
+                            {marketer.marketer_type || marketer.role || 'Broker / Agent'}
+                          </span>
+                        </td>
                         <td className="p-3 border text-gray-600">{marketer.email}</td>
                         <td className="p-3 border">{marketer.phone || '-'}</td>
                         <td className="p-3 border">
