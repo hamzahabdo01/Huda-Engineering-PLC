@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../integrations/supabase/client';
 
 // --- Types & Interfaces ---
@@ -514,7 +514,7 @@ export function AdminDashboardd() {
     handleExplicitStatusChange(customCellText.trim());
   };
 
-  const getProjectName = (client: MarketerClient) => {
+  const getProjectName = useCallback((client: MarketerClient) => {
     if (client.project_name && client.project_name !== '-') {
       return client.project_name;
     }
@@ -523,7 +523,7 @@ export function AdminDashboardd() {
       if (match) return match.name || match.title || '-';
     }
     return '-';
-  };
+  }, [projects]);
 
   const marketerOptions = Array.from(
     new Set([
@@ -607,7 +607,7 @@ export function AdminDashboardd() {
     clientSearch,
     clientSortField,
     clientSortOrder,
-    projects,
+    getProjectName,
   ]);
 
   // --- Sorting & Filtering Logic for MARKETERS ---
