@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Sparkles,
   KeyRound,
+  Briefcase,
 } from 'lucide-react';
 
 // --- Types & Interfaces ---
@@ -64,6 +65,7 @@ export interface MarketerProfile {
   email: string;
   phone?: string;
   status?: string;
+  marketer_type?: string; // 👈 تم إضافة حقل نوع المسوق هنا
 }
 
 export interface SelectedUnit {
@@ -229,6 +231,8 @@ export function MarketerDashboard() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupCountryCode, setSignupCountryCode] = useState('+251');
   const [signupPhone, setSignupPhone] = useState('');
+  // 👈 إضافة حالة لنوع المسوق
+  const [signupType, setSignupType] = useState<'Internal Sale' | 'Freelance' | 'Agent'>('Internal Sale');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
@@ -265,7 +269,7 @@ export function MarketerDashboard() {
   const [countryCode, setCountryCode] = useState('+251');
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
-  const [customSource, setCustomSource] = useState(''); // 👈 إضافة State للمصدر المخصص
+  const [customSource, setCustomSource] = useState('');
 
   // Leads Filter Tabs State
   const [leadTab, setLeadTab] = useState<'All' | 'New' | 'Qualified' | 'Negotiation' | 'Closed'>('All');
@@ -629,6 +633,7 @@ export function MarketerDashboard() {
     }
   };
 
+  // 👈 دالة انشاء الحساب المعدلة لحفظ marketer_type
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -648,7 +653,7 @@ export function MarketerDashboard() {
         email: signupEmail,
         password: signupPassword,
         options: {
-          data: { name: signupName, phone: fullPhone },
+          data: { name: signupName, phone: fullPhone, marketer_type: signupType },
         },
       });
 
@@ -666,6 +671,7 @@ export function MarketerDashboard() {
             email: signupEmail,
             phone: fullPhone,
             status: 'pending',
+            marketer_type: signupType, // 👈 حفظ نوع المسوّق في قاعدة البيانات
           },
         ]);
 
@@ -678,6 +684,7 @@ export function MarketerDashboard() {
           setSignupName('');
           setSignupEmail('');
           setSignupPhone('');
+          setSignupType('Internal Sale');
           setSignupPassword('');
           setSignupConfirmPassword('');
         }
@@ -700,7 +707,7 @@ export function MarketerDashboard() {
     setClientPhone('');
     setCountryCode('+251');
     setClientSource('Facebook boost');
-    setCustomSource(''); // 👈 تفريغ النص المخصص
+    setCustomSource('');
     setActionStatus('New');
     setSelectedUnits([]);
     setTotalPayment('');
@@ -724,7 +731,6 @@ export function MarketerDashboard() {
     }
     setClientPhone(phoneNum);
 
-    // 👈 دعم مصدر Other عند التعديل
     const defaultSources = [
       'Facebook boost', 'telegram', 'YouTube', 'Instagram',
       'survey', 'called call', 'purchased leads', 'walk in',
@@ -775,7 +781,6 @@ export function MarketerDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🗑️ دالة حذف العميل
   const handleDeleteLead = async (leadId: string) => {
     const confirmDelete = window.confirm('Are you sure you want to delete this client/lead?');
     if (!confirmDelete) return;
@@ -867,7 +872,6 @@ export function MarketerDashboard() {
     const apartmentLabels = selectedUnits.map((u) => u.label).join(' | ');
     const unitKeys = selectedUnits.map((u) => u.key).join(' | ');
 
-    // 👈 تحديد القيمة النهائية لمصدر العميل
     const finalSource = clientSource === 'Other' ? customSource.trim() : clientSource;
 
     const leadPayload: any = {
@@ -1261,6 +1265,26 @@ export function MarketerDashboard() {
                   </div>
                 </div>
 
+                {/* 👈 حقل نوع المسوق المضاف (Marketer Type) */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Marketer Type *
+                  </label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <select
+                      value={signupType}
+                      onChange={(e) => setSignupType(e.target.value as any)}
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all cursor-pointer"
+                      required
+                    >
+                      <option value="Internal Sale" className="bg-slate-900 text-white">Internal Sale</option>
+                      <option value="Freelance" className="bg-slate-900 text-white">Freelance</option>
+                      <option value="Agent" className="bg-slate-900 text-white">Agent</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Email Address *
@@ -1386,9 +1410,17 @@ export function MarketerDashboard() {
 
           <div className="h-4 w-[1px] bg-teal-600/60 hidden sm:block" />
 
-          {/* Welcome Text Without Profile Avatar */}
-          <div className="text-xs">
+          {/* Welcome Text with Marketer Type displayed before Name */}
+          <div className="text-xs flex items-center gap-1.5 flex-wrap">
             <span className="text-teal-100">Welcome Back, </span>
+            
+            {/* 👈 الشارة الخصوصية بنوع المسوّق قبل اسمه */}
+            {currentMarketer.marketer_type && (
+              <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                {currentMarketer.marketer_type}
+              </span>
+            )}
+            
             <span className="font-semibold text-white">{currentMarketer.name}</span>
             <span className="text-teal-200/80 text-[11px]">({currentMarketer.email})</span>
           </div>
@@ -1440,7 +1472,7 @@ export function MarketerDashboard() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           
-          {/* 📊 LEFT: AVAILABLE STOCKS TABLE (Matching Image Theme) */}
+          {/* 📊 LEFT: AVAILABLE STOCKS TABLE */}
           <div className="lg:col-span-7 xl:col-span-8 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             
             {/* Title Badge */}
@@ -1495,7 +1527,6 @@ export function MarketerDashboard() {
                   <tbody>
                     {floors.map((floorObj) => (
                       <tr key={floorObj.id} className="hover:bg-gray-50">
-                        {/* Floor Name Column: White bg with bold dark text */}
                         <td className="border border-gray-300 bg-white text-gray-800 font-semibold p-2 text-left px-3 text-xs">
                           {floorObj.floor_name}
                         </td>
@@ -1570,7 +1601,6 @@ export function MarketerDashboard() {
             {/* 1. Add Lead & Take Action Card */}
             <div className={`p-4 rounded-lg shadow-sm border ${editingLeadId ? 'bg-amber-50/70 border-amber-300' : 'bg-white border-gray-200'}`}>
               
-              {/* Card Header with Yellow Accent Line */}
               <div className="flex items-center justify-between mb-3 border-l-4 border-amber-400 pl-2.5">
                 <h2 className="font-bold text-gray-800 text-xs sm:text-sm">
                   {editingLeadId ? '✏️ Edit Lead Record' : 'Add Lead & Take Action'}
@@ -1656,7 +1686,6 @@ export function MarketerDashboard() {
                   />
                 </div>
 
-                {/* Country Dropdown & Phone Input */}
                 <div>
                   <label className="block font-medium text-gray-700 mb-1">
                     Phone Number *
@@ -1678,7 +1707,6 @@ export function MarketerDashboard() {
                   </div>
                 </div>
 
-                {/* 👈 قسم اختيار المصدر وإدخال المصدر المخصص */}
                 <div>
                   <label className="block font-medium text-gray-700 mb-1">
                     Lead Source *
@@ -1708,7 +1736,6 @@ export function MarketerDashboard() {
                     <option value="Other">Other...</option>
                   </select>
 
-                  {/* حقل المصدر المخصص يظهر عند تحديد Other */}
                   {clientSource === 'Other' && (
                     <input
                       type="text"
@@ -1768,7 +1795,6 @@ export function MarketerDashboard() {
                   </div>
                 )}
 
-                {/* Submit Button in Dark Teal Header Color */}
                 <button
                   type="submit"
                   className="w-full font-bold py-2.5 rounded text-xs text-white transition bg-[#00474b] hover:bg-[#00383b] shadow-sm mt-2"
@@ -1784,7 +1810,6 @@ export function MarketerDashboard() {
                 Your Recorded Leads ({leads.length})
               </h2>
 
-              {/* Tabs */}
               <div className="flex border-b border-gray-200 mb-3 overflow-x-auto gap-2 text-[11px]">
                 {(['All', 'New', 'Qualified', 'Negotiation', 'Closed'] as const).map((tab) => {
                   const count = tab === 'All'
@@ -1855,7 +1880,6 @@ export function MarketerDashboard() {
                             </div>
                           </div>
                           
-                          {/* Status Badge */}
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap ${
                               normalizedLeadStatus === 'New'
@@ -1889,7 +1913,6 @@ export function MarketerDashboard() {
                           </p>
                         )}
 
-                        {/* Action Buttons Matching Image (Pink/Red Delete, Soft Yellow Edit) */}
                         <div className="mt-1 pt-1.5 border-t border-gray-100 flex justify-end gap-1.5">
                           <button
                             type="button"
