@@ -63,6 +63,9 @@ export interface MarketerClient {
   total_payment?: number | string | null;
   installment_plan?: string | null;
   memo?: string | null;
+  cpo_file_url?: string | null;
+  cpo_url?: string | null;
+  cpo_file?: string | null;
 }
 
 export interface MarketerAccount {
@@ -116,7 +119,7 @@ export function AdminDashboardd() {
 
   const [activeCellKey, setActiveCellKey] = useState<string | null>(null);
   const [customCellText, setCustomCellText] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'matrix' | 'pricing' | 'clients' | 'marketers'>('matrix');
+  const [activeTab, setActiveTab] = useState<'matrix' | 'pricing' | 'clients' | 'marketers'>('clients');
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
@@ -275,6 +278,34 @@ export function AdminDashboardd() {
     } else if (data) {
       setMarketerAccounts(data);
     }
+  };
+
+  // --- Update Client Lead Status (e.g., Approve Qualification -> Qualified) ---
+  const handleUpdateClientStatus = async (clientId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from('leads')
+      .update({ status: newStatus })
+      .eq('id', clientId);
+
+    if (error) {
+      alert(`Error updating status: ${error.message}`);
+    } else {
+      setMarketerClients((prev) =>
+        prev.map((c) => (c.id === clientId ? { ...c, status: newStatus } : c))
+      );
+      alert(`✅ Client status updated to ${newStatus}`);
+    }
+  };
+
+  // --- Helper to Resolve CPO Document Public URL ---
+  const getCpoFileUrl = (client: MarketerClient): string | null => {
+    const file = client.cpo_file_url || client.cpo_url || client.cpo_file;
+    if (!file) return null;
+    if (file.startsWith('http://') || file.startsWith('https://')) return file;
+
+    // Retrieve from Supabase storage 'cpo-files' bucket
+    const { data } = supabase.storage.from('cpo-files').getPublicUrl(file);
+    return data?.publicUrl || null;
   };
 
   const handleUpdateMarketerStatus = async (marketerId: string, newStatus: 'approved' | 'rejected') => {
@@ -1171,7 +1202,7 @@ export function AdminDashboardd() {
             <div>
               <h2 className="text-lg font-bold text-gray-800">👥 Marketer Registered Clients</h2>
               <p className="text-xs text-gray-500">
-                Search, filter by marketer or lead status, and sort clients easily
+                Search, filter by marketer or lead status, approve qualification requests and view CPO files
               </p>
             </div>
 
@@ -1225,11 +1256,13 @@ export function AdminDashboardd() {
                   className="p-1.5 bg-white border border-gray-300 font-semibold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
                   <option value="all">All Statuses</option>
-                  <option value="New">New</option>
+                  <option value="Request for Qualification">Request for Qualification</option>
                   <option value="Qualified">Qualified</option>
+                  <option value="New">New</option>
                   <option value="Negotiation">Negotiation</option>
                   <option value="Reserved">Reserved</option>
                   <option value="Closed">Closed</option>
+                  <option value="Rejected">Rejected</option>
                 </select>
               </div>
 
@@ -1280,6 +1313,7 @@ export function AdminDashboardd() {
                   <th className="p-3 border">Unit / Details</th>
                   <th className="p-3 border">Source</th>
                   <th className="p-3 border">Status</th>
+                  <th className="p-3 border text-center">CPO Document</th>
                   <th
                     onClick={() => handleClientSortToggle('total_payment')}
                     className="p-3 border cursor-pointer hover:bg-gray-200 transition"
@@ -1297,84 +1331,136 @@ export function AdminDashboardd() {
               <tbody>
                 {filteredAndSortedClients.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="p-6 text-center text-gray-500 font-semibold">
+                    <td colSpan={11} className="p-6 text-center text-gray-500 font-semibold">
                       No clients found matching current filter/search criteria.
                     </td>
                   </tr>
                 ) : (
-                  filteredAndSortedClients.map((client) => (
-                    <tr key={client.id} className="border-b hover:bg-gray-50">
-                      <td className="p-3 border font-bold text-blue-800">
-                        {client.marketer_name || client.marketerName || 'Unknown'}
-                      </td>
-                      <td className="p-3 border">
-                        <span className="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-[10px] border border-blue-200">
-                          {client.marketer_type || client.marketerType || 'Standard'}
-                        </span>
-                      </td>
-                      <td className="p-3 border font-semibold">
-                        {client.name || client.client_name}
-                      </td>
-                      <td className="p-3 border">{client.phone}</td>
-                      <td className="p-3 border font-semibold text-gray-800">
-                        {getProjectName(client)}
-                      </td>
-                      <td className="p-3 border font-medium text-amber-900">
-                        {client.apartment_id || client.apartmentId || '-'}
-                      </td>
-                      <td className="p-3 border">
-                        <span className="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded text-[10px]">
-                          {client.source || client.lead_source || 'Direct'}
-                        </span>
-                      </td>
-                      <td className="p-3 border">
-                        <span className={`font-bold px-2.5 py-1 rounded-full text-[10px] ${
-                          client.status === 'Negotiation' ? 'bg-orange-100 text-orange-800' :
-                          client.status === 'Qualified' ? 'bg-amber-100 text-amber-800' :
-                          client.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {client.status || 'Reserved'}
-                        </span>
-                      </td>
+                  filteredAndSortedClients.map((client) => {
+                    const cpoUrl = getCpoFileUrl(client);
+                    const isRequestForQualification =
+                      client.status?.toLowerCase() === 'request for qualification';
 
-                      <td className="p-3 border">
-                        {client.total_payment || client.installment_plan || client.memo ? (
-                          <div className="bg-slate-50 p-2 rounded border border-slate-200 space-y-1 min-w-[170px] text-[11px]">
-                            {client.total_payment && (
-                              <div className="font-semibold text-slate-800">
-                                💵 Total: <span className="text-emerald-600">${Number(client.total_payment).toLocaleString()}</span>
-                              </div>
-                            )}
-                            {client.installment_plan && (
-                              <div className="text-slate-600">
-                                📅 Plan: <span className="font-medium text-slate-700">{client.installment_plan}</span>
-                              </div>
-                            )}
-                            {client.memo && (
-                              <div className="text-slate-500 italic truncate max-w-[200px]" title={client.memo}>
-                                📝 {client.memo}
+                    return (
+                      <tr key={client.id} className="border-b hover:bg-gray-50">
+                        <td className="p-3 border font-bold text-blue-800">
+                          {client.marketer_name || client.marketerName || 'Unknown'}
+                        </td>
+                        <td className="p-3 border">
+                          <span className="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-[10px] border border-blue-200">
+                            {client.marketer_type || client.marketerType || 'Standard'}
+                          </span>
+                        </td>
+                        <td className="p-3 border font-semibold">
+                          {client.name || client.client_name}
+                        </td>
+                        <td className="p-3 border">{client.phone}</td>
+                        <td className="p-3 border font-semibold text-gray-800">
+                          {getProjectName(client)}
+                        </td>
+                        <td className="p-3 border font-medium text-amber-900">
+                          {client.apartment_id || client.apartmentId || '-'}
+                        </td>
+                        <td className="p-3 border">
+                          <span className="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded text-[10px]">
+                            {client.source || client.lead_source || 'Direct'}
+                          </span>
+                        </td>
+
+                        {/* Status Column with Approve / Reject Actions */}
+                        <td className="p-3 border">
+                          <div className="flex flex-col items-start gap-1.5">
+                            <span
+                              className={`font-bold px-2.5 py-1 rounded-full text-[10px] ${
+                                isRequestForQualification
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                  : client.status === 'Qualified'
+                                  ? 'bg-emerald-100 text-emerald-800 font-extrabold'
+                                  : client.status === 'Rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : client.status === 'Negotiation'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}
+                            >
+                              {client.status || 'Reserved'}
+                            </span>
+
+                            {/* Approve & Reject buttons when status is Request for Qualification */}
+                            {isRequestForQualification && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <button
+                                  onClick={() => handleUpdateClientStatus(client.id, 'Qualified')}
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px] shadow-sm transition"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateClientStatus(client.id, 'Rejected')}
+                                  className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded text-[10px] shadow-sm transition"
+                                >
+                                  Reject
+                                </button>
                               </div>
                             )}
                           </div>
-                        ) : (
-                          <span className="text-gray-400 italic">—</span>
-                        )}
-                      </td>
+                        </td>
 
-                      <td className="p-3 border text-gray-500 whitespace-nowrap">
-                        {client.created_at
-                          ? new Date(client.created_at).toLocaleString('en-US', {
-                              year: 'numeric',
-                              month: 'numeric',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true,
-                            })
-                          : '-'}
-                      </td>
-                    </tr>
-                  ))
+                        {/* CPO File View Button Column */}
+                        <td className="p-3 border text-center">
+                          {cpoUrl ? (
+                            <a
+                              href={cpoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-bold text-[10px] shadow-sm transition"
+                            >
+                              📄 View CPO
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 italic text-[11px]">—</span>
+                          )}
+                        </td>
+
+                        <td className="p-3 border">
+                          {client.total_payment || client.installment_plan || client.memo ? (
+                            <div className="bg-slate-50 p-2 rounded border border-slate-200 space-y-1 min-w-[170px] text-[11px]">
+                              {client.total_payment && (
+                                <div className="font-semibold text-slate-800">
+                                  💵 Total: <span className="text-emerald-600">${Number(client.total_payment).toLocaleString()}</span>
+                                </div>
+                              )}
+                              {client.installment_plan && (
+                                <div className="text-slate-600">
+                                  📅 Plan: <span className="font-medium text-slate-700">{client.installment_plan}</span>
+                                </div>
+                              )}
+                              {client.memo && (
+                                <div className="text-slate-500 italic truncate max-w-[200px]" title={client.memo}>
+                                  📝 {client.memo}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic">—</span>
+                          )}
+                        </td>
+
+                        <td className="p-3 border text-gray-500 whitespace-nowrap">
+                          {client.created_at
+                            ? new Date(client.created_at).toLocaleString('en-US', {
+                                year: 'numeric',
+                                month: 'numeric',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true,
+                              })
+                            : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
