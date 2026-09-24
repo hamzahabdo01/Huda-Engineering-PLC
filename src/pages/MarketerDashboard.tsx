@@ -33,7 +33,7 @@ export interface UnitType {
   monthlyInstallment?: number;
 }
 
-export type UnitStatus = 'available' | 'unavailable' | 'reserved' | string;
+export type UnitStatus = 'available' | 'unavailable' | 'pending' | 'reserved' | string;
 
 export interface Project {
   id: string;
@@ -65,7 +65,7 @@ export interface MarketerProfile {
   email: string;
   phone?: string;
   status?: string;
-  marketer_type?: string; // 👈 تم إضافة حقل نوع المسوق هنا
+  marketer_type?: string;
 }
 
 export interface SelectedUnit {
@@ -231,7 +231,6 @@ export function MarketerDashboard() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupCountryCode, setSignupCountryCode] = useState('+251');
   const [signupPhone, setSignupPhone] = useState('');
-  // 👈 إضافة حالة لنوع المسوق
   const [signupType, setSignupType] = useState<'Internal Sale' | 'Freelance' | 'Agent'>('Internal Sale');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
@@ -256,7 +255,9 @@ export function MarketerDashboard() {
   const [selectedUnits, setSelectedUnits] = useState<SelectedUnit[]>([]);
 
   // Action / Status Dropdown State
-  const [actionStatus, setActionStatus] = useState<'New' | 'Qualified' | 'Negotiation' | 'Closed'>('New');
+  const [actionStatus, setActionStatus] = useState<
+    'New' | 'Request for Qualification' | 'Qualified' | 'Negotiation' | 'Closed'
+  >('New');
 
   // Negotiation Extra Fields State
   const [totalPayment, setTotalPayment] = useState<string>('');
@@ -272,7 +273,9 @@ export function MarketerDashboard() {
   const [customSource, setCustomSource] = useState('');
 
   // Leads Filter Tabs State
-  const [leadTab, setLeadTab] = useState<'All' | 'New' | 'Qualified' | 'Negotiation' | 'Closed'>('All');
+  const [leadTab, setLeadTab] = useState<
+    'All' | 'New' | 'Request for Qualification' | 'Qualified' | 'Negotiation' | 'Closed'
+  >('All');
 
   // ✏️ Edit Mode State
   const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
@@ -285,9 +288,14 @@ export function MarketerDashboard() {
   };
 
   // 🛠️ دالة توحيد صيغ الحالات
-  const normalizeStatus = (statusStr?: string): 'New' | 'Qualified' | 'Negotiation' | 'Closed' => {
+  const normalizeStatus = (
+    statusStr?: string
+  ): 'New' | 'Request for Qualification' | 'Qualified' | 'Negotiation' | 'Closed' => {
     if (!statusStr) return 'New';
     const s = statusStr.trim().toLowerCase();
+    if (s === 'request for qualification' || s === 'rfq' || s === 'pending qualification') {
+      return 'Request for Qualification';
+    }
     if (s === 'qualified') return 'Qualified';
     if (s === 'negotiation') return 'Negotiation';
     if (s === 'closed') return 'Closed';
@@ -633,7 +641,6 @@ export function MarketerDashboard() {
     }
   };
 
-  // 👈 دالة انشاء الحساب المعدلة لحفظ marketer_type
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -671,7 +678,7 @@ export function MarketerDashboard() {
             email: signupEmail,
             phone: fullPhone,
             status: 'pending',
-            marketer_type: signupType, // 👈 حفظ نوع المسوّق في قاعدة البيانات
+            marketer_type: signupType,
           },
         ]);
 
@@ -825,13 +832,18 @@ export function MarketerDashboard() {
         if (exists) {
           return prev.filter((u) => u.key !== key);
         } else {
-          if (actionStatus === 'Qualified') {
+          if (
+            actionStatus === 'Request for Qualification' ||
+            actionStatus === 'Qualified'
+          ) {
             return [...prev, { key, floorName, unitTypeId: unitType.id, label, details: unitType }];
           } else {
             return [{ key, floorName, unitTypeId: unitType.id, label, details: unitType }];
           }
         }
       });
+    } else if (statusLower === 'pending') {
+      alert(`⏳ Unit on ${formattedFloor} (${unitType.title}) is PENDING approval.`);
     } else if (statusLower === 'reserved') {
       alert(`🟡 Unit on ${formattedFloor} (${unitType.title}) is already RESERVED.`);
     } else {
@@ -926,14 +938,16 @@ export function MarketerDashboard() {
         }
       }
 
+      // 🔄 تحديث حالة الشقة في جدول srm_matrix_cells في قاعدة البيانات
       if (selectedUnits.length > 0 && targetStatus !== 'New') {
+        const newCellStatus = targetStatus === 'Request for Qualification' ? 'pending' : 'reserved';
         for (const unit of selectedUnits) {
           await supabase.from('srm_matrix_cells').upsert(
             {
               project_id: selectedProjectId,
               floor_name: unit.floorName,
               unit_type_id: unit.unitTypeId,
-              status: 'reserved',
+              status: newCellStatus,
               updated_at: new Date().toISOString(),
             },
             { onConflict: 'project_id,floor_name,unit_type_id' }
@@ -1265,7 +1279,6 @@ export function MarketerDashboard() {
                   </div>
                 </div>
 
-                {/* 👈 حقل نوع المسوق المضاف (Marketer Type) */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Marketer Type *
@@ -1391,13 +1404,12 @@ export function MarketerDashboard() {
     );
   }
 
-  // SCREEN 2: MAIN DASHBOARD (CUSTOM DESIGN MATCHING IMAGE)
+  // SCREEN 2: MAIN DASHBOARD
   return (
     <div className="p-3 sm:p-5 bg-[#eef2f5] min-h-screen text-left font-sans" dir="ltr">
       
-      {/* 🟢 TOP HEADER BAR (Matching Exact Dark Teal Theme - NO Profile Pic) */}
+      {/* 🟢 TOP HEADER BAR */}
       <div className="bg-[#00474b] text-white px-5 py-3 rounded-md shadow-sm mb-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Left Side: Brand Logo & User Welcome Text (NO PROFILE PIC) */}
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-amber-400 rounded-sm flex items-center justify-center font-black text-[#00474b] text-xs">
@@ -1410,11 +1422,9 @@ export function MarketerDashboard() {
 
           <div className="h-4 w-[1px] bg-teal-600/60 hidden sm:block" />
 
-          {/* Welcome Text with Marketer Type displayed before Name */}
           <div className="text-xs flex items-center gap-1.5 flex-wrap">
             <span className="text-teal-100">Welcome Back, </span>
             
-            {/* 👈 الشارة الخصوصية بنوع المسوّق قبل اسمه */}
             {currentMarketer.marketer_type && (
               <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
                 {currentMarketer.marketer_type}
@@ -1426,7 +1436,6 @@ export function MarketerDashboard() {
           </div>
         </div>
 
-        {/* Right Side: Project Dropdown & Logout Button */}
         <div className="flex items-center gap-3 w-full sm:w-auto justify-end text-xs">
           {projects.length > 0 && (
             <div className="flex items-center gap-2">
@@ -1475,7 +1484,6 @@ export function MarketerDashboard() {
           {/* 📊 LEFT: AVAILABLE STOCKS TABLE */}
           <div className="lg:col-span-7 xl:col-span-8 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             
-            {/* Title Badge */}
             <div className="flex items-center gap-2 mb-4">
               <span className="text-amber-500 text-lg">🟡</span>
               <h2 className="text-sm font-black text-[#00474b] uppercase tracking-wider">
@@ -1492,7 +1500,6 @@ export function MarketerDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-center text-xs font-sans border border-gray-300">
                   <thead>
-                    {/* Header Row 1 */}
                     <tr className="bg-[#00474b] text-white">
                       <th rowSpan={2} className="border border-teal-800 p-2 font-bold min-w-[80px]">
                         Floor
@@ -1508,7 +1515,6 @@ export function MarketerDashboard() {
                       </th>
                     </tr>
 
-                    {/* Header Row 2 */}
                     <tr className="bg-[#00474b] text-white">
                       {unitTypes.map((ut) => (
                         <th key={ut.id} className="border border-teal-800 p-2 font-semibold">
@@ -1558,7 +1564,12 @@ export function MarketerDashboard() {
                                 </span>
                               );
                             }
+                          } else if (statusLower === 'pending') {
+                            // ⚪ تم التحويل إلى اللون الرمادي لمرحلة الانتظار قبل موافقة الأدمن
+                            bgClass = 'bg-gray-400 hover:bg-gray-500 text-white font-bold cursor-not-allowed';
+                            cellContent = <span className="text-[10px] uppercase">PENDING</span>;
                           } else if (statusLower === 'reserved') {
+                            // 🟡 اللون الأصفر المخصص بعد موافقة الأدمن
                             bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer text-black font-semibold';
                             cellContent = <span className="text-[10px] uppercase">RESERVED</span>;
                           } else if (statusLower === 'shop' || statusLower === 'business') {
@@ -1633,7 +1644,8 @@ export function MarketerDashboard() {
                     className="w-full p-2 bg-white border border-gray-300 rounded text-xs font-semibold text-gray-800 focus:ring-1 focus:ring-[#00474b] outline-none cursor-pointer"
                   >
                     <option value="New">Now (Save Lead without Unit)</option>
-                    <option value="Qualified">Qualified (Reserve Unit)</option>
+                    {/* 👈 تم التعديل إلى Request for Qualification */}
+                    <option value="Request for Qualification">Request for Qualification (Reserve Unit)</option>
                     <option value="Negotiation">Negotiation (Payment Terms)</option>
                     <option value="Closed">Closed (Completed Deal)</option>
                   </select>
@@ -1810,11 +1822,22 @@ export function MarketerDashboard() {
                 Your Recorded Leads ({leads.length})
               </h2>
 
+              {/* 👈 تم إضافة Request for Qualification مع الاحتفاظ بـ Qualified */}
               <div className="flex border-b border-gray-200 mb-3 overflow-x-auto gap-2 text-[11px]">
-                {(['All', 'New', 'Qualified', 'Negotiation', 'Closed'] as const).map((tab) => {
-                  const count = tab === 'All'
-                    ? leads.length
-                    : leads.filter((l) => normalizeStatus(l.status) === tab).length;
+                {(
+                  [
+                    'All',
+                    'New',
+                    'Request for Qualification',
+                    'Qualified',
+                    'Negotiation',
+                    'Closed',
+                  ] as const
+                ).map((tab) => {
+                  const count =
+                    tab === 'All'
+                      ? leads.length
+                      : leads.filter((l) => normalizeStatus(l.status) === tab).length;
 
                   return (
                     <button
@@ -1884,6 +1907,8 @@ export function MarketerDashboard() {
                             className={`text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap ${
                               normalizedLeadStatus === 'New'
                                 ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                                : normalizedLeadStatus === 'Request for Qualification'
+                                ? 'bg-gray-100 text-gray-800 border border-gray-300'
                                 : normalizedLeadStatus === 'Qualified'
                                 ? 'bg-amber-100 text-amber-900 border border-amber-300'
                                 : normalizedLeadStatus === 'Negotiation'
