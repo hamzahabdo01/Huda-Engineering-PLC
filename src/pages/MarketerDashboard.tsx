@@ -1811,7 +1811,7 @@ export function MarketerDashboard() {
                   <div className="bg-amber-50/80 p-3 border border-amber-200 rounded space-y-2">
                     <label className="block font-bold text-amber-900 text-xs flex items-center gap-1.5">
                       <Upload className="w-3.5 h-3.5 text-amber-700" />
-                      Upload CPO Image (صورة الـ CPO)
+                      Upload CPO Image (CPO)
                     </label>
                     <input
                       type="file"
