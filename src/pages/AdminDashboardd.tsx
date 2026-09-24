@@ -63,6 +63,11 @@ export interface MarketerClient {
   total_payment?: number | string | null;
   installment_plan?: string | null;
   memo?: string | null;
+  // حقول الـ CPO بجميع المسميات المحتملة
+  cpo_image?: string | null;
+  cpoImage?: string | null;
+  cpo_image_url?: string | null;
+  cpoImageUrl?: string | null;
   cpo_file_url?: string | null;
   cpo_url?: string | null;
   cpo_file?: string | null;
@@ -298,15 +303,39 @@ export function AdminDashboardd() {
   };
 
   // --- Helper to Resolve CPO Document Public URL ---
-  const getCpoFileUrl = (client: MarketerClient): string | null => {
-    const file = client.cpo_file_url || client.cpo_url || client.cpo_file;
-    if (!file) return null;
-    if (file.startsWith('http://') || file.startsWith('https://')) return file;
+const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | null => {
+  // فحص حقول الـ Image المخصصة أولاً ثم باقي حقول الـ File
+  const file =
+    client.cpo_image ||
+    client.cpoImage ||
+    client.cpo_image_url ||
+    client.cpoImageUrl ||
+    client.cpo_file_url ||
+    client.cpo_url ||
+    client.cpo_file ||
+    client.cpo_path ||
+    client.cpo ||
+    client.cpo_document;
 
-    // Retrieve from Supabase storage 'cpo-files' bucket
-    const { data } = supabase.storage.from('cpo-files').getPublicUrl(file);
-    return data?.publicUrl || null;
-  };
+  if (!file || typeof file !== 'string' || file.trim() === '') {
+    return null;
+  }
+
+  const cleanFile = file.trim();
+
+  // إذا كان الرابط مسبوقاً بـ http أو base64 image
+  if (
+    cleanFile.startsWith('http://') ||
+    cleanFile.startsWith('https://') ||
+    cleanFile.startsWith('data:image')
+  ) {
+    return cleanFile;
+  }
+
+  // إذا كان ملفاً مرفوعاً في Supabase Storage (cpo-files)
+  const { data } = supabase.storage.from('cpo-files').getPublicUrl(cleanFile);
+  return data?.publicUrl || null;
+};
 
   const handleUpdateMarketerStatus = async (marketerId: string, newStatus: 'approved' | 'rejected') => {
     const { error } = await supabase
