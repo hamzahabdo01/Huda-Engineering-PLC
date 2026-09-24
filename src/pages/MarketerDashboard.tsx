@@ -13,6 +13,7 @@ import {
   Sparkles,
   KeyRound,
   Briefcase,
+  Upload,
 } from 'lucide-react';
 
 // --- Types & Interfaces ---
@@ -56,6 +57,7 @@ export interface Lead {
   total_payment?: number;
   installment_plan?: string;
   memo?: string;
+  cpo?: string; // 👈 حقل CPO لحفظ رابط صورة المستند
   created_at?: string;
 }
 
@@ -263,6 +265,11 @@ export function MarketerDashboard() {
   const [totalPayment, setTotalPayment] = useState<string>('');
   const [installmentPlan, setInstallmentPlan] = useState<string>('');
   const [memo, setMemo] = useState<string>('');
+
+  // 📷 CPO Image Upload State
+  const [cpoFile, setCpoFile] = useState<File | null>(null);
+  const [cpoUrl, setCpoUrl] = useState<string>('');
+  const [uploadingCpo, setUploadingCpo] = useState<boolean>(false);
 
   // Leads State & Country Code State
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -720,6 +727,8 @@ export function MarketerDashboard() {
     setTotalPayment('');
     setInstallmentPlan('');
     setMemo('');
+    setCpoFile(null);
+    setCpoUrl('');
   };
 
   const handleEditLead = (lead: Lead) => {
@@ -757,6 +766,8 @@ export function MarketerDashboard() {
     setTotalPayment(lead.total_payment ? lead.total_payment.toString() : '');
     setInstallmentPlan(lead.installment_plan || '');
     setMemo(lead.memo || '');
+    setCpoUrl(lead.cpo || '');
+    setCpoFile(null);
 
     if (lead.unit_key) {
       const keys = lead.unit_key.split(' | ');
@@ -879,6 +890,43 @@ export function MarketerDashboard() {
       return;
     }
 
+    // 📤 رفع صورة الـ CPO لـ Supabase Storage إذا وُجد ملف
+    let uploadedCpoUrl = cpoUrl;
+    if (targetStatus === 'Request for Qualification' && cpoFile) {
+      setUploadingCpo(true);
+      try {
+        const fileExt = cpoFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+        const filePath = `cpo_documents/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('cpo-files')
+          .upload(filePath, cpoFile);
+
+        if (uploadError) {
+          // محاولة الرفع للحافظة الإفتراضية leads في حال عدم تجهيز cpo-files
+          const { error: fallbackError } = await supabase.storage
+            .from('leads')
+            .upload(filePath, cpoFile);
+
+          if (fallbackError) {
+            console.error('CPO Upload Error:', uploadError);
+            alert(`⚠️ Warning: Failed to upload CPO image (${uploadError.message}). Saving lead without new image.`);
+          } else {
+            const { data: publicUrlData } = supabase.storage.from('leads').getPublicUrl(filePath);
+            uploadedCpoUrl = publicUrlData.publicUrl;
+          }
+        } else {
+          const { data: publicUrlData } = supabase.storage.from('cpo-files').getPublicUrl(filePath);
+          uploadedCpoUrl = publicUrlData.publicUrl;
+        }
+      } catch (err: any) {
+        console.error('Upload Error:', err);
+      } finally {
+        setUploadingCpo(false);
+      }
+    }
+
     const { fullPhone } = formatCleanPhone(countryCode, cleanPhone);
 
     const apartmentLabels = selectedUnits.map((u) => u.label).join(' | ');
@@ -896,6 +944,7 @@ export function MarketerDashboard() {
       marketer_id: currentMarketer?.id,
       marketer_name: currentMarketer?.name,
       status: targetStatus,
+      cpo: uploadedCpoUrl || null, // 👈 حفظ رابط صورة CPO في قاعدة البيانات
       total_payment: targetStatus === 'Negotiation' && totalPayment ? parseFloat(totalPayment) : null,
       installment_plan: targetStatus === 'Negotiation' && installmentPlan ? installmentPlan : null,
       memo: targetStatus === 'Negotiation' && memo ? memo : null,
@@ -1565,11 +1614,9 @@ export function MarketerDashboard() {
                               );
                             }
                           } else if (statusLower === 'pending') {
-                            // ⚪ تم التحويل إلى اللون الرمادي لمرحلة الانتظار قبل موافقة الأدمن
                             bgClass = 'bg-gray-400 hover:bg-gray-500 text-white font-bold cursor-not-allowed';
                             cellContent = <span className="text-[10px] uppercase">PENDING</span>;
                           } else if (statusLower === 'reserved') {
-                            // 🟡 اللون الأصفر المخصص بعد موافقة الأدمن
                             bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer text-black font-semibold';
                             cellContent = <span className="text-[10px] uppercase">RESERVED</span>;
                           } else if (statusLower === 'shop' || statusLower === 'business') {
@@ -1644,7 +1691,6 @@ export function MarketerDashboard() {
                     className="w-full p-2 bg-white border border-gray-300 rounded text-xs font-semibold text-gray-800 focus:ring-1 focus:ring-[#00474b] outline-none cursor-pointer"
                   >
                     <option value="New">Now (Save Lead without Unit)</option>
-                    {/* 👈 تم التعديل إلى Request for Qualification */}
                     <option value="Request for Qualification">Request for Qualification (Reserve Unit)</option>
                     <option value="Negotiation">Negotiation (Payment Terms)</option>
                     <option value="Closed">Closed (Completed Deal)</option>
@@ -1760,6 +1806,44 @@ export function MarketerDashboard() {
                   )}
                 </div>
 
+                {/* 🖼️ CPO Image Upload Field (يظهر في حالة Request for Qualification) */}
+                {actionStatus === 'Request for Qualification' && (
+                  <div className="bg-amber-50/80 p-3 border border-amber-200 rounded space-y-2">
+                    <label className="block font-bold text-amber-900 text-xs flex items-center gap-1.5">
+                      <Upload className="w-3.5 h-3.5 text-amber-700" />
+                      Upload CPO Image (صورة الـ CPO)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setCpoFile(e.target.files[0]);
+                        }
+                      }}
+                      className="w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-[#00474b] file:text-white hover:file:bg-[#00383b] cursor-pointer bg-white border border-gray-300 rounded p-1"
+                    />
+                    {cpoFile && (
+                      <p className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                        ✓ Selected file: {cpoFile.name}
+                      </p>
+                    )}
+                    {!cpoFile && cpoUrl && (
+                      <div className="text-[11px] flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                        <span className="text-gray-600 font-medium">Existing CPO Attachment:</span>
+                        <a
+                          href={cpoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#00474b] font-bold underline hover:text-teal-700"
+                        >
+                          View Attachment 📎
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {actionStatus === 'Negotiation' && (
                   <div className="bg-teal-50/60 p-3 border border-teal-200 rounded space-y-2">
                     <h3 className="font-bold text-[#00474b] text-[11px] border-b border-teal-200 pb-1">
@@ -1809,9 +1893,14 @@ export function MarketerDashboard() {
 
                 <button
                   type="submit"
-                  className="w-full font-bold py-2.5 rounded text-xs text-white transition bg-[#00474b] hover:bg-[#00383b] shadow-sm mt-2"
+                  disabled={uploadingCpo}
+                  className="w-full font-bold py-2.5 rounded text-xs text-white transition bg-[#00474b] hover:bg-[#00383b] shadow-sm mt-2 disabled:opacity-50"
                 >
-                  {editingLeadId ? `Update Lead Record` : `Save Lead as "${actionStatus}"`}
+                  {uploadingCpo
+                    ? 'Uploading CPO Image...'
+                    : editingLeadId
+                    ? `Update Lead Record`
+                    : `Save Lead as "${actionStatus}"`}
                 </button>
               </form>
             </div>
@@ -1822,7 +1911,6 @@ export function MarketerDashboard() {
                 Your Recorded Leads ({leads.length})
               </h2>
 
-              {/* 👈 تم إضافة Request for Qualification مع الاحتفاظ بـ Qualified */}
               <div className="flex border-b border-gray-200 mb-3 overflow-x-auto gap-2 text-[11px]">
                 {(
                   [
@@ -1936,6 +2024,20 @@ export function MarketerDashboard() {
                           <p className="text-[10px] text-amber-800 font-semibold">
                             Units: {lead.apartment_id}
                           </p>
+                        )}
+
+                        {/* 📎 عرض صورة CPO المرفقة إن وجدت */}
+                        {lead.cpo && (
+                          <div className="mt-1">
+                            <a
+                              href={lead.cpo}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200 transition"
+                            >
+                              📎 View CPO Image
+                            </a>
+                          </div>
                         )}
 
                         <div className="mt-1 pt-1.5 border-t border-gray-100 flex justify-end gap-1.5">
