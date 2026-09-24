@@ -265,6 +265,7 @@ export function MarketerDashboard() {
   const [countryCode, setCountryCode] = useState('+251');
   const [clientPhone, setClientPhone] = useState('');
   const [clientSource, setClientSource] = useState('Facebook boost');
+  const [customSource, setCustomSource] = useState(''); // 👈 إضافة State للمصدر المخصص
 
   // Leads Filter Tabs State
   const [leadTab, setLeadTab] = useState<'All' | 'New' | 'Qualified' | 'Negotiation' | 'Closed'>('All');
@@ -699,6 +700,7 @@ export function MarketerDashboard() {
     setClientPhone('');
     setCountryCode('+251');
     setClientSource('Facebook boost');
+    setCustomSource(''); // 👈 تفريغ النص المخصص
     setActionStatus('New');
     setSelectedUnits([]);
     setTotalPayment('');
@@ -722,7 +724,21 @@ export function MarketerDashboard() {
     }
     setClientPhone(phoneNum);
 
-    setClientSource(lead.source || 'Facebook boost');
+    // 👈 دعم مصدر Other عند التعديل
+    const defaultSources = [
+      'Facebook boost', 'telegram', 'YouTube', 'Instagram',
+      'survey', 'called call', 'purchased leads', 'walk in',
+      'company lead', 'linkedin', 'company boost'
+    ];
+
+    if (lead.source && !defaultSources.includes(lead.source)) {
+      setClientSource('Other');
+      setCustomSource(lead.source);
+    } else {
+      setClientSource(lead.source || 'Facebook boost');
+      setCustomSource('');
+    }
+
     setActionStatus(normalizeStatus(lead.status));
 
     setTotalPayment(lead.total_payment ? lead.total_payment.toString() : '');
@@ -827,6 +843,11 @@ export function MarketerDashboard() {
       return;
     }
 
+    if (clientSource === 'Other' && !customSource.trim()) {
+      alert('⚠️ Please specify the lead source in the text field.');
+      return;
+    }
+
     if (!selectedProjectId) {
       alert('⚠️ No active project selected.');
       return;
@@ -846,10 +867,13 @@ export function MarketerDashboard() {
     const apartmentLabels = selectedUnits.map((u) => u.label).join(' | ');
     const unitKeys = selectedUnits.map((u) => u.key).join(' | ');
 
+    // 👈 تحديد القيمة النهائية لمصدر العميل
+    const finalSource = clientSource === 'Other' ? customSource.trim() : clientSource;
+
     const leadPayload: any = {
       name: clientName,
       phone: fullPhone,
-      source: clientSource,
+      source: finalSource,
       apartment_id: apartmentLabels || null,
       unit_key: unitKeys || null,
       project_id: selectedProjectId,
@@ -1654,13 +1678,19 @@ export function MarketerDashboard() {
                   </div>
                 </div>
 
+                {/* 👈 قسم اختيار المصدر وإدخال المصدر المخصص */}
                 <div>
                   <label className="block font-medium text-gray-700 mb-1">
                     Lead Source *
                   </label>
                   <select
                     value={clientSource}
-                    onChange={(e) => setClientSource(e.target.value)}
+                    onChange={(e) => {
+                      setClientSource(e.target.value);
+                      if (e.target.value !== 'Other') {
+                        setCustomSource('');
+                      }
+                    }}
                     className="w-full p-2 border border-gray-300 rounded text-xs bg-white outline-none focus:ring-1 focus:ring-[#00474b]"
                     required
                   >
@@ -1675,7 +1705,20 @@ export function MarketerDashboard() {
                     <option value="company lead">company lead</option>
                     <option value="linkedin">linkedin</option>
                     <option value="company boost">company boost</option>
+                    <option value="Other">Other...</option>
                   </select>
+
+                  {/* حقل المصدر المخصص يظهر عند تحديد Other */}
+                  {clientSource === 'Other' && (
+                    <input
+                      type="text"
+                      placeholder="Please specify lead source..."
+                      value={customSource}
+                      onChange={(e) => setCustomSource(e.target.value)}
+                      className="w-full mt-2 p-2 border border-amber-300 bg-amber-50 rounded text-xs outline-none focus:ring-1 focus:ring-[#00474b]"
+                      required
+                    />
+                  )}
                 </div>
 
                 {actionStatus === 'Negotiation' && (
