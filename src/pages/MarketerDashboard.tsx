@@ -54,10 +54,12 @@ export interface Lead {
   marketer_id?: string;
   marketer_name?: string;
   status: string;
+  payment_type?: 'full' | 'progressive';
   total_payment?: number;
+  down_payment?: number;
   installment_plan?: string;
   memo?: string;
-  cpo?: string; // 👈 حقل CPO لحفظ رابط صورة المستند
+  cpo?: string;
   created_at?: string;
 }
 
@@ -105,14 +107,15 @@ const COUNTRY_CODES = [
   { code: '+91', label: '🇮🇳 India (+91)' },
 ];
 
-// 🔍 مكوّن البحث لاختيار الدولة (Searchable Dropdown Component)
 function SearchableCountrySelect({
   value,
   onChange,
+  disabled = false,
   isDark = false,
 }: {
   value: string;
   onChange: (code: string) => void;
+  disabled?: boolean;
   isDark?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -141,9 +144,12 @@ function SearchableCountrySelect({
     <div className="relative" ref={dropdownRef}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        disabled={disabled}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`p-2.5 border rounded-lg text-xs font-semibold outline-none flex items-center justify-between min-w-[120px] transition-all ${
-          isDark
+          disabled
+            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+            : isDark
             ? 'bg-slate-950/60 border-slate-800 text-white focus:border-teal-500'
             : 'bg-white border-gray-300 text-gray-800 focus:ring-1 focus:ring-[#00474b]'
         }`}
@@ -152,7 +158,7 @@ function SearchableCountrySelect({
         <span className={`ml-1 text-[9px] ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>▼</span>
       </button>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <div
           className={`absolute z-50 mt-1 w-60 border rounded-lg shadow-2xl p-2 max-h-56 overflow-y-auto left-0 ${
             isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-200 text-gray-800'
@@ -262,11 +268,13 @@ export function MarketerDashboard() {
   >('New');
 
   // Negotiation Extra Fields State
+  const [paymentType, setPaymentType] = useState<'full' | 'progressive'>('progressive');
   const [totalPayment, setTotalPayment] = useState<string>('');
+  const [downPayment, setDownPayment] = useState<string>('');
   const [installmentPlan, setInstallmentPlan] = useState<string>('');
   const [memo, setMemo] = useState<string>('');
 
-  // 📷 CPO Image Upload State
+  // CPO Image Upload State
   const [cpoFile, setCpoFile] = useState<File | null>(null);
   const [cpoUrl, setCpoUrl] = useState<string>('');
   const [uploadingCpo, setUploadingCpo] = useState<boolean>(false);
@@ -284,17 +292,18 @@ export function MarketerDashboard() {
     'All' | 'New' | 'Request for Qualification' | 'Qualified' | 'Negotiation' | 'Closed'
   >('All');
 
-  // ✏️ Edit Mode State
+  // Edit Mode State
   const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
 
-  // 🛠️ دالة لتنسيق اسم الطابق
+  // حالة قفل وتثبيت رقم الهاتف في التفاوض وما بعده
+  const isPhoneDisabled = actionStatus === 'Negotiation' || actionStatus === 'Closed';
+
   const formatFloorName = (name: string) => {
     const clean = (name || '').trim();
     if (!clean) return '';
     return clean.toLowerCase().endsWith('floor') ? clean : `${clean} Floor`;
   };
 
-  // 🛠️ دالة توحيد صيغ الحالات
   const normalizeStatus = (
     statusStr?: string
   ): 'New' | 'Request for Qualification' | 'Qualified' | 'Negotiation' | 'Closed' => {
@@ -309,7 +318,6 @@ export function MarketerDashboard() {
     return 'New';
   };
 
-  // 📱 دالة تنظيف وتجهيز رقم الهاتف
   const formatCleanPhone = (code: string, phone: string) => {
     const rawNumber = phone.replace(/[^0-9]/g, '').replace(/^0+/, '');
     return {
@@ -724,7 +732,9 @@ export function MarketerDashboard() {
     setCustomSource('');
     setActionStatus('New');
     setSelectedUnits([]);
+    setPaymentType('progressive');
     setTotalPayment('');
+    setDownPayment('');
     setInstallmentPlan('');
     setMemo('');
     setCpoFile(null);
@@ -762,8 +772,9 @@ export function MarketerDashboard() {
     }
 
     setActionStatus(normalizeStatus(lead.status));
-
+    setPaymentType(lead.payment_type || 'progressive');
     setTotalPayment(lead.total_payment ? lead.total_payment.toString() : '');
+    setDownPayment(lead.down_payment ? lead.down_payment.toString() : '');
     setInstallmentPlan(lead.installment_plan || '');
     setMemo(lead.memo || '');
     setCpoUrl(lead.cpo || '');
@@ -881,6 +892,31 @@ export function MarketerDashboard() {
       return;
     }
 
+    const { fullPhone } = formatCleanPhone(countryCode, cleanPhone);
+
+    // 🔍 1. التحقق من تميز وفرادة رقم الهاتف من قاعدة البيانات
+    try {
+      let checkPhoneQuery = supabase
+        .from('leads')
+        .select('id')
+        .eq('phone', fullPhone);
+
+      if (editingLeadId) {
+        checkPhoneQuery = checkPhoneQuery.neq('id', editingLeadId);
+      }
+
+      const { data: existingLeads, error: checkError } = await checkPhoneQuery;
+
+      if (checkError) {
+        console.error('Phone Check Error:', checkError);
+      } else if (existingLeads && existingLeads.length > 0) {
+        alert('⚠️ هذا الرقم موجود مسبقاً!');
+        return;
+      }
+    } catch (err: any) {
+      console.error('Phone verification failed:', err);
+    }
+
     const targetStatus = normalizeStatus(actionStatus);
 
     if (targetStatus !== 'New' && selectedUnits.length === 0) {
@@ -890,7 +926,7 @@ export function MarketerDashboard() {
       return;
     }
 
-    // 📤 رفع صورة الـ CPO لـ Supabase Storage إذا وُجد ملف
+    // 📤 رفع صورة CPO إن وجدت
     let uploadedCpoUrl = cpoUrl;
     if (targetStatus === 'Request for Qualification' && cpoFile) {
       setUploadingCpo(true);
@@ -904,7 +940,6 @@ export function MarketerDashboard() {
           .upload(filePath, cpoFile);
 
         if (uploadError) {
-          // محاولة الرفع للحافظة الإفتراضية leads في حال عدم تجهيز cpo-files
           const { error: fallbackError } = await supabase.storage
             .from('leads')
             .upload(filePath, cpoFile);
@@ -927,8 +962,6 @@ export function MarketerDashboard() {
       }
     }
 
-    const { fullPhone } = formatCleanPhone(countryCode, cleanPhone);
-
     const apartmentLabels = selectedUnits.map((u) => u.label).join(' | ');
     const unitKeys = selectedUnits.map((u) => u.key).join(' | ');
 
@@ -944,9 +977,11 @@ export function MarketerDashboard() {
       marketer_id: currentMarketer?.id,
       marketer_name: currentMarketer?.name,
       status: targetStatus,
-      cpo: uploadedCpoUrl || null, // 👈 حفظ رابط صورة CPO في قاعدة البيانات
+      cpo: uploadedCpoUrl || null,
+      payment_type: targetStatus === 'Negotiation' ? paymentType : null,
       total_payment: targetStatus === 'Negotiation' && totalPayment ? parseFloat(totalPayment) : null,
-      installment_plan: targetStatus === 'Negotiation' && installmentPlan ? installmentPlan : null,
+      down_payment: targetStatus === 'Negotiation' && downPayment ? parseFloat(downPayment) : null,
+      installment_plan: targetStatus === 'Negotiation' && paymentType === 'progressive' && installmentPlan ? installmentPlan : null,
       memo: targetStatus === 'Negotiation' && memo ? memo : null,
     };
 
@@ -987,7 +1022,6 @@ export function MarketerDashboard() {
         }
       }
 
-      // 🔄 تحديث حالة الشقة في جدول srm_matrix_cells في قاعدة البيانات
       if (selectedUnits.length > 0 && targetStatus !== 'New') {
         const newCellStatus = targetStatus === 'Request for Qualification' ? 'pending' : 'reserved';
         for (const unit of selectedUnits) {
@@ -1028,13 +1062,12 @@ export function MarketerDashboard() {
     );
   }
 
-  // SCREEN 1: LUXURY DARK AUTHENTICATION SCREEN
+  // SCREEN 1: AUTHENTICATION SCREEN
   if (!currentMarketer || isUpdatePassword) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 p-4 sm:p-6 lg:p-8 font-sans" dir="ltr">
         <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800/80">
           
-          {/* Left Side: Visual Branding & Hero Panel */}
           <div className="relative hidden lg:flex lg:col-span-5 flex-col justify-between p-10 overflow-hidden">
             <img
               src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop"
@@ -1071,7 +1104,6 @@ export function MarketerDashboard() {
             </div>
           </div>
 
-          {/* Right Side: Dynamic Form Panel */}
           <div className="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center bg-slate-900">
             <div className="mb-8">
               <h1 className="text-3xl font-extrabold text-white tracking-tight">
@@ -1745,21 +1777,34 @@ export function MarketerDashboard() {
                 </div>
 
                 <div>
-                  <label className="block font-medium text-gray-700 mb-1">
-                    Phone Number *
-                  </label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="font-medium text-gray-700">
+                      Phone Number *
+                    </label>
+                    {isPhoneDisabled && (
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                        🔒 Fixed in Negotiation
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-1.5">
                     <SearchableCountrySelect
                       value={countryCode}
                       onChange={(code) => setCountryCode(code)}
+                      disabled={isPhoneDisabled}
                       isDark={false}
                     />
                     <input
                       type="tel"
                       placeholder="9xxxxxxx / 5xxxxxxx"
                       value={clientPhone}
+                      disabled={isPhoneDisabled}
                       onChange={(e) => setClientPhone(e.target.value)}
-                      className="flex-1 p-2 border border-gray-300 rounded text-xs outline-none focus:ring-1 focus:ring-[#00474b]"
+                      className={`flex-1 p-2 border rounded text-xs outline-none ${
+                        isPhoneDisabled
+                          ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed font-medium'
+                          : 'border-gray-300 focus:ring-1 focus:ring-[#00474b]'
+                      }`}
                       required
                     />
                   </div>
@@ -1806,7 +1851,7 @@ export function MarketerDashboard() {
                   )}
                 </div>
 
-                {/* 🖼️ CPO Image Upload Field (يظهر في حالة Request for Qualification) */}
+                {/* 🖼️ CPO Image Upload Field */}
                 {actionStatus === 'Request for Qualification' && (
                   <div className="bg-amber-50/80 p-3 border border-amber-200 rounded space-y-2">
                     <label className="block font-bold text-amber-900 text-xs flex items-center gap-1.5">
@@ -1844,11 +1889,55 @@ export function MarketerDashboard() {
                   </div>
                 )}
 
+                {/* 💳 negotiation details المحدّث بكل المتطلبات */}
                 {actionStatus === 'Negotiation' && (
-                  <div className="bg-teal-50/60 p-3 border border-teal-200 rounded space-y-2">
+                  <div className="bg-teal-50/60 p-3 border border-teal-200 rounded space-y-2.5">
                     <h3 className="font-bold text-[#00474b] text-[11px] border-b border-teal-200 pb-1">
                       📝 Negotiation Details
                     </h3>
+
+                    {/* خيار نوع الدفع: Full Payment vs Progressive Payment */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-700 mb-1">
+                        Payment Method *
+                      </label>
+                      <div className="grid grid-cols-2 gap-2 bg-white p-1 border border-gray-300 rounded">
+                        <label
+                          className={`flex items-center justify-center gap-1.5 p-1.5 text-xs font-bold rounded cursor-pointer transition ${
+                            paymentType === 'full'
+                              ? 'bg-[#00474b] text-white'
+                              : 'text-gray-600 hover:bg-gray-100'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="paymentType"
+                            value="full"
+                            checked={paymentType === 'full'}
+                            onChange={() => setPaymentType('full')}
+                            className="hidden"
+                          />
+                          Full Payment
+                        </label>
+                        <label
+                          className={`flex items-center justify-center gap-1.5 p-1.5 text-xs font-bold rounded cursor-pointer transition ${
+                            paymentType === 'progressive'
+                              ? 'bg-[#00474b] text-white'
+                              : 'text-gray-600 hover:bg-gray-100'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="paymentType"
+                            value="progressive"
+                            checked={paymentType === 'progressive'}
+                            onChange={() => setPaymentType('progressive')}
+                            className="hidden"
+                          />
+                          Progressive Payment
+                        </label>
+                      </div>
+                    </div>
 
                     <div>
                       <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
@@ -1859,22 +1948,39 @@ export function MarketerDashboard() {
                         placeholder="Agreed Total Payment"
                         value={totalPayment}
                         onChange={(e) => setTotalPayment(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none"
+                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
                       />
                     </div>
 
+                    {/* Down Payment: يظهر سواء كان Full Payment أو Progressive Payment */}
                     <div>
                       <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
-                        Installment Plan
+                        Down Payment ($)
                       </label>
                       <input
-                        type="text"
-                        placeholder="e.g. 20% down, 3 years"
-                        value={installmentPlan}
-                        onChange={(e) => setInstallmentPlan(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none"
+                        type="number"
+                        placeholder="Down Payment Amount"
+                        value={downPayment}
+                        onChange={(e) => setDownPayment(e.target.value)}
+                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
                       />
                     </div>
+
+                    {/* Installment Plan: يظهر فقط عند اختيار Progressive Payment بعد حقل Down Payment */}
+                    {paymentType === 'progressive' && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
+                          Installment Plan
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 20% down, 3 years"
+                          value={installmentPlan}
+                          onChange={(e) => setInstallmentPlan(e.target.value)}
+                          className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
@@ -1885,7 +1991,7 @@ export function MarketerDashboard() {
                         placeholder="Write extra details..."
                         value={memo}
                         onChange={(e) => setMemo(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none resize-none"
+                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none resize-none focus:border-teal-600"
                       />
                     </div>
                   </div>
@@ -2026,7 +2132,6 @@ export function MarketerDashboard() {
                           </p>
                         )}
 
-                        {/* 📎 عرض صورة CPO المرفقة إن وجدت */}
                         {lead.cpo && (
                           <div className="mt-1">
                             <a
