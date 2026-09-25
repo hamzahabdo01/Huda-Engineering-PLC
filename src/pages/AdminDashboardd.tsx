@@ -23,10 +23,6 @@ export interface UnitType {
   project_id: string;
   title: string;
   area: number;
-  total_price?: number;
-  down_payment?: number;
-  installment_years?: number;
-  monthly_installment?: number;
 }
 
 export interface Floor {
@@ -61,9 +57,10 @@ export interface MarketerClient {
   lead_source?: string;
   created_at?: string;
   total_payment?: number | string | null;
+  down_payment?: number | string | null;
+  payment_type?: string | null;
   installment_plan?: string | null;
   memo?: string | null;
-  // حقول الـ CPO بجميع المسميات المحتملة
   cpo_image?: string | null;
   cpoImage?: string | null;
   cpo_image_url?: string | null;
@@ -115,22 +112,15 @@ export function AdminDashboardd() {
   const [newFloorName, setNewFloorName] = useState('');
   const [typicalFloorCount, setTypicalFloorCount] = useState<number | ''>('');
 
-  // Unit Type & Pricing Form States
+  // Unit Type Form States (بدون السعر الإجمالي)
   const [newUnitTitle, setNewUnitTitle] = useState('');
   const [newUnitArea, setNewUnitArea] = useState<number | ''>('');
-  const [newUnitPrice, setNewUnitPrice] = useState<number | ''>('');
-  const [newUnitDownPayment, setNewUnitDownPayment] = useState<number | ''>('');
-  const [newUnitYears, setNewUnitYears] = useState<number | ''>(5);
 
   const [activeCellKey, setActiveCellKey] = useState<string | null>(null);
   const [customCellText, setCustomCellText] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'matrix' | 'pricing' | 'clients' | 'marketers'>('clients');
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
-
-  // --- Pricing Edit States ---
-  const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
-  const [editUnitForm, setEditUnitForm] = useState<Partial<UnitType>>({});
 
   // 1. Fetch Initial Data and Setup Realtime Listeners
   useEffect(() => {
@@ -285,7 +275,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // --- Update Client Lead Status (e.g., Approve Qualification -> Qualified) ---
   const handleUpdateClientStatus = async (clientId: string, newStatus: string) => {
     const { error } = await supabase
       .from('leads')
@@ -302,40 +291,36 @@ export function AdminDashboardd() {
     }
   };
 
-  // --- Helper to Resolve CPO Document Public URL ---
-const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | null => {
-  // فحص حقول الـ Image المخصصة أولاً ثم باقي حقول الـ File
-  const file =
-    client.cpo_image ||
-    client.cpoImage ||
-    client.cpo_image_url ||
-    client.cpoImageUrl ||
-    client.cpo_file_url ||
-    client.cpo_url ||
-    client.cpo_file ||
-    client.cpo_path ||
-    client.cpo ||
-    client.cpo_document;
+  const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | null => {
+    const file =
+      client.cpo_image ||
+      client.cpoImage ||
+      client.cpo_image_url ||
+      client.cpoImageUrl ||
+      client.cpo_file_url ||
+      client.cpo_url ||
+      client.cpo_file ||
+      client.cpo_path ||
+      client.cpo ||
+      client.cpo_document;
 
-  if (!file || typeof file !== 'string' || file.trim() === '') {
-    return null;
-  }
+    if (!file || typeof file !== 'string' || file.trim() === '') {
+      return null;
+    }
 
-  const cleanFile = file.trim();
+    const cleanFile = file.trim();
 
-  // إذا كان الرابط مسبوقاً بـ http أو base64 image
-  if (
-    cleanFile.startsWith('http://') ||
-    cleanFile.startsWith('https://') ||
-    cleanFile.startsWith('data:image')
-  ) {
-    return cleanFile;
-  }
+    if (
+      cleanFile.startsWith('http://') ||
+      cleanFile.startsWith('https://') ||
+      cleanFile.startsWith('data:image')
+    ) {
+      return cleanFile;
+    }
 
-  // إذا كان ملفاً مرفوعاً في Supabase Storage (cpo-files)
-  const { data } = supabase.storage.from('cpo-files').getPublicUrl(cleanFile);
-  return data?.publicUrl || null;
-};
+    const { data } = supabase.storage.from('cpo-files').getPublicUrl(cleanFile);
+    return data?.publicUrl || null;
+  };
 
   const handleUpdateMarketerStatus = async (marketerId: string, newStatus: 'approved' | 'rejected') => {
     const { error } = await supabase
@@ -350,61 +335,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
         prev.map((m) => (m.id === marketerId ? { ...m, status: newStatus } : m))
       );
       alert(`✅ Marketer status updated to ${newStatus}`);
-    }
-  };
-
-  const handleEditUnitClick = (ut: UnitType) => {
-    setEditingUnitId(ut.id);
-    setEditUnitForm(ut);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingUnitId(null);
-    setEditUnitForm({});
-  };
-
-  const handleSaveUnitPricing = async (unitId: string) => {
-    const totalPrice = Number(editUnitForm.total_price) || 0;
-    const downPayment = Number(editUnitForm.down_payment) || 0;
-    const years = Number(editUnitForm.installment_years) || 1;
-    const remaining = Math.max(0, totalPrice - downPayment);
-    const monthlyInstallment = years > 0 ? Math.round(remaining / (years * 12)) : 0;
-
-    const updatedData = {
-      title: editUnitForm.title?.trim() || '',
-      area: Number(editUnitForm.area) || 0,
-      total_price: totalPrice,
-      down_payment: downPayment,
-      installment_years: years,
-      monthly_installment: monthlyInstallment,
-    };
-
-    const { error } = await supabase
-      .from('srm_unit_types')
-      .update(updatedData)
-      .eq('id', unitId);
-
-    if (error) {
-      alert('Error updating pricing: ' + error.message);
-    } else {
-      setUnitTypes((prev) =>
-        prev.map((ut) => (ut.id === unitId ? { ...ut, ...updatedData } : ut))
-      );
-      setEditingUnitId(null);
-      alert('✅ Unit Pricing updated successfully!');
-    }
-  };
-
-  const handleDeleteUnitType = async (unitId: string) => {
-    if (!confirm('Are you sure you want to delete this unit type?')) return;
-
-    const { error } = await supabase.from('srm_unit_types').delete().eq('id', unitId);
-
-    if (error) {
-      alert('Error deleting unit type: ' + error.message);
-    } else {
-      setUnitTypes((prev) => prev.filter((ut) => ut.id !== unitId));
-      alert('🗑️ Unit type deleted successfully!');
     }
   };
 
@@ -479,15 +409,10 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
     }
   };
 
+  // إضافة نوع شقة جديد بدون Total Price
   const handleAddUnitType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUnitTitle.trim() || !newUnitArea || !selectedProjectId) return;
-
-    const totalPrice = Number(newUnitPrice) || 0;
-    const downPayment = Number(newUnitDownPayment) || 0;
-    const years = Number(newUnitYears) || 1;
-    const remaining = Math.max(0, totalPrice - downPayment);
-    const monthlyInstallment = years > 0 ? Math.round(remaining / (years * 12)) : 0;
 
     const { data, error } = await supabase
       .from('srm_unit_types')
@@ -496,10 +421,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
           project_id: selectedProjectId,
           title: newUnitTitle.trim(),
           area: Number(newUnitArea),
-          total_price: totalPrice,
-          down_payment: downPayment,
-          installment_years: years,
-          monthly_installment: monthlyInstallment,
         },
       ])
       .select();
@@ -510,10 +431,7 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
       setUnitTypes([...unitTypes, data[0]]);
       setNewUnitTitle('');
       setNewUnitArea('');
-      setNewUnitPrice('');
-      setNewUnitDownPayment('');
-      setNewUnitYears(5);
-      alert('✅ Unit Type & Payment Plan saved successfully!');
+      alert('✅ Unit Type added successfully!');
     }
   };
 
@@ -605,19 +523,16 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
   const filteredAndSortedClients = useMemo(() => {
     return marketerClients
       .filter((c) => {
-        // Marketer Filter
         if (selectedMarketerFilter !== 'all') {
           const mName = c.marketer_name || c.marketerName || '';
           if (mName !== selectedMarketerFilter) return false;
         }
 
-        // Status Filter
         if (clientStatusFilter !== 'all') {
           const status = c.status || 'Reserved';
           if (status.toLowerCase() !== clientStatusFilter.toLowerCase()) return false;
         }
 
-        // Search Filter
         if (clientSearch.trim() !== '') {
           const query = clientSearch.toLowerCase();
           const mName = (c.marketer_name || c.marketerName || '').toLowerCase();
@@ -683,13 +598,11 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
   const filteredAndSortedMarketers = useMemo(() => {
     return marketerAccounts
       .filter((m) => {
-        // Status Filter
         if (marketerStatusFilter !== 'all') {
           const st = m.status || 'pending';
           if (st.toLowerCase() !== marketerStatusFilter.toLowerCase()) return false;
         }
 
-        // Search Filter
         if (marketerSearch.trim() !== '') {
           const query = marketerSearch.toLowerCase();
           const name = (m.name || '').toLowerCase();
@@ -794,7 +707,7 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
             activeTab === 'pricing' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
           }`}
         >
-          💳 Pricing & Payment Plans
+          💳 Pricing & Payment Plans ({marketerClients.length})
         </button>
         <button
           onClick={() => setActiveTab('clients')}
@@ -885,8 +798,9 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
                 </form>
               </div>
 
+              {/* تم حذف حقل total payment من هذه الاستمارة بناءً على طلبك */}
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="font-bold text-gray-800 text-sm mb-3">🏠 2. Add House Type & Pricing</h2>
+                <h2 className="font-bold text-gray-800 text-sm mb-3">🏠 2. Add House Type</h2>
                 <form onSubmit={handleAddUnitType} className="space-y-3">
                   <div>
                     <label className="block text-[11px] font-medium text-gray-700 mb-1">House Title *</label>
@@ -899,28 +813,16 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[11px] font-medium text-gray-700 mb-1">Area (m²) *</label>
-                      <input
-                        type="number"
-                        placeholder="e.g. 120"
-                        value={newUnitArea}
-                        onChange={(e) => setNewUnitArea(e.target.value ? Number(e.target.value) : '')}
-                        className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-medium text-gray-700 mb-1">Total Price ($)</label>
-                      <input
-                        type="number"
-                        placeholder="e.g. 150000"
-                        value={newUnitPrice}
-                        onChange={(e) => setNewUnitPrice(e.target.value ? Number(e.target.value) : '')}
-                        className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-700 mb-1">Area (m²) *</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 120"
+                      value={newUnitArea}
+                      onChange={(e) => setNewUnitArea(e.target.value ? Number(e.target.value) : '')}
+                      className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
+                      required
+                    />
                   </div>
                   <button
                     type="submit"
@@ -1082,137 +984,118 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
         </>
       )}
 
-      {/* TAB 2: PRICING & PAYMENT PLAN MANAGER */}
+      {/* TAB 2: PRICING & PAYMENT PLANS (بيانات الماركتر والخطط) */}
       {activeTab === 'pricing' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-lg font-bold text-gray-800">
-                💳 Pricing & Payment Plans for [{selectedProject?.name || selectedProject?.title}]
+                💳 Marketer Payment Plans & Pricing
               </h2>
-              <p className="text-xs text-gray-500">Edit prices, down payments, and installment duration dynamically</p>
+              <p className="text-xs text-gray-500">
+                View client payment details (Full Payment vs Progressive Payment) entered by marketers
+              </p>
             </div>
+            <button
+              onClick={fetchMarketerClients}
+              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 transition"
+            >
+              🔄 Refresh
+            </button>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border border-gray-200">
               <thead className="bg-gray-800 text-white uppercase font-bold">
                 <tr>
-                  <th className="p-3 border">House Title</th>
-                  <th className="p-3 border">Area (m²)</th>
+                  <th className="p-3 border">Project Name</th>
+                  <th className="p-3 border">Client Name</th>
+                  <th className="p-3 border">Apartment / Unit</th>
+                  <th className="p-3 border">Payment Type</th>
                   <th className="p-3 border">Total Price ($)</th>
                   <th className="p-3 border">Down Payment ($)</th>
-                  <th className="p-3 border">Installment Years</th>
-                  <th className="p-3 border">Est. Monthly Payment</th>
-                  <th className="p-3 border text-center">Actions</th>
+                  <th className="p-3 border">Installment Plan</th>
+                  <th className="p-3 border">Marketer</th>
+                  <th className="p-3 border">Date</th>
                 </tr>
               </thead>
               <tbody>
-                {unitTypes.length === 0 ? (
+                {marketerClients.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500 font-semibold">
-                      No unit types found for this project.
+                    <td colSpan={9} className="p-6 text-center text-gray-500 font-semibold">
+                      No payment or client records submitted by marketers.
                     </td>
                   </tr>
                 ) : (
-                  unitTypes.map((ut) => {
-                    const isEditing = editingUnitId === ut.id;
+                  marketerClients.map((client) => {
+                    const paymentTypeStr = (
+                      client.payment_type ||
+                      (client.installment_plan ? 'progressive payment' : 'full payment')
+                    ).toLowerCase();
 
-                    if (isEditing) {
-                      const currentPrice = Number(editUnitForm.total_price) || 0;
-                      const currentDown = Number(editUnitForm.down_payment) || 0;
-                      const currentYears = Number(editUnitForm.installment_years) || 1;
-                      const rem = Math.max(0, currentPrice - currentDown);
-                      const calcMonthly = currentYears > 0 ? Math.round(rem / (currentYears * 12)) : 0;
-
-                      return (
-                        <tr key={ut.id} className="bg-blue-50 border-b border-blue-200">
-                          <td className="p-2 border">
-                            <input
-                              type="text"
-                              value={editUnitForm.title || ''}
-                              onChange={(e) => setEditUnitForm({ ...editUnitForm, title: e.target.value })}
-                              className="w-full p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="p-2 border">
-                            <input
-                              type="number"
-                              value={editUnitForm.area || ''}
-                              onChange={(e) => setEditUnitForm({ ...editUnitForm, area: Number(e.target.value) })}
-                              className="w-20 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="p-2 border">
-                            <input
-                              type="number"
-                              value={editUnitForm.total_price || ''}
-                              onChange={(e) => setEditUnitForm({ ...editUnitForm, total_price: Number(e.target.value) })}
-                              className="w-28 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500 font-bold text-emerald-700"
-                            />
-                          </td>
-                          <td className="p-2 border">
-                            <input
-                              type="number"
-                              value={editUnitForm.down_payment || ''}
-                              onChange={(e) => setEditUnitForm({ ...editUnitForm, down_payment: Number(e.target.value) })}
-                              className="w-28 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="p-2 border">
-                            <input
-                              type="number"
-                              value={editUnitForm.installment_years || ''}
-                              onChange={(e) => setEditUnitForm({ ...editUnitForm, installment_years: Number(e.target.value) })}
-                              className="w-16 p-1.5 border rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="p-2 border font-bold text-blue-700">
-                            ${calcMonthly.toLocaleString()} / mo
-                          </td>
-                          <td className="p-2 border text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                onClick={() => handleSaveUnitPricing(ut.id)}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[11px]"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                className="px-2.5 py-1 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded text-[11px]"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    }
+                    const isFullPayment = paymentTypeStr.includes('full');
 
                     return (
-                      <tr key={ut.id} className="border-b hover:bg-gray-50">
-                        <td className="p-3 border font-bold">{ut.title}</td>
-                        <td className="p-3 border">{ut.area} m²</td>
-                        <td className="p-3 border font-semibold text-emerald-700">${ut.total_price?.toLocaleString() || 0}</td>
-                        <td className="p-3 border">${ut.down_payment?.toLocaleString() || 0}</td>
-                        <td className="p-3 border">{ut.installment_years || 0} Years</td>
-                        <td className="p-3 border font-bold text-blue-700">${ut.monthly_installment?.toLocaleString() || 0} / mo</td>
-                        <td className="p-3 border text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleEditUnitClick(ut)}
-                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold text-[11px]"
-                            >
-                              ✏️ Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUnitType(ut.id)}
-                              className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-[11px]"
-                            >
-                              🗑️
-                            </button>
-                          </div>
+                      <tr key={client.id} className="border-b hover:bg-gray-50">
+                        {/* اسم المشروع */}
+                        <td className="p-3 border font-bold text-gray-800">
+                          {getProjectName(client)}
+                        </td>
+
+                        {/* اسم العميل */}
+                        <td className="p-3 border font-semibold text-blue-900">
+                          {client.name || client.client_name || '—'}
+                        </td>
+
+                        {/* تفاصيل الشقة */}
+                        <td className="p-3 border font-medium text-amber-900">
+                          {client.apartment_id || client.apartmentId || '—'}
+                        </td>
+
+                        {/* نوع الدفع (Full Payment أو Progressive Payment) */}
+                        <td className="p-3 border">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
+                              isFullPayment
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : 'bg-purple-100 text-purple-800 border border-purple-300'
+                            }`}
+                          >
+                            {isFullPayment ? '💵 Full Payment' : '📅 Progressive Payment'}
+                          </span>
+                        </td>
+
+                        {/* المباشر / الإجمالي */}
+                        <td className="p-3 border font-semibold text-emerald-700">
+                          {client.total_payment
+                            ? `$${Number(client.total_payment).toLocaleString()}`
+                            : '—'}
+                        </td>
+
+                        {/* الدفعة الأولى */}
+                        <td className="p-3 border font-semibold text-blue-700">
+                          {client.down_payment
+                            ? `$${Number(client.down_payment).toLocaleString()}`
+                            : isFullPayment
+                            ? 'N/A'
+                            : '—'}
+                        </td>
+
+                        {/* خطة الأقساط */}
+                        <td className="p-3 border text-gray-700 font-medium">
+                          {client.installment_plan || (isFullPayment ? 'Full Cash' : '—')}
+                        </td>
+
+                        {/* اسم الماركتر */}
+                        <td className="p-3 border font-bold text-gray-700">
+                          {client.marketer_name || client.marketerName || '—'}
+                        </td>
+
+                        {/* تاريخ الإنشاء */}
+                        <td className="p-3 border text-gray-500 whitespace-nowrap">
+                          {client.created_at
+                            ? new Date(client.created_at).toLocaleDateString('en-US')
+                            : '—'}
                         </td>
                       </tr>
                     );
@@ -1236,7 +1119,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
             </div>
 
             <div className="flex flex-wrap items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-300">
-              {/* 🔍 Search Input */}
               <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500">
                 <span className="text-gray-400 text-xs">🔍</span>
                 <input
@@ -1256,7 +1138,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
                 )}
               </div>
 
-              {/* 👤 Select Marketer Filter */}
               <div className="flex items-center gap-1.5">
                 <select
                   value={selectedMarketerFilter}
@@ -1277,7 +1158,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
                 </select>
               </div>
 
-              {/* 📊 Status Filter */}
               <div className="flex items-center gap-1.5">
                 <select
                   value={clientStatusFilter}
@@ -1295,7 +1175,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
                 </select>
               </div>
 
-              {/* 🔄 Refresh Button */}
               <button
                 onClick={fetchMarketerClients}
                 className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 transition flex items-center gap-1"
@@ -1303,7 +1182,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
                 🔄 Refresh
               </button>
 
-              {/* 🔄 Reset Filters */}
               {(clientSearch || selectedMarketerFilter !== 'all' || clientStatusFilter !== 'all') && (
                 <button
                   onClick={() => {
@@ -1319,7 +1197,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
             </div>
           </div>
 
-          {/* Table displaying Filtered & Sorted Clients */}
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border border-gray-200">
               <thead className="bg-gray-100 text-gray-700 uppercase font-bold select-none">
@@ -1396,7 +1273,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
                           </span>
                         </td>
 
-                        {/* Status Column with Approve / Reject Actions */}
                         <td className="p-3 border">
                           <div className="flex flex-col items-start gap-1.5">
                             <span
@@ -1415,7 +1291,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
                               {client.status || 'Reserved'}
                             </span>
 
-                            {/* Approve & Reject buttons when status is Request for Qualification */}
                             {isRequestForQualification && (
                               <div className="flex items-center gap-1 mt-1">
                                 <button
@@ -1435,7 +1310,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
                           </div>
                         </td>
 
-                        {/* CPO File View Button Column */}
                         <td className="p-3 border text-center">
                           {cpoUrl ? (
                             <a
@@ -1497,7 +1371,7 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
         </div>
       )}
 
-      {/* TAB 4: MARKETERS & APPROVALS (WITH SEARCH, FILTER & SORT) */}
+      {/* TAB 4: MARKETERS & APPROVALS */}
       {activeTab === 'marketers' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -1507,7 +1381,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              {/* 🔍 Search Input */}
               <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500">
                 <span className="text-gray-400 text-xs">🔍</span>
                 <input
@@ -1527,7 +1400,6 @@ const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | n
                 )}
               </div>
 
-              {/* 📊 Status Filter */}
               <select
                 value={marketerStatusFilter}
                 onChange={(e) => setMarketerStatusFilter(e.target.value)}
