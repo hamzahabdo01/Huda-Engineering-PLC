@@ -1,26 +1,21 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../integrations/supabase/client';
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  User,
-  UserPlus,
-  Phone,
-  ShieldCheck,
-  ArrowRight,
-  Sparkles,
-  KeyRound,
-  Briefcase,
-  Upload,
-} from 'lucide-react';
 
 // --- Types & Interfaces ---
-export interface Floor {
-  id: string;
-  project_id: string;
-  floor_name: string;
+export type UnitStatus =
+  | 'available'
+  | 'reserved'
+  | 'unavailable'
+  | 'office'
+  | 'business'
+  | 'shop'
+  | string;
+
+export interface PaymentPlan {
+  total_price?: number;
+  down_payment?: number;
+  installment_years?: number;
+  monthly_installment?: number;
 }
 
 export interface UnitType {
@@ -28,13 +23,13 @@ export interface UnitType {
   project_id: string;
   title: string;
   area: number;
-  totalPrice?: number;
-  downPayment?: number;
-  installmentYears?: number;
-  monthlyInstallment?: number;
 }
 
-export type UnitStatus = 'available' | 'unavailable' | 'pending' | 'reserved' | string;
+export interface Floor {
+  id: string;
+  project_id: string;
+  floor_name: string;
+}
 
 export interface Project {
   id: string;
@@ -43,486 +38,130 @@ export interface Project {
   subtitle?: string;
 }
 
-export interface Lead {
+export interface MarketerClient {
   id: string;
-  name: string;
-  phone: string;
-  source?: string;
-  apartment_id?: string;
-  unit_key?: string;
-  project_id?: string;
-  marketer_id?: string;
   marketer_name?: string;
-  status: string;
-  payment_type?: 'full' | 'progressive';
-  total_payment?: number;
-  down_payment?: number;
-  installment_plan?: string;
-  memo?: string;
-  cpo?: string;
+  marketerName?: string;
+  marketer_type?: string;
+  marketerType?: string;
+  client_name?: string;
+  name?: string;
+  phone: string;
+  project_id?: string;
+  project_name?: string;
+  unit_title?: string;
+  apartment_id?: string;
+  apartmentId?: string;
+  status?: string;
+  source?: string;
+  lead_source?: string;
   created_at?: string;
+  total_payment?: number | string | null;
+  down_payment?: number | string | null;
+  payment_type?: string | null;
+  installment_plan?: string | null;
+  memo?: string | null;
+  cpo_image?: string | null;
+  cpoImage?: string | null;
+  cpo_image_url?: string | null;
+  cpoImageUrl?: string | null;
+  cpo_file_url?: string | null;
+  cpo_url?: string | null;
+  cpo_file?: string | null;
 }
 
-export interface MarketerProfile {
+export interface MarketerAccount {
   id: string;
   name: string;
   email: string;
   phone?: string;
-  status?: string;
   marketer_type?: string;
+  role?: string;
+  status: 'pending' | 'approved' | 'rejected' | string;
+  created_at?: string;
 }
 
-export interface SelectedUnit {
-  key: string;
-  floorName: string;
-  unitTypeId: string;
-  label: string;
-  details: UnitType;
-}
-
-// قائمة الدول ومفاتيح الاتصال
-const COUNTRY_CODES = [
-  { code: '+251', label: '🇪🇹 Ethiopia (+251)' },
-  { code: '+966', label: '🇸🇦 Saudi Arabia (+966)' },
-  { code: '+971', label: '🇦🇪 UAE (+971)' },
-  { code: '+965', label: '🇰🇼 Kuwait (+965)' },
-  { code: '+974', label: '🇶🇦 Qatar (+974)' },
-  { code: '+20', label: '🇪🇬 Egypt (+20)' },
-  { code: '+1', label: '🇺🇸 USA/Canada (+1)' },
-  { code: '+44', label: '🇬🇧 UK (+44)' },
-  { code: '+212', label: '🇲🇦 Morocco (+212)' },
-  { code: '+213', label: '🇩🇿 Algeria (+213)' },
-  { code: '+216', label: '🇹🇳 Tunisia (+216)' },
-  { code: '+249', label: '🇸🇩 Sudan (+249)' },
-  { code: '+962', label: '🇯🇴 Jordan (+962)' },
-  { code: '+961', label: '🇱🇧 Lebanon (+961)' },
-  { code: '+968', label: '🇴🇲 Oman (+968)' },
-  { code: '+973', label: '🇧🇭 Bahrain (+973)' },
-  { code: '+964', label: '🇮🇶 Iraq (+964)' },
-  { code: '+90', label: '🇹🇷 Turkey (+90)' },
-  { code: '+49', label: '🇩🇪 Germany (+49)' },
-  { code: '+33', label: '🇫🇷 France (+33)' },
-  { code: '+39', label: '🇮🇹 Italy (+39)' },
-  { code: '+86', label: '🇨🇳 China (+86)' },
-  { code: '+91', label: '🇮🇳 India (+91)' },
-];
-
-function SearchableCountrySelect({
-  value,
-  onChange,
-  disabled = false,
-  isDark = false,
-}: {
-  value: string;
-  onChange: (code: string) => void;
-  disabled?: boolean;
-  isDark?: boolean;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const selected = COUNTRY_CODES.find((c) => c.code === value) || COUNTRY_CODES[0];
-
-  const filtered = COUNTRY_CODES.filter(
-    (c) =>
-      c.label.toLowerCase().includes(search.toLowerCase()) ||
-      c.code.includes(search)
-  );
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`p-2.5 border rounded-lg text-xs font-semibold outline-none flex items-center justify-between min-w-[120px] transition-all ${
-          disabled
-            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-            : isDark
-            ? 'bg-slate-950/60 border-slate-800 text-white focus:border-teal-500'
-            : 'bg-white border-gray-300 text-gray-800 focus:ring-1 focus:ring-[#00474b]'
-        }`}
-      >
-        <span className="truncate">{selected.label}</span>
-        <span className={`ml-1 text-[9px] ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>▼</span>
-      </button>
-
-      {isOpen && !disabled && (
-        <div
-          className={`absolute z-50 mt-1 w-60 border rounded-lg shadow-2xl p-2 max-h-56 overflow-y-auto left-0 ${
-            isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-200 text-gray-800'
-          }`}
-        >
-          <input
-            type="text"
-            placeholder="🔍 Search country or code..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={`w-full p-2 border rounded text-xs mb-2 outline-none ${
-              isDark
-                ? 'bg-slate-950 border-slate-800 text-white placeholder-slate-500 focus:border-teal-500'
-                : 'bg-gray-50 border-gray-300 text-gray-800 focus:ring-1 focus:ring-[#00474b]'
-            }`}
-            autoFocus
-          />
-          <div className="space-y-0.5">
-            {filtered.length > 0 ? (
-              filtered.map((c) => (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => {
-                    onChange(c.code);
-                    setIsOpen(false);
-                    setSearch('');
-                  }}
-                  className={`w-full text-left px-2 py-1.5 text-xs rounded transition ${
-                    value === c.code
-                      ? 'bg-[#00474b] text-white font-bold'
-                      : isDark
-                      ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                      : 'text-gray-700 hover:bg-teal-50'
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))
-            ) : (
-              <div className={`text-xs p-2 text-center ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                No country found
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function MarketerDashboard() {
-  // --- Auth & User State ---
-  const [currentMarketer, setCurrentMarketer] = useState<MarketerProfile | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
-  const [loadingProjects, setLoadingProjects] = useState(true);
-  const [loadingDetails, setLoadingDetails] = useState(false);
-
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [isUpdatePassword, setIsUpdatePassword] = useState(false);
-  const isUpdatePasswordRef = useRef(false);
-
-  const setUpdatePasswordMode = (val: boolean) => {
-    isUpdatePasswordRef.current = val;
-    setIsUpdatePassword(val);
-  };
-
-  const [authLoading, setAuthLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // Auth Inputs
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
-  const [signupName, setSignupName] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupCountryCode, setSignupCountryCode] = useState('+251');
-  const [signupPhone, setSignupPhone] = useState('');
-  const [signupType, setSignupType] = useState<'Internal Sale' | 'Freelance' | 'Agent'>('Internal Sale');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
-
-  // Password Reset Inputs
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-
-  const [authError, setAuthError] = useState('');
-  const [authSuccess, setAuthSuccess] = useState('');
-
-  // --- Dynamic Relational Database States ---
+export function AdminDashboardd() {
+  // --- States ---
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+
   const [floors, setFloors] = useState<Floor[]>([]);
   const [unitTypes, setUnitTypes] = useState<UnitType[]>([]);
-  const [matrix, setMatrix] = useState<Record<string, string>>({});
+  const [matrix, setMatrix] = useState<Record<string, UnitStatus>>({});
+  const [marketerClients, setMarketerClients] = useState<MarketerClient[]>([]);
+  const [marketerAccounts, setMarketerAccounts] = useState<MarketerAccount[]>([]);
+  const [marketersFetchError, setMarketersFetchError] = useState<string | null>(null);
+
+  // --- Clients Search, Filter & Sort States ---
+  const [selectedMarketerFilter, setSelectedMarketerFilter] = useState<string>('all');
+  const [clientSearch, setClientSearch] = useState<string>('');
+  const [clientStatusFilter, setClientStatusFilter] = useState<string>('all');
+  const [clientSortField, setClientSortField] = useState<'created_at' | 'name' | 'marketer_name' | 'total_payment'>('created_at');
+  const [clientSortOrder, setClientSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // --- Marketers Search, Filter & Sort States ---
+  const [marketerSearch, setMarketerSearch] = useState<string>('');
+  const [marketerStatusFilter, setMarketerStatusFilter] = useState<string>('all');
+  const [marketerSortField, setMarketerSortField] = useState<'name' | 'email' | 'created_at' | 'status'>('created_at');
+  const [marketerSortOrder, setMarketerSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Floor Form States
+  const [newFloorName, setNewFloorName] = useState('');
+  const [typicalFloorCount, setTypicalFloorCount] = useState<number | ''>('');
+
+  // Unit Type Form States (بدون السعر الإجمالي)
+  const [newUnitTitle, setNewUnitTitle] = useState('');
+  const [newUnitArea, setNewUnitArea] = useState<number | ''>('');
+
+  const [activeCellKey, setActiveCellKey] = useState<string | null>(null);
+  const [customCellText, setCustomCellText] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'matrix' | 'pricing' | 'clients' | 'marketers'>('clients');
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
-  // Dynamic Selection States
-  const [selectedUnits, setSelectedUnits] = useState<SelectedUnit[]>([]);
-
-  // Action / Status Dropdown State
-  const [actionStatus, setActionStatus] = useState<
-    'New' | 'Request for Qualification' | 'Qualified' | 'Negotiation' | 'Closed'
-  >('New');
-
-  // Negotiation Extra Fields State
-  const [paymentType, setPaymentType] = useState<'full' | 'progressive'>('progressive');
-  const [totalPayment, setTotalPayment] = useState<string>('');
-  const [downPayment, setDownPayment] = useState<string>('');
-  const [installmentPlan, setInstallmentPlan] = useState<string>('');
-  const [memo, setMemo] = useState<string>('');
-
-  // CPO Image Upload State
-  const [cpoFile, setCpoFile] = useState<File | null>(null);
-  const [cpoUrl, setCpoUrl] = useState<string>('');
-  const [uploadingCpo, setUploadingCpo] = useState<boolean>(false);
-
-  // Leads State & Country Code State
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [clientName, setClientName] = useState('');
-  const [countryCode, setCountryCode] = useState('+251');
-  const [clientPhone, setClientPhone] = useState('');
-  const [clientSource, setClientSource] = useState('Facebook boost');
-  const [customSource, setCustomSource] = useState('');
-
-  // Leads Filter Tabs State
-  const [leadTab, setLeadTab] = useState<
-    'All' | 'New' | 'Request for Qualification' | 'Qualified' | 'Negotiation' | 'Closed'
-  >('All');
-
-  // Edit Mode State
-  const [editingLeadId, setEditingLeadId] = useState<string | null>(null);
-
-  // حالة قفل وتثبيت رقم الهاتف في التفاوض وما بعده
-  const isPhoneDisabled = actionStatus === 'Negotiation' || actionStatus === 'Closed';
-
-  const formatFloorName = (name: string) => {
-    const clean = (name || '').trim();
-    if (!clean) return '';
-    return clean.toLowerCase().endsWith('floor') ? clean : `${clean} Floor`;
-  };
-
-  const normalizeStatus = (
-    statusStr?: string
-  ): 'New' | 'Request for Qualification' | 'Qualified' | 'Negotiation' | 'Closed' => {
-    if (!statusStr) return 'New';
-    const s = statusStr.trim().toLowerCase();
-    if (s === 'request for qualification' || s === 'rfq' || s === 'pending qualification') {
-      return 'Request for Qualification';
-    }
-    if (s === 'qualified') return 'Qualified';
-    if (s === 'negotiation') return 'Negotiation';
-    if (s === 'closed') return 'Closed';
-    return 'New';
-  };
-
-  const formatCleanPhone = (code: string, phone: string) => {
-    const rawNumber = phone.replace(/[^0-9]/g, '').replace(/^0+/, '');
-    return {
-      fullPhone: `${code} ${rawNumber}`,
-      numericPhone: `${code.replace(/[^0-9]/g, '')}${rawNumber}`,
-    };
-  };
-
-  const fetchProjects = useCallback(async () => {
-    setLoadingProjects(true);
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        const formatted: Project[] = data.map((p: any) => ({
-          id: p.id,
-          name: p.name || p.title || 'Untitled Project',
-          subtitle: p.subtitle || '',
-        }));
-
-        setProjects(formatted);
-
-        setSelectedProjectId((prev) => {
-          if (!prev || !formatted.some((p) => p.id === prev)) {
-            return formatted[0].id;
-          }
-          return prev;
-        });
-      } else {
-        setProjects([]);
-      }
-    } catch (err: any) {
-      console.error('Error fetching projects:', err.message);
-    } finally {
-      setLoadingProjects(false);
-    }
-  }, []);
-
-  const fetchFloors = useCallback(async (projectId: string) => {
-    const { data, error } = await supabase
-      .from('srm_floors')
-      .select('*')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: true });
-
-    if (!error && data) {
-      setFloors(data);
-    }
-  }, []);
-
-  const fetchUnitTypes = useCallback(async (projectId: string) => {
-    const { data, error } = await supabase
-      .from('srm_unit_types')
-      .select('*')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: true });
-
-    if (!error && data) {
-      const formatted: UnitType[] = data.map((ut: any) => ({
-        id: ut.id,
-        project_id: ut.project_id,
-        title: ut.title,
-        area: ut.area,
-        totalPrice: ut.total_price || ut.totalPrice,
-        downPayment: ut.down_payment || ut.downPayment,
-        installmentYears: ut.installment_years || ut.installmentYears,
-        monthlyInstallment: ut.monthly_installment || ut.monthlyInstallment,
-      }));
-      setUnitTypes(formatted);
-    }
-  }, []);
-
-  const fetchMatrixData = useCallback(async (projectId: string) => {
-    const { data, error } = await supabase
-      .from('srm_matrix_cells')
-      .select('*')
-      .eq('project_id', projectId);
-
-    if (!error && data) {
-      const matrixMap: Record<string, string> = {};
-      data.forEach((item: any) => {
-        const floorClean = (item.floor_name || '').trim();
-        const uId = item.unit_type_id || item.unit_id || '';
-        const uTitle = (item.unit_type_title || item.unit_title || item.title || '').trim();
-
-        if (floorClean) {
-          if (uId) {
-            matrixMap[`${floorClean}___${uId}`] = item.status;
-            if (item.floor_name) matrixMap[`${item.floor_name}___${uId}`] = item.status;
-          }
-          if (uTitle) {
-            matrixMap[`${floorClean}___${uTitle}`] = item.status;
-            if (item.floor_name) matrixMap[`${item.floor_name}___${uTitle}`] = item.status;
-          }
-        }
-      });
-      setMatrix(matrixMap);
-    }
-  }, []);
-
-  const fetchProjectDetails = useCallback(async (projectId: string) => {
-    setLoadingDetails(true);
-    await Promise.all([
-      fetchFloors(projectId),
-      fetchUnitTypes(projectId),
-      fetchMatrixData(projectId),
-    ]);
-    setLoadingDetails(false);
-  }, [fetchFloors, fetchUnitTypes, fetchMatrixData]);
-
-  const fetchLeadsForMarketer = useCallback(async (marketerId: string, marketerName: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .or(`marketer_id.eq.${marketerId},marketer_name.eq.${marketerName}`)
-        .order('created_at', { ascending: false });
-
-      if (!error && data) {
-        setLeads(data);
-      }
-    } catch (err) {
-      console.error('Error fetching leads:', err);
-    }
-  }, []);
-
-  const fetchMarketerProfile = useCallback(async (userId: string) => {
-    if (isUpdatePasswordRef.current) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('marketers')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        const isApproved = data.status === 'approved';
-
-        if (!isApproved && !isUpdatePasswordRef.current) {
-          setAuthError('⏳ Your account is pending admin approval. Access is restricted.');
-          setCurrentMarketer(null);
-          await supabase.auth.signOut();
-        } else if (isApproved && !isUpdatePasswordRef.current) {
-          setCurrentMarketer(data);
-          fetchLeadsForMarketer(data.id, data.name);
-        }
-      } else {
-        if (!isUpdatePasswordRef.current) {
-          setAuthError('❌ Profile record not found in marketers table.');
-          setCurrentMarketer(null);
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-    } finally {
-      setLoadingUser(false);
-    }
-  }, [fetchLeadsForMarketer]);
-
+  // 1. Fetch Initial Data and Setup Realtime Listeners
   useEffect(() => {
     fetchProjects();
+    fetchMarketerClients();
+    fetchMarketerAccounts();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setUpdatePasswordMode(true);
-        setIsForgotPassword(false);
-        setIsSignUp(false);
-        setCurrentMarketer(null);
-        setLoadingUser(false);
-        return;
-      }
-
-      if (isUpdatePasswordRef.current) {
-        setLoadingUser(false);
-        return;
-      }
-
-      if (session?.user) {
-        fetchMarketerProfile(session.user.id);
-      } else {
-        setCurrentMarketer(null);
-        setLoadingUser(false);
-      }
-    });
+    const leadsChannel = supabase
+      .channel('realtime-leads-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'leads' },
+        () => {
+          fetchMarketerClients();
+        }
+      )
+      .subscribe();
 
     return () => {
-      authListener.subscription.unsubscribe();
+      supabase.removeChannel(leadsChannel);
     };
-  }, [fetchProjects, fetchMarketerProfile]);
+  }, []);
 
+  // 2. Fetch Project Specific Data
   useEffect(() => {
     if (!selectedProjectId) return;
 
+    const fetchProjectDetails = async (projectId: string) => {
+      setLoading(true);
+      await Promise.all([
+        fetchFloors(projectId),
+        fetchUnitTypes(projectId),
+        fetchMatrixData(projectId),
+      ]);
+      setLoading(false);
+    };
+
     fetchProjectDetails(selectedProjectId);
 
-    const matrixChannel = supabase
-      .channel(`realtime-matrix-${selectedProjectId}`)
+    const channel = supabase
+      .channel('schema-db-changes')
       .on(
         'postgres_changes',
         {
@@ -538,1635 +177,1360 @@ export function MarketerDashboard() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(matrixChannel);
+      supabase.removeChannel(channel);
     };
-  }, [selectedProjectId, fetchProjectDetails, fetchMatrixData]);
+  }, [selectedProjectId]);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    setAuthSuccess('');
-    setAuthLoading(true);
+  // --- Supabase API Calls ---
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
+  const fetchProjects = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('projects').select('*');
+    if (error) {
+      console.error('Error fetching projects:', error);
+    } else if (data && data.length > 0) {
+      setProjects(data);
+      setSelectedProjectId(data[0].id);
+    }
+    setLoading(false);
+  };
+
+  const fetchFloors = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from('srm_floors')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    if (!error && data) {
+      setFloors(data);
+    }
+  };
+
+  const fetchUnitTypes = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from('srm_unit_types')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    if (!error && data) {
+      setUnitTypes(data);
+    }
+  };
+
+  const fetchMatrixData = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from('srm_matrix_cells')
+      .select('*')
+      .eq('project_id', projectId);
+
+    if (!error && data) {
+      const matrixMap: Record<string, UnitStatus> = {};
+      data.forEach((item) => {
+        const key = `${item.floor_name}__${item.unit_type_id}`;
+        matrixMap[key] = item.status as UnitStatus;
       });
-
-      if (error) {
-        setAuthError(`❌ Login failed: ${error.message}`);
-        setAuthLoading(false);
-        return;
-      }
-
-      if (data.user) {
-        await fetchMarketerProfile(data.user.id);
-      }
-    } catch (err: any) {
-      setAuthError(`❌ An unexpected error occurred: ${err.message}`);
-    } finally {
-      setAuthLoading(false);
+      setMatrix(matrixMap);
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    setAuthSuccess('');
+  const fetchMarketerClients = async () => {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*, projects(name, title)')
+      .order('created_at', { ascending: false });
 
-    if (!loginEmail.trim()) {
-      setAuthError('❌ Please enter your email address first.');
-      return;
-    }
-
-    setAuthLoading(true);
-
-    try {
-      const redirectUrl = `${window.location.origin}${window.location.pathname}`;
-
-      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-        redirectTo: redirectUrl,
-      });
-
-      if (error) {
-        setAuthError(`❌ ${error.message}`);
-      } else {
-        setAuthSuccess('✅ Password reset link has been sent to your email inbox!');
-      }
-    } catch (err: any) {
-      setAuthError(`❌ ${err.message}`);
-    } finally {
-      setAuthLoading(false);
+    if (!error && data) {
+      const formattedData = data.map((item: any) => ({
+        ...item,
+        project_name:
+          item.project_name ||
+          item.projects?.name ||
+          item.projects?.title ||
+          null,
+      }));
+      setMarketerClients(formattedData);
+    } else if (error) {
+      const { data: rawData } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (rawData) setMarketerClients(rawData);
     }
   };
 
-  const handleSetNewPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    setAuthSuccess('');
+  const fetchMarketerAccounts = async () => {
+    setMarketersFetchError(null);
+    const { data, error } = await supabase
+      .from('marketers')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    if (newPassword !== confirmNewPassword) {
-      setAuthError('❌ Passwords do not match.');
-      return;
-    }
-
-    setAuthLoading(true);
-
-    try {
-      const { data: authData, error: authError } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (authError) {
-        setAuthError(`❌ Auth error: ${authError.message}`);
-        setAuthLoading(false);
-        return;
-      }
-
-      if (authData?.user) {
-        const { error: dbError } = await supabase
-          .from('marketers')
-          .update({
-            status: 'pending',
-          })
-          .eq('id', authData.user.id);
-
-        if (dbError) {
-          setAuthError(`❌ Failed to update status in Database: ${dbError.message}`);
-          setAuthLoading(false);
-          return;
-        }
-
-        window.history.replaceState(null, '', window.location.pathname);
-        await supabase.auth.signOut();
-
-        setUpdatePasswordMode(false);
-        setCurrentMarketer(null);
-        setNewPassword('');
-        setConfirmNewPassword('');
-        setAuthSuccess(
-          '✅ Password updated successfully! Your account status is now PENDING and awaiting Admin re-approval.'
-        );
-      }
-    } catch (err: any) {
-      setAuthError(`❌ ${err.message}`);
-    } finally {
-      setAuthLoading(false);
+    if (error) {
+      console.error('Error fetching marketer accounts:', error);
+      setMarketersFetchError(error.message);
+    } else if (data) {
+      setMarketerAccounts(data);
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    setAuthSuccess('');
+  const handleUpdateClientStatus = async (clientId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from('leads')
+      .update({ status: newStatus })
+      .eq('id', clientId);
 
-    if (signupPassword !== signupConfirmPassword) {
-      setAuthError('❌ Passwords do not match.');
-      return;
-    }
-
-    const { fullPhone } = formatCleanPhone(signupCountryCode, signupPhone);
-
-    setAuthLoading(true);
-
-    try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: signupEmail,
-        password: signupPassword,
-        options: {
-          data: { name: signupName, phone: fullPhone, marketer_type: signupType },
-        },
-      });
-
-      if (authError) {
-        setAuthError(`❌ ${authError.message}`);
-        setAuthLoading(false);
-        return;
-      }
-
-      if (authData.user) {
-        const { error: dbError } = await supabase.from('marketers').insert([
-          {
-            id: authData.user.id,
-            name: signupName,
-            email: signupEmail,
-            phone: fullPhone,
-            status: 'pending',
-            marketer_type: signupType,
-          },
-        ]);
-
-        if (dbError) {
-          setAuthError(`⚠️ Account created, but database record failed: ${dbError.message}`);
-        } else {
-          setAuthSuccess(
-            '✅ Registration successful! Your account is now awaiting admin approval.'
-          );
-          setSignupName('');
-          setSignupEmail('');
-          setSignupPhone('');
-          setSignupType('Internal Sale');
-          setSignupPassword('');
-          setSignupConfirmPassword('');
-        }
-      }
-    } catch (err: any) {
-      setAuthError(`❌ ${err.message}`);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setCurrentMarketer(null);
-  };
-
-  const resetForm = () => {
-    setEditingLeadId(null);
-    setClientName('');
-    setClientPhone('');
-    setCountryCode('+251');
-    setClientSource('Facebook boost');
-    setCustomSource('');
-    setActionStatus('New');
-    setSelectedUnits([]);
-    setPaymentType('progressive');
-    setTotalPayment('');
-    setDownPayment('');
-    setInstallmentPlan('');
-    setMemo('');
-    setCpoFile(null);
-    setCpoUrl('');
-  };
-
-  const handleEditLead = (lead: Lead) => {
-    setEditingLeadId(lead.id);
-    setClientName(lead.name || '');
-
-    let phoneNum = (lead.phone || '').trim();
-    const matchedCountry = COUNTRY_CODES.find((c) => phoneNum.startsWith(c.code));
-
-    if (matchedCountry) {
-      setCountryCode(matchedCountry.code);
-      phoneNum = phoneNum.slice(matchedCountry.code.length).trim().replace(/^0+/, '');
+    if (error) {
+      alert(`Error updating status: ${error.message}`);
     } else {
-      setCountryCode('+251');
-      phoneNum = phoneNum.replace(/^\+251/, '').trim().replace(/^0+/, '');
+      setMarketerClients((prev) =>
+        prev.map((c) => (c.id === clientId ? { ...c, status: newStatus } : c))
+      );
+      alert(`✅ Client status updated to ${newStatus}`);
     }
-    setClientPhone(phoneNum);
+  };
 
-    const defaultSources = [
-      'Facebook boost', 'telegram', 'YouTube', 'Instagram',
-      'survey', 'called call', 'purchased leads', 'walk in',
-      'company lead', 'linkedin', 'company boost'
+  const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | null => {
+    const file =
+      client.cpo_image ||
+      client.cpoImage ||
+      client.cpo_image_url ||
+      client.cpoImageUrl ||
+      client.cpo_file_url ||
+      client.cpo_url ||
+      client.cpo_file ||
+      client.cpo_path ||
+      client.cpo ||
+      client.cpo_document;
+
+    if (!file || typeof file !== 'string' || file.trim() === '') {
+      return null;
+    }
+
+    const cleanFile = file.trim();
+
+    if (
+      cleanFile.startsWith('http://') ||
+      cleanFile.startsWith('https://') ||
+      cleanFile.startsWith('data:image')
+    ) {
+      return cleanFile;
+    }
+
+    const { data } = supabase.storage.from('cpo-files').getPublicUrl(cleanFile);
+    return data?.publicUrl || null;
+  };
+
+  const handleUpdateMarketerStatus = async (marketerId: string, newStatus: 'approved' | 'rejected') => {
+    const { error } = await supabase
+      .from('marketers')
+      .update({ status: newStatus })
+      .eq('id', marketerId);
+
+    if (error) {
+      alert(`Error updating marketer status: ${error.message}`);
+    } else {
+      setMarketerAccounts((prev) =>
+        prev.map((m) => (m.id === marketerId ? { ...m, status: newStatus } : m))
+      );
+      alert(`✅ Marketer status updated to ${newStatus}`);
+    }
+  };
+
+  const getOrdinalFloorName = (num: number): string => {
+    const ordinals = [
+      'First', 'Second', 'Third', 'Fourth', 'Fifth',
+      'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth',
+      'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth',
+      'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth',
+      'Twenty-First', 'Twenty-Second', 'Twenty-Third', 'Twenty-Fourth', 'Twenty-Fifth',
+      'Twenty-Sixth', 'Twenty-Seventh', 'Twenty-Eighth', 'Twenty-Ninth', 'Thirtieth'
     ];
 
-    if (lead.source && !defaultSources.includes(lead.source)) {
-      setClientSource('Other');
-      setCustomSource(lead.source);
-    } else {
-      setClientSource(lead.source || 'Facebook boost');
-      setCustomSource('');
+    if (num <= ordinals.length) {
+      return `${ordinals[num - 1]} Floor`;
     }
 
-    setActionStatus(normalizeStatus(lead.status));
-    setPaymentType(lead.payment_type || 'progressive');
-    setTotalPayment(lead.total_payment ? lead.total_payment.toString() : '');
-    setDownPayment(lead.down_payment ? lead.down_payment.toString() : '');
-    setInstallmentPlan(lead.installment_plan || '');
-    setMemo(lead.memo || '');
-    setCpoUrl(lead.cpo || '');
-    setCpoFile(null);
-
-    if (lead.unit_key) {
-      const keys = lead.unit_key.split(' | ');
-      const restoredUnits: SelectedUnit[] = [];
-
-      keys.forEach((k) => {
-        const parts = k.split('___');
-        if (parts.length === 2) {
-          const floorName = parts[0];
-          const unitTypeId = parts[1];
-          const matchedUt = unitTypes.find((ut) => ut.id === unitTypeId);
-
-          if (matchedUt) {
-            restoredUnits.push({
-              key: k,
-              floorName,
-              unitTypeId,
-              label: `${formatFloorName(floorName)} [${matchedUt.title} (${matchedUt.area}m²)]`,
-              details: matchedUt,
-            });
-          }
-        }
-      });
-      setSelectedUnits(restoredUnits);
-    } else {
-      setSelectedUnits([]);
-    }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const j = num % 10, k = num % 100;
+    if (j === 1 && k !== 11) return `${num}st Floor`;
+    if (j === 2 && k !== 12) return `${num}nd Floor`;
+    if (j === 3 && k !== 13) return `${num}rd Floor`;
+    return `${num}th Floor`;
   };
 
-  const handleDeleteLead = async (leadId: string) => {
-    const confirmDelete = window.confirm('Are you sure you want to delete this client/lead?');
-    if (!confirmDelete) return;
-
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .delete()
-        .eq('id', leadId);
-
-      if (error) {
-        alert(`❌ Failed to delete lead! Database error: ${error.message}`);
-        return;
-      }
-
-      setLeads((prev) => prev.filter((l) => l.id !== leadId));
-
-      if (editingLeadId === leadId) {
-        resetForm();
-      }
-
-      alert('✅ Client deleted successfully!');
-    } catch (err: any) {
-      alert(`❌ Unexpected Error: ${err.message}`);
-    }
-  };
-
-  const handleCellClick = (floorName: string, unitType: UnitType, status: string) => {
-    if (actionStatus === 'New') {
-      alert('ℹ️ Action Status is set to "New". Unit selection is not required for New leads.');
-      return;
-    }
-
-    const key = `${floorName}___${unitType.id}`;
-    const formattedFloor = formatFloorName(floorName);
-    const label = `${formattedFloor} [${unitType.title} (${unitType.area}m²)]`;
-    const statusLower = (status || '').toLowerCase().trim();
-
-    if (statusLower === 'available') {
-      setSelectedUnits((prev) => {
-        const exists = prev.some((u) => u.key === key);
-        if (exists) {
-          return prev.filter((u) => u.key !== key);
-        } else {
-          if (
-            actionStatus === 'Request for Qualification' ||
-            actionStatus === 'Qualified'
-          ) {
-            return [...prev, { key, floorName, unitTypeId: unitType.id, label, details: unitType }];
-          } else {
-            return [{ key, floorName, unitTypeId: unitType.id, label, details: unitType }];
-          }
-        }
-      });
-    } else if (statusLower === 'pending') {
-      alert(`⏳ Unit on ${formattedFloor} (${unitType.title}) is PENDING approval.`);
-    } else if (statusLower === 'reserved') {
-      alert(`🟡 Unit on ${formattedFloor} (${unitType.title}) is already RESERVED.`);
-    } else {
-      alert(`🔴 Unit on ${formattedFloor} (${unitType.title}) is marked as "${status.toUpperCase()}" and is NOT available.`);
-    }
-  };
-
-  const handleSaveLeadWithAction = async (e: React.FormEvent) => {
+  const handleAddFloors = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanPhone = clientPhone.trim();
+    if (!selectedProjectId) return;
 
-    if (!clientName || !cleanPhone) {
-      alert('⚠️ Please fill in both client name and phone number.');
-      return;
-    }
+    const floorsToCreate: { project_id: string; floor_name: string }[] = [];
 
-    if (clientSource === 'Other' && !customSource.trim()) {
-      alert('⚠️ Please specify the lead source in the text field.');
-      return;
-    }
+    if (typicalFloorCount && Number(typicalFloorCount) > 0) {
+      const count = Number(typicalFloorCount);
+      for (let i = 1; i <= count; i++) {
+        const name = getOrdinalFloorName(i);
 
-    if (!selectedProjectId) {
-      alert('⚠️ No active project selected.');
-      return;
-    }
-
-    const { fullPhone } = formatCleanPhone(countryCode, cleanPhone);
-
-    // 🔍 1. التحقق من تميز وفرادة رقم الهاتف من قاعدة البيانات
-    try {
-      let checkPhoneQuery = supabase
-        .from('leads')
-        .select('id')
-        .eq('phone', fullPhone);
-
-      if (editingLeadId) {
-        checkPhoneQuery = checkPhoneQuery.neq('id', editingLeadId);
-      }
-
-      const { data: existingLeads, error: checkError } = await checkPhoneQuery;
-
-      if (checkError) {
-        console.error('Phone Check Error:', checkError);
-      } else if (existingLeads && existingLeads.length > 0) {
-        alert('⚠️ هذا الرقم موجود مسبقاً!');
-        return;
-      }
-    } catch (err: any) {
-      console.error('Phone verification failed:', err);
-    }
-
-    const targetStatus = normalizeStatus(actionStatus);
-
-    if (targetStatus !== 'New' && selectedUnits.length === 0) {
-      alert(
-        `⚠️ To change status to "${targetStatus}", please select at least one available GREEN unit from the inventory table first!`
-      );
-      return;
-    }
-
-    // 📤 رفع صورة CPO إن وجدت
-    let uploadedCpoUrl = cpoUrl;
-    if (targetStatus === 'Request for Qualification' && cpoFile) {
-      setUploadingCpo(true);
-      try {
-        const fileExt = cpoFile.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-        const filePath = `cpo_documents/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('cpo-files')
-          .upload(filePath, cpoFile);
-
-        if (uploadError) {
-          const { error: fallbackError } = await supabase.storage
-            .from('leads')
-            .upload(filePath, cpoFile);
-
-          if (fallbackError) {
-            console.error('CPO Upload Error:', uploadError);
-            alert(`⚠️ Warning: Failed to upload CPO image (${uploadError.message}). Saving lead without new image.`);
-          } else {
-            const { data: publicUrlData } = supabase.storage.from('leads').getPublicUrl(filePath);
-            uploadedCpoUrl = publicUrlData.publicUrl;
-          }
-        } else {
-          const { data: publicUrlData } = supabase.storage.from('cpo-files').getPublicUrl(filePath);
-          uploadedCpoUrl = publicUrlData.publicUrl;
-        }
-      } catch (err: any) {
-        console.error('Upload Error:', err);
-      } finally {
-        setUploadingCpo(false);
-      }
-    }
-
-    const apartmentLabels = selectedUnits.map((u) => u.label).join(' | ');
-    const unitKeys = selectedUnits.map((u) => u.key).join(' | ');
-
-    const finalSource = clientSource === 'Other' ? customSource.trim() : clientSource;
-
-    const leadPayload: any = {
-      name: clientName,
-      phone: fullPhone,
-      source: finalSource,
-      apartment_id: apartmentLabels || null,
-      unit_key: unitKeys || null,
-      project_id: selectedProjectId,
-      marketer_id: currentMarketer?.id,
-      marketer_name: currentMarketer?.name,
-      status: targetStatus,
-      cpo: uploadedCpoUrl || null,
-      payment_type: targetStatus === 'Negotiation' ? paymentType : null,
-      total_payment: targetStatus === 'Negotiation' && totalPayment ? parseFloat(totalPayment) : null,
-      down_payment: targetStatus === 'Negotiation' && downPayment ? parseFloat(downPayment) : null,
-      installment_plan: targetStatus === 'Negotiation' && paymentType === 'progressive' && installmentPlan ? installmentPlan : null,
-      memo: targetStatus === 'Negotiation' && memo ? memo : null,
-    };
-
-    try {
-      if (editingLeadId) {
-        const { data: updatedData, error: updateError } = await supabase
-          .from('leads')
-          .update(leadPayload)
-          .eq('id', editingLeadId)
-          .select();
-
-        if (updateError) {
-          alert(`❌ Failed to update lead! Database error: ${updateError.message}`);
-          return;
-        }
-
-        if (!updatedData || updatedData.length === 0) {
-          alert('❌ Database update failed! Check Supabase RLS policies for UPDATE on the "leads" table.');
-          return;
-        }
-
-        const savedLead = updatedData[0];
-        setLeads((prev) => prev.map((l) => (l.id === editingLeadId ? savedLead : l)));
-
-      } else {
-        const { data: leadData, error: leadError } = await supabase
-          .from('leads')
-          .insert([leadPayload])
-          .select();
-
-        if (leadError) {
-          alert(`❌ Failed to save lead! Database error: ${leadError.message}`);
-          return;
-        }
-
-        if (leadData && leadData[0]) {
-          setLeads((prev) => [leadData[0], ...prev]);
+        if (!floors.some((f) => f.floor_name.toLowerCase() === name.toLowerCase())) {
+          floorsToCreate.push({
+            project_id: selectedProjectId,
+            floor_name: name,
+          });
         }
       }
-
-      if (selectedUnits.length > 0 && targetStatus !== 'New') {
-        const newCellStatus = targetStatus === 'Request for Qualification' ? 'pending' : 'reserved';
-        for (const unit of selectedUnits) {
-          await supabase.from('srm_matrix_cells').upsert(
-            {
-              project_id: selectedProjectId,
-              floor_name: unit.floorName,
-              unit_type_id: unit.unitTypeId,
-              status: newCellStatus,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'project_id,floor_name,unit_type_id' }
-          );
-        }
-        await fetchMatrixData(selectedProjectId);
+    } else if (newFloorName.trim()) {
+      const name = newFloorName.trim();
+      if (floors.some((f) => f.floor_name.toLowerCase() === name.toLowerCase())) {
+        return alert('Floor already exists in this project!');
       }
+      floorsToCreate.push({
+        project_id: selectedProjectId,
+        floor_name: name,
+      });
+    } else {
+      return alert('Please enter floor name or typical count (e.g., 20)');
+    }
 
-      alert(`✅ Lead successfully ${editingLeadId ? 'updated' : 'saved'} as "${targetStatus}"!`);
-      setLeadTab(targetStatus);
-      resetForm();
-    } catch (err: any) {
-      alert(`❌ Unexpected Error: ${err.message}`);
+    if (floorsToCreate.length === 0) {
+      return alert('No new floors were added (they might already exist).');
+    }
+
+    const { data, error } = await supabase
+      .from('srm_floors')
+      .insert(floorsToCreate)
+      .select();
+
+    if (error) {
+      alert('Error adding floor(s): ' + error.message);
+    } else if (data) {
+      setFloors([...floors, ...data]);
+      setNewFloorName('');
+      setTypicalFloorCount('');
+      alert(`✅ Successfully created ${data.length} floor(s)!`);
     }
   };
 
-  const filteredLeads = leadTab === 'All'
-    ? leads
-    : leads.filter((l) => normalizeStatus(l.status) === leadTab);
+  // إضافة نوع شقة جديد بدون Total Price
+  const handleAddUnitType = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUnitTitle.trim() || !newUnitArea || !selectedProjectId) return;
 
-  if (loadingUser) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-xs font-semibold text-slate-400">Loading application...</p>
-        </div>
-      </div>
+    const { data, error } = await supabase
+      .from('srm_unit_types')
+      .insert([
+        {
+          project_id: selectedProjectId,
+          title: newUnitTitle.trim(),
+          area: Number(newUnitArea),
+        },
+      ])
+      .select();
+
+    if (error) {
+      alert('Error adding unit type: ' + error.message);
+    } else if (data) {
+      setUnitTypes([...unitTypes, data[0]]);
+      setNewUnitTitle('');
+      setNewUnitArea('');
+      alert('✅ Unit Type added successfully!');
+    }
+  };
+
+  const saveStatusToSupabase = async (floorName: string, unitTypeId: string, newStatus: UnitStatus) => {
+    const key = `${floorName}__${unitTypeId}`;
+
+    setMatrix((prev) => ({ ...prev, [key]: newStatus }));
+
+    const { error } = await supabase.from('srm_matrix_cells').upsert(
+      {
+        project_id: selectedProjectId,
+        floor_name: floorName,
+        unit_type_id: unitTypeId,
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'project_id,floor_name,unit_type_id' }
     );
+
+    if (error) {
+      console.error('Failed to update matrix status:', error);
+      alert('Could not update status on server: ' + error.message);
+      fetchMatrixData(selectedProjectId);
+    }
+  };
+
+  const handleCellClick = (floorName: string, unitTypeId: string) => {
+    const key = `${floorName}__${unitTypeId}`;
+    const currentStatus = matrix[key] || 'unavailable';
+
+    let nextStatus: UnitStatus = 'available';
+    if (currentStatus === 'available') nextStatus = 'reserved';
+    else if (currentStatus === 'reserved') nextStatus = 'unavailable';
+    else if (currentStatus === 'unavailable') nextStatus = 'available';
+    else nextStatus = 'available';
+
+    setActiveCellKey(key);
+    if (!['available', 'reserved', 'unavailable'].includes(currentStatus)) {
+      setCustomCellText(currentStatus);
+    } else {
+      setCustomCellText('');
+    }
+
+    saveStatusToSupabase(floorName, unitTypeId, nextStatus);
+  };
+
+  const handleExplicitStatusChange = (status: UnitStatus) => {
+    if (!activeCellKey) return;
+    const [floorName, unitTypeId] = activeCellKey.split('__');
+    if (floorName && unitTypeId) {
+      saveStatusToSupabase(floorName, unitTypeId, status);
+    }
+  };
+
+  const handleApplyCustomText = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeCellKey || !customCellText.trim()) return;
+    handleExplicitStatusChange(customCellText.trim());
+  };
+
+  const getProjectName = useCallback((client: MarketerClient) => {
+    if (client.project_name && client.project_name !== '-') {
+      return client.project_name;
+    }
+    if (client.project_id) {
+      const match = projects.find((p) => p.id === client.project_id);
+      if (match) return match.name || match.title || '-';
+    }
+    return '-';
+  }, [projects]);
+
+  const marketerOptions = Array.from(
+    new Set([
+      ...marketerAccounts.map((m) => m.name).filter(Boolean),
+      ...marketerClients.map((c) => c.marketer_name || c.marketerName || '').filter(Boolean),
+    ])
+  );
+
+  // --- Sorting & Filtering Logic for CLIENTS ---
+  const handleClientSortToggle = (field: typeof clientSortField) => {
+    if (clientSortField === field) {
+      setClientSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setClientSortField(field);
+      setClientSortOrder('asc');
+    }
+  };
+
+  const filteredAndSortedClients = useMemo(() => {
+    return marketerClients
+      .filter((c) => {
+        if (selectedMarketerFilter !== 'all') {
+          const mName = c.marketer_name || c.marketerName || '';
+          if (mName !== selectedMarketerFilter) return false;
+        }
+
+        if (clientStatusFilter !== 'all') {
+          const status = c.status || 'Reserved';
+          if (status.toLowerCase() !== clientStatusFilter.toLowerCase()) return false;
+        }
+
+        if (clientSearch.trim() !== '') {
+          const query = clientSearch.toLowerCase();
+          const mName = (c.marketer_name || c.marketerName || '').toLowerCase();
+          const cName = (c.name || c.client_name || '').toLowerCase();
+          const phone = (c.phone || '').toLowerCase();
+          const projName = getProjectName(c).toLowerCase();
+          const source = (c.source || c.lead_source || '').toLowerCase();
+
+          const matches =
+            mName.includes(query) ||
+            cName.includes(query) ||
+            phone.includes(query) ||
+            projName.includes(query) ||
+            source.includes(query);
+
+          if (!matches) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        let valA: any = '';
+        let valB: any = '';
+
+        if (clientSortField === 'name') {
+          valA = (a.name || a.client_name || '').toLowerCase();
+          valB = (b.name || b.client_name || '').toLowerCase();
+        } else if (clientSortField === 'marketer_name') {
+          valA = (a.marketer_name || a.marketerName || '').toLowerCase();
+          valB = (b.marketer_name || b.marketerName || '').toLowerCase();
+        } else if (clientSortField === 'total_payment') {
+          valA = Number(a.total_payment) || 0;
+          valB = Number(b.total_payment) || 0;
+        } else {
+          valA = a.created_at || '';
+          valB = b.created_at || '';
+        }
+
+        if (valA < valB) return clientSortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return clientSortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+  }, [
+    marketerClients,
+    selectedMarketerFilter,
+    clientStatusFilter,
+    clientSearch,
+    clientSortField,
+    clientSortOrder,
+    getProjectName,
+  ]);
+
+  // --- Sorting & Filtering Logic for MARKETERS ---
+  const handleMarketerSortToggle = (field: typeof marketerSortField) => {
+    if (marketerSortField === field) {
+      setMarketerSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setMarketerSortField(field);
+      setMarketerSortOrder('asc');
+    }
+  };
+
+  const filteredAndSortedMarketers = useMemo(() => {
+    return marketerAccounts
+      .filter((m) => {
+        if (marketerStatusFilter !== 'all') {
+          const st = m.status || 'pending';
+          if (st.toLowerCase() !== marketerStatusFilter.toLowerCase()) return false;
+        }
+
+        if (marketerSearch.trim() !== '') {
+          const query = marketerSearch.toLowerCase();
+          const name = (m.name || '').toLowerCase();
+          const email = (m.email || '').toLowerCase();
+          const phone = (m.phone || '').toLowerCase();
+
+          const matches =
+            name.includes(query) || email.includes(query) || phone.includes(query);
+
+          if (!matches) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        let valA: any = '';
+        let valB: any = '';
+
+        if (marketerSortField === 'name') {
+          valA = (a.name || '').toLowerCase();
+          valB = (b.name || '').toLowerCase();
+        } else if (marketerSortField === 'email') {
+          valA = (a.email || '').toLowerCase();
+          valB = (b.email || '').toLowerCase();
+        } else if (marketerSortField === 'status') {
+          valA = (a.status || 'pending').toLowerCase();
+          valB = (b.status || 'pending').toLowerCase();
+        } else {
+          valA = a.created_at || '';
+          valB = b.created_at || '';
+        }
+
+        if (valA < valB) return marketerSortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return marketerSortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+  }, [marketerAccounts, marketerStatusFilter, marketerSearch, marketerSortField, marketerSortOrder]);
+
+  const totalCells = floors.length * unitTypes.length;
+  let availableCount = 0;
+  let reservedCount = 0;
+  let unavailableCount = 0;
+
+  floors.forEach((f) => {
+    unitTypes.forEach((ut) => {
+      const key = `${f.floor_name}__${ut.id}`;
+      const st = matrix[key] || 'unavailable';
+      if (st === 'available') availableCount++;
+      else if (st === 'reserved') reservedCount++;
+      else unavailableCount++;
+    });
+  });
+
+  const pendingMarketersCount = marketerAccounts.filter(
+    (m) => m.status === 'pending' || !m.status
+  ).length;
+
+  if (loading && projects.length === 0) {
+    return <div className="p-10 text-center font-bold text-gray-600">⏳ Loading Matrix Data...</div>;
   }
 
-  // SCREEN 1: AUTHENTICATION SCREEN
-  if (!currentMarketer || isUpdatePassword) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 p-4 sm:p-6 lg:p-8 font-sans" dir="ltr">
-        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800/80">
-          
-          <div className="relative hidden lg:flex lg:col-span-5 flex-col justify-between p-10 overflow-hidden">
-            <img
-              src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop"
-              alt="Luxury Architecture"
-              className="absolute inset-0 h-full w-full object-cover scale-105 transition-transform duration-1000 hover:scale-100"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-teal-950/80 to-teal-900/40" />
+  return (
+    <div className="p-6 bg-gray-100 min-h-screen text-left" dir="ltr">
+      {/* Title Bar */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">⚙️ Admin Portal - Real Estate Manager</h1>
+          <p className="text-xs text-gray-500">
+            Manage floors, unit types, pricing & payment plans, and manage marketer requests
+          </p>
+        </div>
 
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-teal-500/20 backdrop-blur-md border border-teal-400/30 text-teal-300 text-xs font-semibold uppercase tracking-wider mb-6">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Premium Sales Portal
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-amber-400/20">
-                  H
-                </div>
-                <div>
-                  <h2 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
-                    Marketer<span className="text-amber-400">Portal</span>
-                  </h2>
-                  <p className="text-xs text-teal-200/70 font-medium">Real Estate Intelligence</p>
-                </div>
-              </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Active Project:</label>
+          <select
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+            className="p-2 bg-blue-50 border border-blue-300 font-bold text-blue-900 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name || p.title || 'Untitled Project'}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-300 pb-2">
+        <button
+          onClick={() => setActiveTab('matrix')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+            activeTab === 'matrix' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          📊 Matrix & Floors Stock
+        </button>
+        <button
+          onClick={() => setActiveTab('pricing')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+            activeTab === 'pricing' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          💳 Pricing & Payment Plans ({marketerClients.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('clients')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+            activeTab === 'clients' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          👥 Marketers & Clients ({marketerClients.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('marketers')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2 ${
+            activeTab === 'marketers' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          🔑 Marketers & Approvals ({marketerAccounts.length})
+          {pendingMarketersCount > 0 && (
+            <span className="bg-amber-500 text-black text-[10px] px-2 py-0.5 rounded-full font-black animate-pulse">
+              {pendingMarketersCount} Pending
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* TAB 1: MATRIX & FLOORS STOCK */}
+      {activeTab === 'matrix' && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
+              <p className="text-gray-500 text-xs font-semibold">Total Matrix Units</p>
+              <p className="text-2xl font-bold text-gray-800">{totalCells}</p>
             </div>
-
-            <div className="relative z-10 bg-slate-900/60 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-2xl">
-              <div className="flex items-center gap-2 text-amber-400 mb-2">
-                <ShieldCheck className="w-5 h-5" />
-                <span className="text-xs font-bold uppercase tracking-wider">Trusted Ecosystem</span>
-              </div>
-              <p className="text-slate-200 text-sm font-medium leading-relaxed">
-                "Empowering real estate marketers with real-time analytics, inventory management, and seamless deal closing."
-              </p>
+            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-emerald-500">
+              <p className="text-emerald-600 text-xs font-semibold">🟢 Available</p>
+              <p className="text-2xl font-bold text-emerald-700">{availableCount}</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
+              <p className="text-amber-600 text-xs font-semibold">🟡 Reserved</p>
+              <p className="text-2xl font-bold text-amber-700">{reservedCount}</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500">
+              <p className="text-red-600 text-xs font-semibold">🔴 Sold / Unavailable</p>
+              <p className="text-2xl font-bold text-red-700">{unavailableCount}</p>
             </div>
           </div>
 
-          <div className="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center bg-slate-900">
-            <div className="mb-8">
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">
-                {isUpdatePassword
-                  ? 'Set New Password'
-                  : isForgotPassword
-                  ? 'Reset Password'
-                  : isSignUp
-                  ? 'Create Marketer Account'
-                  : 'Welcome Back'}
-              </h1>
-              <p className="text-slate-400 text-sm mt-2">
-                {isUpdatePassword
-                  ? 'Enter your new password. Changes require Admin re-approval.'
-                  : isForgotPassword
-                  ? 'Enter your email address to receive a password reset link.'
-                  : isSignUp
-                  ? 'Register now to join our exclusive marketer network'
-                  : 'Enter your credentials to access your sales workspace'}
-              </p>
-            </div>
-
-            {!isForgotPassword && !isUpdatePassword && (
-              <div className="grid grid-cols-2 gap-1 p-1.5 bg-slate-950 rounded-2xl mb-8 border border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSignUp(false);
-                    setIsForgotPassword(false);
-                    setAuthError('');
-                    setAuthSuccess('');
-                  }}
-                  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 ${
-                    !isSignUp
-                      ? 'bg-[#00474b] text-white shadow-lg shadow-teal-900/30'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <User className="w-4 h-4" />
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSignUp(true);
-                    setIsForgotPassword(false);
-                    setAuthError('');
-                    setAuthSuccess('');
-                  }}
-                  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 ${
-                    isSignUp
-                      ? 'bg-[#00474b] text-white shadow-lg shadow-teal-900/30'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Register
-                </button>
-              </div>
-            )}
-
-            {authError && (
-              <div className="bg-red-500/10 border-l-4 border-red-500 text-red-300 p-3.5 rounded-xl text-xs mb-6 font-medium">
-                {authError}
-              </div>
-            )}
-
-            {authSuccess && (
-              <div className="bg-emerald-500/10 border-l-4 border-emerald-500 text-emerald-300 p-3.5 rounded-xl text-xs mb-6 font-medium">
-                {authSuccess}
-              </div>
-            )}
-
-            {isUpdatePassword ? (
-              <form onSubmit={handleSetNewPassword} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    New Password *
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                      {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Confirm New Password *
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      required
-                      value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                      {showConfirmPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="w-full mt-2 py-4 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <KeyRound className="w-4 h-4" />
-                  <span>{authLoading ? 'Updating...' : 'Update & Submit for Admin Approval'}</span>
-                </button>
-              </form>
-            ) : isForgotPassword ? (
-              <form onSubmit={handleResetPassword} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                    <input
-                      type="email"
-                      required
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="marketer@company.com"
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="w-full py-4 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <span>{authLoading ? 'Sending link...' : 'Send Reset Link'}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsForgotPassword(false);
-                    setAuthError('');
-                    setAuthSuccess('');
-                  }}
-                  className="w-full text-center text-xs font-bold text-slate-400 hover:text-teal-400 pt-2 transition"
-                >
-                  ← Back to Sign In
-                </button>
-              </form>
-            ) : !isSignUp ? (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                    <input
-                      type="email"
-                      required
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="marketer@company.com"
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-semibold text-slate-300">
-                      Password
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsForgotPassword(true);
-                        setAuthError('');
-                        setAuthSuccess('');
-                      }}
-                      className="text-xs text-teal-400 font-semibold hover:text-teal-300 transition-colors"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                      {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="w-full mt-2 py-4 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 group disabled:opacity-50"
-                >
-                  <span>{authLoading ? 'Signing in...' : 'Sign In to Workspace'}</span>
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Full Name *
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                    <input
-                      type="text"
-                      required
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
-                      placeholder="John Doe"
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Marketer Type *
-                  </label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                    <select
-                      value={signupType}
-                      onChange={(e) => setSignupType(e.target.value as any)}
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all cursor-pointer"
-                      required
-                    >
-                      <option value="Internal Sale" className="bg-slate-900 text-white">Internal Sale</option>
-                      <option value="Freelance" className="bg-slate-900 text-white">Freelance</option>
-                      <option value="Agent" className="bg-slate-900 text-white">Agent</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Email Address *
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                    <input
-                      type="email"
-                      required
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      placeholder="name@company.com"
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Phone Number *
-                  </label>
-                  <div className="flex gap-2">
-                    <SearchableCountrySelect
-                      value={signupCountryCode}
-                      onChange={(code) => setSignupCountryCode(code)}
-                      isDark={true}
-                    />
-                    <div className="relative flex-1">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                <h2 className="font-bold text-gray-800 text-sm mb-1">
+                  📐 1. Add Floors to [{selectedProject?.name || selectedProject?.title}]
+                </h2>
+                <form onSubmit={handleAddFloors} className="space-y-3 mt-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-600 mb-1">Single Floor Name</label>
                       <input
-                        type="tel"
-                        required
-                        value={signupPhone}
-                        onChange={(e) => setSignupPhone(e.target.value)}
-                        placeholder="9xxxxxxx"
-                        className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                        type="text"
+                        placeholder="e.g. Ground / First"
+                        value={newFloorName}
+                        onChange={(e) => {
+                          setNewFloorName(e.target.value);
+                          if (e.target.value) setTypicalFloorCount('');
+                        }}
+                        className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-blue-700 mb-1">Typical Count</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 10"
+                        value={typicalFloorCount}
+                        onChange={(e) => {
+                          setTypicalFloorCount(e.target.value ? Number(e.target.value) : '');
+                          if (e.target.value) setNewFloorName('');
+                        }}
+                        className="w-full p-2 border border-blue-400 bg-blue-50 rounded-lg text-xs outline-none focus:ring-1 focus:ring-blue-500 font-bold"
                       />
                     </div>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Password *
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                      {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Confirm Password *
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      required
-                      value={signupConfirmPassword}
-                      onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                      {showConfirmPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="w-full mt-2 py-4 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 group disabled:opacity-50"
-                >
-                  <span>{authLoading ? 'Submitting Request...' : 'Submit Registration'}</span>
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </button>
-              </form>
-            )}
-
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // SCREEN 2: MAIN DASHBOARD
-  return (
-    <div className="p-3 sm:p-5 bg-[#eef2f5] min-h-screen text-left font-sans" dir="ltr">
-      
-      {/* 🟢 TOP HEADER BAR */}
-      <div className="bg-[#00474b] text-white px-5 py-3 rounded-md shadow-sm mb-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4 w-full sm:w-auto">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-amber-400 rounded-sm flex items-center justify-center font-black text-[#00474b] text-xs">
-              H
-            </div>
-            <span className="font-bold text-sm sm:text-base tracking-wide text-white">
-              Marketer <span className="text-amber-400 font-normal">Portal</span>
-            </span>
-          </div>
-
-          <div className="h-4 w-[1px] bg-teal-600/60 hidden sm:block" />
-
-          <div className="text-xs flex items-center gap-1.5 flex-wrap">
-            <span className="text-teal-100">Welcome Back, </span>
-            
-            {currentMarketer.marketer_type && (
-              <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
-                {currentMarketer.marketer_type}
-              </span>
-            )}
-            
-            <span className="font-semibold text-white">{currentMarketer.name}</span>
-            <span className="text-teal-200/80 text-[11px]">({currentMarketer.email})</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end text-xs">
-          {projects.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-teal-100 font-medium whitespace-nowrap">Project:</span>
-              <select
-                value={selectedProjectId}
-                onChange={(e) => {
-                  setSelectedProjectId(e.target.value);
-                  setSelectedUnits([]);
-                }}
-                className="px-2 py-1 bg-[#00383b] border border-teal-600/80 font-bold text-amber-300 rounded text-xs outline-none focus:ring-1 focus:ring-amber-400"
-              >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id} className="bg-slate-900 text-white">
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <button
-            onClick={handleLogout}
-            className="bg-transparent hover:bg-teal-900/80 text-teal-100 border border-teal-600/60 px-2.5 py-1 rounded text-xs font-medium transition"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      {loadingProjects ? (
-        <div className="bg-white p-12 rounded-lg shadow-sm text-center text-gray-500">
-          <div className="w-8 h-8 border-4 border-[#00474b] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-xs font-semibold">Loading projects from Database...</p>
-        </div>
-      ) : projects.length === 0 ? (
-        <div className="bg-white p-12 rounded-lg shadow-sm text-center text-gray-500">
-          <p className="text-base font-bold text-gray-700">No Projects Available</p>
-          <p className="text-xs text-gray-500 mt-1">
-            There are no projects added by Admin yet. Please check back later.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          
-          {/* 📊 LEFT: AVAILABLE STOCKS TABLE */}
-          <div className="lg:col-span-7 xl:col-span-8 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-amber-500 text-lg">🟡</span>
-              <h2 className="text-sm font-black text-[#00474b] uppercase tracking-wider">
-                AVAILABLE STOCKS
-              </h2>
-            </div>
-
-            {loadingDetails ? (
-              <div className="p-12 text-center text-gray-400">
-                <div className="w-6 h-6 border-2 border-[#00474b] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                <p className="text-xs">Loading matrix data...</p>
+                  <button
+                    type="submit"
+                    className="w-full bg-gray-800 hover:bg-black text-white font-bold py-2 rounded-lg text-xs transition"
+                  >
+                    + {typicalFloorCount ? `Generate ${typicalFloorCount} Typical Floors` : 'Add Single Floor'}
+                  </button>
+                </form>
               </div>
-            ) : (
+
+              {/* تم حذف حقل total payment من هذه الاستمارة بناءً على طلبك */}
+              <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                <h2 className="font-bold text-gray-800 text-sm mb-3">🏠 2. Add House Type</h2>
+                <form onSubmit={handleAddUnitType} className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-700 mb-1">House Title *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 3 Bed Room"
+                      value={newUnitTitle}
+                      onChange={(e) => setNewUnitTitle(e.target.value)}
+                      className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-700 mb-1">Area (m²) *</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 120"
+                      value={newUnitArea}
+                      onChange={(e) => setNewUnitArea(e.target.value ? Number(e.target.value) : '')}
+                      className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs transition"
+                  >
+                    + Add House Type Column
+                  </button>
+                </form>
+              </div>
+
+              {/* Selected Cell Panel */}
+              {activeCellKey && (
+                <div className="bg-amber-50 p-4 rounded-xl border border-amber-300 shadow-sm space-y-3">
+                  <p className="text-xs font-bold text-amber-900">
+                    Selected Cell: <span className="underline">{activeCellKey.replace('__', ' / ')}</span>
+                  </p>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => handleExplicitStatusChange('available')}
+                      className="bg-[#00b050] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                    >
+                      🟢 Available
+                    </button>
+                    <button
+                      onClick={() => handleExplicitStatusChange('reserved')}
+                      className="bg-[#f2b827] text-black py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                    >
+                      🟡 Reserved
+                    </button>
+                    <button
+                      onClick={() => handleExplicitStatusChange('unavailable')}
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                    >
+                      🔴 Sold/Off
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-1 border-t border-amber-200">
+                    <button
+                      onClick={() => handleExplicitStatusChange('Business')}
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                    >
+                      🏢 Business
+                    </button>
+                    <button
+                      onClick={() => handleExplicitStatusChange('office')}
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                    >
+                      💼 Office
+                    </button>
+                    <button
+                      onClick={() => handleExplicitStatusChange('Shops')}
+                      className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
+                    >
+                      🛍️ Shops
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleApplyCustomText} className="flex gap-2 pt-1">
+                    <input
+                      type="text"
+                      placeholder="Or enter custom text (e.g. Gym)"
+                      value={customCellText}
+                      onChange={(e) => setCustomCellText(e.target.value)}
+                      className="flex-1 p-1.5 text-xs border border-amber-400 rounded outline-none focus:ring-1 focus:ring-amber-600 bg-white"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-amber-800 text-white px-3 py-1 rounded text-xs font-bold hover:bg-amber-900 transition"
+                    >
+                      Apply Text
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+
+            {/* Matrix Render Table */}
+            <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
+              <div className="flex flex-col items-center justify-center mb-6">
+                <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
+                  AVAILABLE STOCKS (ADMIN MATRIX)
+                </div>
+                <div className="bg-[#00474b] text-white text-xs sm:text-sm font-semibold uppercase px-6 py-1.5 rounded-md mt-2 shadow-sm">
+                  {selectedProject?.subtitle || 'PROJECT DETAILS'}
+                </div>
+              </div>
+
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-center text-xs font-sans border border-gray-300">
+                <table className="w-full border-collapse text-center text-xs font-sans">
                   <thead>
                     <tr className="bg-[#00474b] text-white">
-                      <th rowSpan={2} className="border border-teal-800 p-2 font-bold min-w-[80px]">
-                        Floor
+                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[90px]">Floor</th>
+                      <th colSpan={unitTypes.length || 1} className="border border-gray-400 p-1.5 font-bold italic text-sm">
+                        Type of Houses
                       </th>
-                      <th
-                        colSpan={unitTypes.length || 1}
-                        className="border border-teal-800 p-1.5 font-semibold text-xs"
-                      >
-                        Type of Houses & Price Plans
-                      </th>
-                      <th rowSpan={2} className="border border-teal-800 p-2 font-bold min-w-[70px]">
-                        Remark
-                      </th>
+                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[80px]">Remark</th>
                     </tr>
-
                     <tr className="bg-[#00474b] text-white">
                       {unitTypes.map((ut) => (
-                        <th key={ut.id} className="border border-teal-800 p-2 font-semibold">
-                          <div>{ut.title}</div>
-                          <div className="font-medium text-[10px] text-teal-200">{ut.area} m²</div>
-                          {ut.totalPrice && (
-                            <div className="text-[10px] text-amber-300 font-bold mt-0.5">
-                              ${ut.totalPrice.toLocaleString()}
-                            </div>
-                          )}
+                        <th key={ut.id} className="border border-gray-400 p-2 font-semibold">
+                          {ut.title} <br />
+                          <span className="font-normal text-[11px]">[area={ut.area}]</span>
                         </th>
                       ))}
                     </tr>
                   </thead>
-
                   <tbody>
-                    {floors.map((floorObj) => (
-                      <tr key={floorObj.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 bg-white text-gray-800 font-semibold p-2 text-left px-3 text-xs">
-                          {floorObj.floor_name}
+                    {floors.map((f) => (
+                      <tr key={f.id}>
+                        <td className="border border-black bg-[#f2b827] text-black font-bold p-2 text-xs">
+                          {f.floor_name}
                         </td>
-
                         {unitTypes.map((ut) => {
-                          const fName = (floorObj.floor_name || '').trim();
-                          const utId = ut.id;
-                          const utTitle = (ut.title || '').trim();
+                          const key = `${f.floor_name}__${ut.id}`;
+                          const status = matrix[key] || 'unavailable';
+                          const isActive = activeCellKey === key;
 
-                          const rawStatus =
-                            matrix[`${fName}___${utId}`] ||
-                            matrix[`${fName}___${utTitle}`] ||
-                            matrix[`${floorObj.floor_name}___${ut.id}`] ||
-                            matrix[`${floorObj.floor_name}___${ut.title}`] ||
-                            'unavailable';
-
-                          const statusLower = (rawStatus || '').toLowerCase().trim();
-                          const isSelected = selectedUnits.some((u) => u.key === `${fName}___${utId}`);
-
-                          let bgClass = 'bg-[#d92525] text-white cursor-not-allowed';
+                          let bgClass = 'bg-[#ff0000] text-white';
                           let cellContent: React.ReactNode = null;
 
-                          if (statusLower === 'available') {
-                            bgClass = 'bg-[#00b050] hover:bg-emerald-600 cursor-pointer text-white';
-                            if (isSelected) {
-                              cellContent = (
-                                <span className="text-[9px] bg-black text-amber-300 px-1 py-0.5 rounded font-black shadow">
-                                  ✓ Selected
-                                </span>
-                              );
-                            }
-                          } else if (statusLower === 'pending') {
-                            bgClass = 'bg-gray-400 hover:bg-gray-500 text-white font-bold cursor-not-allowed';
-                            cellContent = <span className="text-[10px] uppercase">PENDING</span>;
-                          } else if (statusLower === 'reserved') {
-                            bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer text-black font-semibold';
-                            cellContent = <span className="text-[10px] uppercase">RESERVED</span>;
-                          } else if (statusLower === 'shop' || statusLower === 'business') {
-                            bgClass = 'bg-[#d92525] text-white font-bold cursor-not-allowed';
-                            cellContent = <span className="text-[10px] uppercase">{rawStatus}</span>;
-                          } else if (statusLower === 'unavailable' || !rawStatus) {
-                            bgClass = 'bg-[#d92525] text-white cursor-not-allowed';
-                            cellContent = null;
+                          if (status === 'available') {
+                            bgClass = 'bg-[#00b050] text-black';
+                            cellContent = '🟢';
+                          } else if (status === 'reserved') {
+                            bgClass = 'bg-[#f2b827] text-black';
+                            cellContent = '🟡';
+                          } else if (status === 'unavailable') {
+                            bgClass = 'bg-[#ff0000] text-white';
+                            cellContent = '🔴';
                           } else {
-                            bgClass = 'bg-[#d92525] text-white font-extrabold text-[10px] uppercase cursor-not-allowed';
-                            cellContent = rawStatus.toUpperCase();
+                            bgClass = 'bg-[#ff0000] text-white font-extrabold';
+                            cellContent = status;
                           }
 
                           return (
                             <td
                               key={ut.id}
-                              onClick={() => handleCellClick(floorObj.floor_name, ut, rawStatus)}
-                              className={`border border-gray-300 p-2.5 transition-all text-center ${bgClass} ${
-                                isSelected ? 'ring-2 ring-blue-600' : ''
+                              onClick={() => handleCellClick(f.floor_name, ut.id)}
+                              className={`border border-black p-2 font-bold transition-all cursor-pointer hover:opacity-80 select-none ${bgClass} ${
+                                isActive ? 'ring-4 ring-blue-600 scale-95 z-10' : ''
                               }`}
-                              title={`Floor ${floorObj.floor_name} - ${ut.title} (${rawStatus.toUpperCase()})`}
                             >
-                              {cellContent}
+                              <span className="text-[11px] uppercase tracking-wider font-black break-words">
+                                {cellContent}
+                              </span>
                             </td>
                           );
                         })}
-
-                        <td className="border border-gray-300 bg-white text-gray-500 p-1 text-[11px]">-</td>
+                        <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">-</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* TAB 2: PRICING & PAYMENT PLANS (بيانات الماركتر والخطط) */}
+      {activeTab === 'pricing' && (
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">
+                💳 Marketer Payment Plans & Pricing
+              </h2>
+              <p className="text-xs text-gray-500">
+                View client payment details (Full Payment vs Progressive Payment) entered by marketers
+              </p>
+            </div>
+            <button
+              onClick={fetchMarketerClients}
+              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 transition"
+            >
+              🔄 Refresh
+            </button>
           </div>
 
-          {/* 📝 RIGHT: ACTION FORM & LEADS SECTION */}
-          <div className="lg:col-span-5 xl:col-span-4 space-y-5">
-            
-            {/* 1. Add Lead & Take Action Card */}
-            <div className={`p-4 rounded-lg shadow-sm border ${editingLeadId ? 'bg-amber-50/70 border-amber-300' : 'bg-white border-gray-200'}`}>
-              
-              <div className="flex items-center justify-between mb-3 border-l-4 border-amber-400 pl-2.5">
-                <h2 className="font-bold text-gray-800 text-xs sm:text-sm">
-                  {editingLeadId ? '✏️ Edit Lead Record' : 'Add Lead & Take Action'}
-                </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border border-gray-200">
+              <thead className="bg-gray-800 text-white uppercase font-bold">
+                <tr>
+                  <th className="p-3 border">Project Name</th>
+                  <th className="p-3 border">Client Name</th>
+                  <th className="p-3 border">Apartment / Unit</th>
+                  <th className="p-3 border">Payment Type</th>
+                  <th className="p-3 border">Total Price ($)</th>
+                  <th className="p-3 border">Down Payment ($)</th>
+                  <th className="p-3 border">Installment Plan</th>
+                  <th className="p-3 border">Marketer</th>
+                  <th className="p-3 border">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {marketerClients.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="p-6 text-center text-gray-500 font-semibold">
+                      No payment or client records submitted by marketers.
+                    </td>
+                  </tr>
+                ) : (
+                  marketerClients.map((client) => {
+                    const paymentTypeStr = (
+                      client.payment_type ||
+                      (client.installment_plan ? 'progressive payment' : 'full payment')
+                    ).toLowerCase();
 
-                {editingLeadId && (
+                    const isFullPayment = paymentTypeStr.includes('full');
+
+                    return (
+                      <tr key={client.id} className="border-b hover:bg-gray-50">
+                        {/* اسم المشروع */}
+                        <td className="p-3 border font-bold text-gray-800">
+                          {getProjectName(client)}
+                        </td>
+
+                        {/* اسم العميل */}
+                        <td className="p-3 border font-semibold text-blue-900">
+                          {client.name || client.client_name || '—'}
+                        </td>
+
+                        {/* تفاصيل الشقة */}
+                        <td className="p-3 border font-medium text-amber-900">
+                          {client.apartment_id || client.apartmentId || '—'}
+                        </td>
+
+                        {/* نوع الدفع (Full Payment أو Progressive Payment) */}
+                        <td className="p-3 border">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
+                              isFullPayment
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : 'bg-purple-100 text-purple-800 border border-purple-300'
+                            }`}
+                          >
+                            {isFullPayment ? '💵 Full Payment' : '📅 Progressive Payment'}
+                          </span>
+                        </td>
+
+                        {/* المباشر / الإجمالي */}
+                        <td className="p-3 border font-semibold text-emerald-700">
+                          {client.total_payment
+                            ? `$${Number(client.total_payment).toLocaleString()}`
+                            : '—'}
+                        </td>
+
+                        {/* الدفعة الأولى */}
+                        <td className="p-3 border font-semibold text-blue-700">
+                          {client.down_payment
+                            ? `$${Number(client.down_payment).toLocaleString()}`
+                            : isFullPayment
+                            ? 'N/A'
+                            : '—'}
+                        </td>
+
+                        {/* خطة الأقساط */}
+                        <td className="p-3 border text-gray-700 font-medium">
+                          {client.installment_plan || (isFullPayment ? 'Full Cash' : '—')}
+                        </td>
+
+                        {/* اسم الماركتر */}
+                        <td className="p-3 border font-bold text-gray-700">
+                          {client.marketer_name || client.marketerName || '—'}
+                        </td>
+
+                        {/* تاريخ الإنشاء */}
+                        <td className="p-3 border text-gray-500 whitespace-nowrap">
+                          {client.created_at
+                            ? new Date(client.created_at).toLocaleDateString('en-US')
+                            : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: MARKETERS & CLIENTS FILTER, SEARCH & SORT */}
+      {activeTab === 'clients' && (
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">👥 Marketer Registered Clients</h2>
+              <p className="text-xs text-gray-500">
+                Search, filter by marketer or lead status, approve qualification requests and view CPO files
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-300">
+              <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500">
+                <span className="text-gray-400 text-xs">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search client, phone, project..."
+                  value={clientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                  className="bg-transparent text-xs outline-none w-40 sm:w-48 text-gray-800"
+                />
+                {clientSearch && (
                   <button
-                    type="button"
-                    onClick={resetForm}
-                    className="text-[10px] bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-2 py-0.5 rounded"
+                    onClick={() => setClientSearch('')}
+                    className="text-xs text-gray-400 hover:text-gray-600 font-bold"
                   >
-                    Cancel
+                    ✕
                   </button>
                 )}
               </div>
 
-              <form onSubmit={handleSaveLeadWithAction} className="space-y-3 text-xs">
-                <div>
-                  <label className="block font-semibold text-gray-700 mb-1">
-                    Action / Status *
-                  </label>
-                  <select
-                    value={actionStatus}
-                    onChange={(e: any) => {
-                      setActionStatus(normalizeStatus(e.target.value));
-                      if (e.target.value === 'New') {
-                        setSelectedUnits([]);
-                      }
-                    }}
-                    className="w-full p-2 bg-white border border-gray-300 rounded text-xs font-semibold text-gray-800 focus:ring-1 focus:ring-[#00474b] outline-none cursor-pointer"
-                  >
-                    <option value="New">Now (Save Lead without Unit)</option>
-                    <option value="Request for Qualification">Request for Qualification (Reserve Unit)</option>
-                    <option value="Negotiation">Negotiation (Payment Terms)</option>
-                    <option value="Closed">Closed (Completed Deal)</option>
-                  </select>
-                </div>
-
-                {actionStatus !== 'New' && (
-                  <div>
-                    <label className="block font-medium text-gray-700 mb-1">
-                      Selected Units ({selectedUnits.length}) *
-                    </label>
-                    {selectedUnits.length === 0 ? (
-                      <div className="p-2 bg-amber-50 border border-amber-200 rounded text-amber-900 text-[11px] font-medium text-center">
-                        ← Click any GREEN cell in table to select
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                        {selectedUnits.map((u, idx) => (
-                          <div
-                            key={idx}
-                            className="bg-emerald-50 border border-emerald-300 rounded p-1.5 text-[11px] flex justify-between items-center"
-                          >
-                            <div>
-                              <span className="font-bold text-emerald-900">{u.label}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedUnits((prev) => prev.filter((item) => item.key !== u.key))}
-                              className="text-red-500 font-bold hover:text-red-700 text-[10px]"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div>
-                  <label className="block font-medium text-gray-700 mb-1">
-                    Client Name *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. John Doe"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded text-xs outline-none focus:ring-1 focus:ring-[#00474b]"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="font-medium text-gray-700">
-                      Phone Number *
-                    </label>
-                    {isPhoneDisabled && (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                        🔒 Fixed in Negotiation
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-1.5">
-                    <SearchableCountrySelect
-                      value={countryCode}
-                      onChange={(code) => setCountryCode(code)}
-                      disabled={isPhoneDisabled}
-                      isDark={false}
-                    />
-                    <input
-                      type="tel"
-                      placeholder="9xxxxxxx / 5xxxxxxx"
-                      value={clientPhone}
-                      disabled={isPhoneDisabled}
-                      onChange={(e) => setClientPhone(e.target.value)}
-                      className={`flex-1 p-2 border rounded text-xs outline-none ${
-                        isPhoneDisabled
-                          ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed font-medium'
-                          : 'border-gray-300 focus:ring-1 focus:ring-[#00474b]'
-                      }`}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-medium text-gray-700 mb-1">
-                    Lead Source *
-                  </label>
-                  <select
-                    value={clientSource}
-                    onChange={(e) => {
-                      setClientSource(e.target.value);
-                      if (e.target.value !== 'Other') {
-                        setCustomSource('');
-                      }
-                    }}
-                    className="w-full p-2 border border-gray-300 rounded text-xs bg-white outline-none focus:ring-1 focus:ring-[#00474b]"
-                    required
-                  >
-                    <option value="Facebook boost">Facebook boost</option>
-                    <option value="telegram">telegram</option>
-                    <option value="YouTube">YouTube</option>
-                    <option value="Instagram">Instagram</option>
-                    <option value="survey">survey</option>
-                    <option value="called call">called call</option>
-                    <option value="purchased leads">purchased leads</option>
-                    <option value="walk in">walk in</option>
-                    <option value="company lead">company lead</option>
-                    <option value="linkedin">linkedin</option>
-                    <option value="company boost">company boost</option>
-                    <option value="Other">Other...</option>
-                  </select>
-
-                  {clientSource === 'Other' && (
-                    <input
-                      type="text"
-                      placeholder="Please specify lead source..."
-                      value={customSource}
-                      onChange={(e) => setCustomSource(e.target.value)}
-                      className="w-full mt-2 p-2 border border-amber-300 bg-amber-50 rounded text-xs outline-none focus:ring-1 focus:ring-[#00474b]"
-                      required
-                    />
-                  )}
-                </div>
-
-                {/* 🖼️ CPO Image Upload Field */}
-                {actionStatus === 'Request for Qualification' && (
-                  <div className="bg-amber-50/80 p-3 border border-amber-200 rounded space-y-2">
-                    <label className="block font-bold text-amber-900 text-xs flex items-center gap-1.5">
-                      <Upload className="w-3.5 h-3.5 text-amber-700" />
-                      Upload CPO Image (CPO)
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          setCpoFile(e.target.files[0]);
-                        }
-                      }}
-                      className="w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-[#00474b] file:text-white hover:file:bg-[#00383b] cursor-pointer bg-white border border-gray-300 rounded p-1"
-                    />
-                    {cpoFile && (
-                      <p className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
-                        ✓ Selected file: {cpoFile.name}
-                      </p>
-                    )}
-                    {!cpoFile && cpoUrl && (
-                      <div className="text-[11px] flex items-center justify-between bg-white p-2 rounded border border-gray-200">
-                        <span className="text-gray-600 font-medium">Existing CPO Attachment:</span>
-                        <a
-                          href={cpoUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[#00474b] font-bold underline hover:text-teal-700"
-                        >
-                          View Attachment 📎
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* 💳 negotiation details المحدّث بكل المتطلبات */}
-                {actionStatus === 'Negotiation' && (
-                  <div className="bg-teal-50/60 p-3 border border-teal-200 rounded space-y-2.5">
-                    <h3 className="font-bold text-[#00474b] text-[11px] border-b border-teal-200 pb-1">
-                      📝 Negotiation Details
-                    </h3>
-
-                    {/* خيار نوع الدفع: Full Payment vs Progressive Payment */}
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-700 mb-1">
-                        Payment Method *
-                      </label>
-                      <div className="grid grid-cols-2 gap-2 bg-white p-1 border border-gray-300 rounded">
-                        <label
-                          className={`flex items-center justify-center gap-1.5 p-1.5 text-xs font-bold rounded cursor-pointer transition ${
-                            paymentType === 'full'
-                              ? 'bg-[#00474b] text-white'
-                              : 'text-gray-600 hover:bg-gray-100'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="paymentType"
-                            value="full"
-                            checked={paymentType === 'full'}
-                            onChange={() => setPaymentType('full')}
-                            className="hidden"
-                          />
-                          Full Payment
-                        </label>
-                        <label
-                          className={`flex items-center justify-center gap-1.5 p-1.5 text-xs font-bold rounded cursor-pointer transition ${
-                            paymentType === 'progressive'
-                              ? 'bg-[#00474b] text-white'
-                              : 'text-gray-600 hover:bg-gray-100'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="paymentType"
-                            value="progressive"
-                            checked={paymentType === 'progressive'}
-                            onChange={() => setPaymentType('progressive')}
-                            className="hidden"
-                          />
-                          Progressive Payment
-                        </label>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
-                        Total Payment ($)
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="Agreed Total Payment"
-                        value={totalPayment}
-                        onChange={(e) => setTotalPayment(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
-                      />
-                    </div>
-
-                    {/* Down Payment: يظهر سواء كان Full Payment أو Progressive Payment */}
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
-                        Down Payment ($)
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="Down Payment Amount"
-                        value={downPayment}
-                        onChange={(e) => setDownPayment(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
-                      />
-                    </div>
-
-                    {/* Installment Plan: يظهر فقط عند اختيار Progressive Payment بعد حقل Down Payment */}
-                    {paymentType === 'progressive' && (
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
-                          Installment Plan
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. 20% down, 3 years"
-                          value={installmentPlan}
-                          onChange={(e) => setInstallmentPlan(e.target.value)}
-                          className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
-                        Memo / Notes
-                      </label>
-                      <textarea
-                        rows={2}
-                        placeholder="Write extra details..."
-                        value={memo}
-                        onChange={(e) => setMemo(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none resize-none focus:border-teal-600"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={uploadingCpo}
-                  className="w-full font-bold py-2.5 rounded text-xs text-white transition bg-[#00474b] hover:bg-[#00383b] shadow-sm mt-2 disabled:opacity-50"
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={selectedMarketerFilter}
+                  onChange={(e) => setSelectedMarketerFilter(e.target.value)}
+                  className="p-1.5 bg-white border border-gray-300 font-bold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
-                  {uploadingCpo
-                    ? 'Uploading CPO Image...'
-                    : editingLeadId
-                    ? `Update Lead Record`
-                    : `Save Lead as "${actionStatus}"`}
-                </button>
-              </form>
-            </div>
-
-            {/* 2. Your Recorded Leads Card with Tabs */}
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-              <h2 className="font-bold text-gray-800 mb-2.5 text-xs sm:text-sm">
-                Your Recorded Leads ({leads.length})
-              </h2>
-
-              <div className="flex border-b border-gray-200 mb-3 overflow-x-auto gap-2 text-[11px]">
-                {(
-                  [
-                    'All',
-                    'New',
-                    'Request for Qualification',
-                    'Qualified',
-                    'Negotiation',
-                    'Closed',
-                  ] as const
-                ).map((tab) => {
-                  const count =
-                    tab === 'All'
-                      ? leads.length
-                      : leads.filter((l) => normalizeStatus(l.status) === tab).length;
-
-                  return (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => setLeadTab(tab)}
-                      className={`pb-1.5 font-semibold whitespace-nowrap border-b-2 transition-all ${
-                        leadTab === tab
-                          ? 'border-[#00474b] text-[#00474b]'
-                          : 'border-transparent text-gray-500 hover:text-gray-800'
-                      }`}
-                    >
-                      {tab} ({count})
-                    </button>
-                  );
-                })}
+                  <option value="all">-- All Marketers ({marketerClients.length}) --</option>
+                  {marketerOptions.map((name) => {
+                    const count = marketerClients.filter(
+                      (c) => (c.marketer_name || c.marketerName) === name
+                    ).length;
+                    return (
+                      <option key={name} value={name}>
+                        👤 {name} ({count})
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
 
-              {filteredLeads.length === 0 ? (
-                <p className="text-gray-400 text-xs py-3 text-center">No leads found in "{leadTab}".</p>
-              ) : (
-                <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                  {filteredLeads.map((lead) => {
-                    const matchedProj = projects.find((p) => p.id === lead.project_id) || selectedProject;
-                    const normalizedLeadStatus = normalizeStatus(lead.status);
-                    const rawDigits = (lead.phone || '').replace(/[^0-9]/g, '');
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={clientStatusFilter}
+                  onChange={(e) => setClientStatusFilter(e.target.value)}
+                  className="p-1.5 bg-white border border-gray-300 font-semibold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="Request for Qualification">Request for Qualification</option>
+                  <option value="Qualified">Qualified</option>
+                  <option value="New">New</option>
+                  <option value="Negotiation">Negotiation</option>
+                  <option value="Reserved">Reserved</option>
+                  <option value="Closed">Closed</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+
+              <button
+                onClick={fetchMarketerClients}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 transition flex items-center gap-1"
+              >
+                🔄 Refresh
+              </button>
+
+              {(clientSearch || selectedMarketerFilter !== 'all' || clientStatusFilter !== 'all') && (
+                <button
+                  onClick={() => {
+                    setClientSearch('');
+                    setSelectedMarketerFilter('all');
+                    setClientStatusFilter('all');
+                  }}
+                  className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 font-bold text-xs rounded-lg transition"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border border-gray-200">
+              <thead className="bg-gray-100 text-gray-700 uppercase font-bold select-none">
+                <tr>
+                  <th
+                    onClick={() => handleClientSortToggle('marketer_name')}
+                    className="p-3 border cursor-pointer hover:bg-gray-200 transition"
+                  >
+                    Marketer Name {clientSortField === 'marketer_name' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                  <th className="p-3 border">Marketer Type</th>
+                  <th
+                    onClick={() => handleClientSortToggle('name')}
+                    className="p-3 border cursor-pointer hover:bg-gray-200 transition"
+                  >
+                    Client Name {clientSortField === 'name' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                  <th className="p-3 border">Phone</th>
+                  <th className="p-3 border">Project Name</th>
+                  <th className="p-3 border">Unit / Details</th>
+                  <th className="p-3 border">Source</th>
+                  <th className="p-3 border">Status</th>
+                  <th className="p-3 border text-center">CPO Document</th>
+                  <th
+                    onClick={() => handleClientSortToggle('total_payment')}
+                    className="p-3 border cursor-pointer hover:bg-gray-200 transition"
+                  >
+                    Negotiation Details {clientSortField === 'total_payment' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                  <th
+                    onClick={() => handleClientSortToggle('created_at')}
+                    className="p-3 border cursor-pointer hover:bg-gray-200 transition"
+                  >
+                    Date & Time {clientSortField === 'created_at' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAndSortedClients.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="p-6 text-center text-gray-500 font-semibold">
+                      No clients found matching current filter/search criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredAndSortedClients.map((client) => {
+                    const cpoUrl = getCpoFileUrl(client);
+                    const isRequestForQualification =
+                      client.status?.toLowerCase() === 'request for qualification';
 
                     return (
-                      <div
-                        key={lead.id}
-                        className={`p-3 border rounded-md flex flex-col gap-1 text-xs transition ${
-                          editingLeadId === lead.id
-                            ? 'bg-amber-50 border-amber-400'
-                            : 'bg-white border-gray-200'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-bold text-gray-900">{lead.name}</p>
-                            
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-gray-600 text-[11px]">{lead.phone}</span>
-                              {rawDigits && (
-                                <div className="flex items-center gap-1">
-                                  <a
-                                    href={`tel:+${rawDigits}`}
-                                    className="text-[10px] text-gray-500 hover:text-black"
-                                    title="Call Phone"
-                                  >
-                                    📞
-                                  </a>
-                                  <a
-                                    href={`https://wa.me/${rawDigits}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-[10px] text-emerald-600 hover:text-emerald-800"
-                                    title="WhatsApp"
-                                  >
-                                    💬
-                                  </a>
+                      <tr key={client.id} className="border-b hover:bg-gray-50">
+                        <td className="p-3 border font-bold text-blue-800">
+                          {client.marketer_name || client.marketerName || 'Unknown'}
+                        </td>
+                        <td className="p-3 border">
+                          <span className="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-[10px] border border-blue-200">
+                            {client.marketer_type || client.marketerType || 'Standard'}
+                          </span>
+                        </td>
+                        <td className="p-3 border font-semibold">
+                          {client.name || client.client_name}
+                        </td>
+                        <td className="p-3 border">{client.phone}</td>
+                        <td className="p-3 border font-semibold text-gray-800">
+                          {getProjectName(client)}
+                        </td>
+                        <td className="p-3 border font-medium text-amber-900">
+                          {client.apartment_id || client.apartmentId || '-'}
+                        </td>
+                        <td className="p-3 border">
+                          <span className="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded text-[10px]">
+                            {client.source || client.lead_source || 'Direct'}
+                          </span>
+                        </td>
+
+                        <td className="p-3 border">
+                          <div className="flex flex-col items-start gap-1.5">
+                            <span
+                              className={`font-bold px-2.5 py-1 rounded-full text-[10px] ${
+                                isRequestForQualification
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                  : client.status === 'Qualified'
+                                  ? 'bg-emerald-100 text-emerald-800 font-extrabold'
+                                  : client.status === 'Rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : client.status === 'Negotiation'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}
+                            >
+                              {client.status || 'Reserved'}
+                            </span>
+
+                            {isRequestForQualification && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <button
+                                  onClick={() => handleUpdateClientStatus(client.id, 'Qualified')}
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px] shadow-sm transition"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateClientStatus(client.id, 'Rejected')}
+                                  className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded text-[10px] shadow-sm transition"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="p-3 border text-center">
+                          {cpoUrl ? (
+                            <a
+                              href={cpoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-bold text-[10px] shadow-sm transition"
+                            >
+                              📄 View CPO
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 italic text-[11px]">—</span>
+                          )}
+                        </td>
+
+                        <td className="p-3 border">
+                          {client.total_payment || client.installment_plan || client.memo ? (
+                            <div className="bg-slate-50 p-2 rounded border border-slate-200 space-y-1 min-w-[170px] text-[11px]">
+                              {client.total_payment && (
+                                <div className="font-semibold text-slate-800">
+                                  💵 Total: <span className="text-emerald-600">${Number(client.total_payment).toLocaleString()}</span>
+                                </div>
+                              )}
+                              {client.installment_plan && (
+                                <div className="text-slate-600">
+                                  📅 Plan: <span className="font-medium text-slate-700">{client.installment_plan}</span>
+                                </div>
+                              )}
+                              {client.memo && (
+                                <div className="text-slate-500 italic truncate max-w-[200px]" title={client.memo}>
+                                  📝 {client.memo}
                                 </div>
                               )}
                             </div>
-                          </div>
-                          
+                          ) : (
+                            <span className="text-gray-400 italic">—</span>
+                          )}
+                        </td>
+
+                        <td className="p-3 border text-gray-500 whitespace-nowrap">
+                          {client.created_at
+                            ? new Date(client.created_at).toLocaleString('en-US', {
+                                year: 'numeric',
+                                month: 'numeric',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true,
+                              })
+                            : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: MARKETERS & APPROVALS */}
+      {activeTab === 'marketers' && (
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">🔑 Marketer Registration Approvals</h2>
+              <p className="text-xs text-gray-500">Search, filter, and manage marketer account requests</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500">
+                <span className="text-gray-400 text-xs">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search name, email, phone..."
+                  value={marketerSearch}
+                  onChange={(e) => setMarketerSearch(e.target.value)}
+                  className="bg-transparent text-xs outline-none w-40 sm:w-48 text-gray-800"
+                />
+                {marketerSearch && (
+                  <button
+                    onClick={() => setMarketerSearch('')}
+                    className="text-xs text-gray-400 hover:text-gray-600 font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={marketerStatusFilter}
+                onChange={(e) => setMarketerStatusFilter(e.target.value)}
+                className="p-2 bg-gray-50 border border-gray-300 font-semibold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="all">All Approval Statuses</option>
+                <option value="pending">⏳ Pending</option>
+                <option value="approved">✅ Approved</option>
+                <option value="rejected">❌ Rejected</option>
+              </select>
+
+              <button
+                onClick={fetchMarketerAccounts}
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 border rounded-lg text-xs font-bold text-gray-700 transition"
+              >
+                🔄 Refresh
+              </button>
+            </div>
+          </div>
+
+          {marketersFetchError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-800 text-xs rounded">
+              ⚠️ <strong>Error Loading Data from Supabase:</strong> {marketersFetchError}
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border border-gray-200">
+              <thead className="bg-gray-800 text-white uppercase font-bold select-none">
+                <tr>
+                  <th
+                    onClick={() => handleMarketerSortToggle('name')}
+                    className="p-3 border cursor-pointer hover:bg-gray-700 transition"
+                  >
+                    Marketer Name {marketerSortField === 'name' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                  <th className="p-3 border">Marketer Type</th>
+                  <th
+                    onClick={() => handleMarketerSortToggle('email')}
+                    className="p-3 border cursor-pointer hover:bg-gray-700 transition"
+                  >
+                    Email {marketerSortField === 'email' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                  <th className="p-3 border">Phone</th>
+                  <th
+                    onClick={() => handleMarketerSortToggle('status')}
+                    className="p-3 border cursor-pointer hover:bg-gray-700 transition"
+                  >
+                    Status {marketerSortField === 'status' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                  <th
+                    onClick={() => handleMarketerSortToggle('created_at')}
+                    className="p-3 border cursor-pointer hover:bg-gray-700 transition"
+                  >
+                    Created At {marketerSortField === 'created_at' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                  </th>
+                  <th className="p-3 border text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAndSortedMarketers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-4 text-center text-gray-500 font-semibold">
+                      No marketer accounts found matching criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredAndSortedMarketers.map((marketer) => {
+                    const status = marketer.status || 'pending';
+                    return (
+                      <tr key={marketer.id} className="border-b hover:bg-gray-50">
+                        <td className="p-3 border font-bold text-gray-800">{marketer.name || 'Unnamed'}</td>
+                        <td className="p-3 border">
+                          <span className="bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded text-[10px] border border-indigo-200">
+                            {marketer.marketer_type || marketer.role || 'Broker / Agent'}
+                          </span>
+                        </td>
+                        <td className="p-3 border text-gray-600">{marketer.email}</td>
+                        <td className="p-3 border">{marketer.phone || '-'}</td>
+                        <td className="p-3 border">
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap ${
-                              normalizedLeadStatus === 'New'
-                                ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                                : normalizedLeadStatus === 'Request for Qualification'
-                                ? 'bg-gray-100 text-gray-800 border border-gray-300'
-                                : normalizedLeadStatus === 'Qualified'
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                : normalizedLeadStatus === 'Negotiation'
-                                ? 'bg-purple-100 text-purple-900 border border-purple-200'
-                                : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                            className={`px-2 py-1 rounded-full text-[10px] font-extrabold uppercase ${
+                              status === 'approved'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : status === 'rejected'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-amber-100 text-amber-800 animate-pulse'
                             }`}
                           >
-                            {normalizedLeadStatus}
+                            {status === 'approved' && '✅ Approved'}
+                            {status === 'rejected' && '❌ Rejected'}
+                            {status === 'pending' && '⏳ Pending Approval'}
                           </span>
-                        </div>
-
-                        {matchedProj && (
-                          <p className="text-[10px] text-gray-500">
-                            Project: <span className="font-medium text-gray-700">{matchedProj.name}</span>
-                          </p>
-                        )}
-
-                        {lead.source && (
-                          <p className="text-[10px] text-gray-500">
-                            Source: <span className="font-medium text-gray-700">{lead.source}</span>
-                          </p>
-                        )}
-
-                        {lead.apartment_id && (
-                          <p className="text-[10px] text-amber-800 font-semibold">
-                            Units: {lead.apartment_id}
-                          </p>
-                        )}
-
-                        {lead.cpo && (
-                          <div className="mt-1">
-                            <a
-                              href={lead.cpo}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200 transition"
+                        </td>
+                        <td className="p-3 border text-gray-500 whitespace-nowrap">
+                          {marketer.created_at
+                            ? new Date(marketer.created_at).toLocaleDateString('en-US')
+                            : '-'}
+                        </td>
+                        <td className="p-3 border text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleUpdateMarketerStatus(marketer.id, 'approved')}
+                              disabled={status === 'approved'}
+                              className={`px-3 py-1 rounded text-xs font-bold transition ${
+                                status === 'approved'
+                                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                              }`}
                             >
-                              📎 View CPO Image
-                            </a>
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleUpdateMarketerStatus(marketer.id, 'rejected')}
+                              disabled={status === 'rejected'}
+                              className={`px-3 py-1 rounded text-xs font-bold transition ${
+                                status === 'rejected'
+                                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                  : 'bg-red-600 hover:bg-red-700 text-white'
+                              }`}
+                            >
+                              Reject
+                            </button>
                           </div>
-                        )}
-
-                        <div className="mt-1 pt-1.5 border-t border-gray-100 flex justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteLead(lead.id)}
-                            className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[10px] font-medium px-2 py-0.5 rounded transition"
-                          >
-                            Delete
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleEditLead(lead)}
-                            className="bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 text-[10px] font-medium px-2 py-0.5 rounded transition"
-                          >
-                            Edit Lead / Change Status
-                          </button>
-                        </div>
-                      </div>
+                        </td>
+                      </tr>
                     );
-                  })}
-                </div>
-              )}
-            </div>
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -2174,4 +1538,4 @@ export function MarketerDashboard() {
   );
 }
 
-export default MarketerDashboard;
+export default AdminDashboardd;
