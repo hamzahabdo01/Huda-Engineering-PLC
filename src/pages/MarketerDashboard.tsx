@@ -1722,7 +1722,7 @@ export function MarketerDashboard() {
                     }}
                     className="w-full p-2 bg-white border border-gray-300 rounded text-xs font-semibold text-gray-800 focus:ring-1 focus:ring-[#00474b] outline-none cursor-pointer"
                   >
-                    <option value="New">Now (Save Lead without Unit)</option>
+                    <option value="New">New (Save Lead without Unit)</option>
                     <option value="Request for Qualification">Request for Qualification (Reserve Unit)</option>
                     <option value="Negotiation">Negotiation (Payment Terms)</option>
                     <option value="Closed">Closed (Completed Deal)</option>
