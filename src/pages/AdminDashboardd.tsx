@@ -112,7 +112,7 @@ export function AdminDashboardd() {
   const [newFloorName, setNewFloorName] = useState('');
   const [typicalFloorCount, setTypicalFloorCount] = useState<number | ''>('');
 
-  // Unit Type Form States (بدون السعر الإجمالي)
+  // Unit Type Form States
   const [newUnitTitle, setNewUnitTitle] = useState('');
   const [newUnitArea, setNewUnitArea] = useState<number | ''>('');
 
@@ -409,7 +409,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // إضافة نوع شقة جديد بدون Total Price
   const handleAddUnitType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUnitTitle.trim() || !newUnitArea || !selectedProjectId) return;
@@ -798,7 +797,6 @@ export function AdminDashboardd() {
                 </form>
               </div>
 
-              {/* تم حذف حقل total payment من هذه الاستمارة بناءً على طلبك */}
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                 <h2 className="font-bold text-gray-800 text-sm mb-3">🏠 2. Add House Type</h2>
                 <form onSubmit={handleAddUnitType} className="space-y-3">
@@ -954,6 +952,9 @@ export function AdminDashboardd() {
                           } else if (status === 'unavailable') {
                             bgClass = 'bg-[#ff0000] text-white';
                             cellContent = '🔴';
+                          } else if (status.toLowerCase() === 'pending') {
+                            bgClass = 'bg-gray-400 text-white font-extrabold';
+                            cellContent = 'PENDING';
                           } else {
                             bgClass = 'bg-[#ff0000] text-white font-extrabold';
                             cellContent = status;
@@ -984,7 +985,7 @@ export function AdminDashboardd() {
         </>
       )}
 
-      {/* TAB 2: PRICING & PAYMENT PLANS (بيانات الماركتر والخطط) */}
+      {/* TAB 2: PRICING & PAYMENT PLANS */}
       {activeTab === 'pricing' && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -1037,22 +1038,15 @@ export function AdminDashboardd() {
 
                     return (
                       <tr key={client.id} className="border-b hover:bg-gray-50">
-                        {/* اسم المشروع */}
                         <td className="p-3 border font-bold text-gray-800">
                           {getProjectName(client)}
                         </td>
-
-                        {/* اسم العميل */}
                         <td className="p-3 border font-semibold text-blue-900">
                           {client.name || client.client_name || '—'}
                         </td>
-
-                        {/* تفاصيل الشقة */}
                         <td className="p-3 border font-medium text-amber-900">
                           {client.apartment_id || client.apartmentId || '—'}
                         </td>
-
-                        {/* نوع الدفع (Full Payment أو Progressive Payment) */}
                         <td className="p-3 border">
                           <span
                             className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
@@ -1064,15 +1058,11 @@ export function AdminDashboardd() {
                             {isFullPayment ? '💵 Full Payment' : '📅 Progressive Payment'}
                           </span>
                         </td>
-
-                        {/* المباشر / الإجمالي */}
                         <td className="p-3 border font-semibold text-emerald-700">
                           {client.total_payment
                             ? `$${Number(client.total_payment).toLocaleString()}`
                             : '—'}
                         </td>
-
-                        {/* الدفعة الأولى */}
                         <td className="p-3 border font-semibold text-blue-700">
                           {client.down_payment
                             ? `$${Number(client.down_payment).toLocaleString()}`
@@ -1080,18 +1070,12 @@ export function AdminDashboardd() {
                             ? 'N/A'
                             : '—'}
                         </td>
-
-                        {/* خطة الأقساط */}
                         <td className="p-3 border text-gray-700 font-medium">
                           {client.installment_plan || (isFullPayment ? 'Full Cash' : '—')}
                         </td>
-
-                        {/* اسم الماركتر */}
                         <td className="p-3 border font-bold text-gray-700">
                           {client.marketer_name || client.marketerName || '—'}
                         </td>
-
-                        {/* تاريخ الإنشاء */}
                         <td className="p-3 border text-gray-500 whitespace-nowrap">
                           {client.created_at
                             ? new Date(client.created_at).toLocaleDateString('en-US')
