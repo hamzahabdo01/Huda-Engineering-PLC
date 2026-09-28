@@ -1487,8 +1487,10 @@ export function MarketerDashboard() {
 
   // SCREEN 2: MAIN DASHBOARD
   return (
-    <div className="p-3 sm:p-5 bg-[#eef2f5] min-h-screen text-left font-sans" dir="ltr">
-      
+    <div
+      className="p-3 sm:p-5 bg-[#eef2f5] min-h-screen text-left font-sans"
+      dir="ltr"
+    >
       {/* 🟢 TOP HEADER BAR */}
       <div className="bg-[#00474b] text-white px-5 py-3 rounded-md shadow-sm mb-5 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -1497,7 +1499,8 @@ export function MarketerDashboard() {
               H
             </div>
             <span className="font-bold text-sm sm:text-base tracking-wide text-white">
-              Marketer <span className="text-amber-400 font-normal">Portal</span>
+              Marketer{" "}
+              <span className="text-amber-400 font-normal">Portal</span>
             </span>
           </div>
 
@@ -1505,22 +1508,28 @@ export function MarketerDashboard() {
 
           <div className="text-xs flex items-center gap-1.5 flex-wrap">
             <span className="text-teal-100">Welcome Back, </span>
-            
+
             {currentMarketer.marketer_type && (
               <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
                 {currentMarketer.marketer_type}
               </span>
             )}
-            
-            <span className="font-semibold text-white">{currentMarketer.name}</span>
-            <span className="text-teal-200/80 text-[11px]">({currentMarketer.email})</span>
+
+            <span className="font-semibold text-white">
+              {currentMarketer.name}
+            </span>
+            <span className="text-teal-200/80 text-[11px]">
+              ({currentMarketer.email})
+            </span>
           </div>
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto justify-end text-xs">
           {projects.length > 0 && (
             <div className="flex items-center gap-2">
-              <span className="text-teal-100 font-medium whitespace-nowrap">Project:</span>
+              <span className="text-teal-100 font-medium whitespace-nowrap">
+                Project:
+              </span>
               <select
                 value={selectedProjectId}
                 onChange={(e) => {
@@ -1530,7 +1539,11 @@ export function MarketerDashboard() {
                 className="px-2 py-1 bg-[#00383b] border border-teal-600/80 font-bold text-amber-300 rounded text-xs outline-none focus:ring-1 focus:ring-amber-400"
               >
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id} className="bg-slate-900 text-white">
+                  <option
+                    key={p.id}
+                    value={p.id}
+                    className="bg-slate-900 text-white"
+                  >
                     {p.name}
                   </option>
                 ))}
@@ -1550,21 +1563,23 @@ export function MarketerDashboard() {
       {loadingProjects ? (
         <div className="bg-white p-12 rounded-lg shadow-sm text-center text-gray-500">
           <div className="w-8 h-8 border-4 border-[#00474b] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-xs font-semibold">Loading projects from Database...</p>
+          <p className="text-xs font-semibold">
+            Loading projects from Database...
+          </p>
         </div>
       ) : projects.length === 0 ? (
         <div className="bg-white p-12 rounded-lg shadow-sm text-center text-gray-500">
-          <p className="text-base font-bold text-gray-700">No Projects Available</p>
+          <p className="text-base font-bold text-gray-700">
+            No Projects Available
+          </p>
           <p className="text-xs text-gray-500 mt-1">
             There are no projects added by Admin yet. Please check back later.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          
           {/* 📊 LEFT: AVAILABLE STOCKS TABLE */}
           <div className="lg:col-span-7 xl:col-span-8 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            
             <div className="flex items-center gap-2 mb-4">
               <span className="text-amber-500 text-lg">🟡</span>
               <h2 className="text-sm font-black text-[#00474b] uppercase tracking-wider">
@@ -1582,7 +1597,10 @@ export function MarketerDashboard() {
                 <table className="w-full border-collapse text-center text-xs font-sans border border-gray-300">
                   <thead>
                     <tr className="bg-[#00474b] text-white">
-                      <th rowSpan={2} className="border border-teal-800 p-2 font-bold min-w-[80px]">
+                      <th
+                        rowSpan={2}
+                        className="border border-teal-800 p-2 font-bold min-w-[80px]"
+                      >
                         Floor
                       </th>
                       <th
@@ -1591,16 +1609,24 @@ export function MarketerDashboard() {
                       >
                         Type of Houses & Price Plans
                       </th>
-                      <th rowSpan={2} className="border border-teal-800 p-2 font-bold min-w-[70px]">
+                      <th
+                        rowSpan={2}
+                        className="border border-teal-800 p-2 font-bold min-w-[70px]"
+                      >
                         Remark
                       </th>
                     </tr>
 
                     <tr className="bg-[#00474b] text-white">
                       {unitTypes.map((ut) => (
-                        <th key={ut.id} className="border border-teal-800 p-2 font-semibold">
+                        <th
+                          key={ut.id}
+                          className="border border-teal-800 p-2 font-semibold"
+                        >
                           <div>{ut.title}</div>
-                          <div className="font-medium text-[10px] text-teal-200">{ut.area} m²</div>
+                          <div className="font-medium text-[10px] text-teal-200">
+                            {ut.area} m²
+                          </div>
                           {ut.totalPrice && (
                             <div className="text-[10px] text-amber-300 font-bold mt-0.5">
                               ${ut.totalPrice.toLocaleString()}
@@ -1619,25 +1645,31 @@ export function MarketerDashboard() {
                         </td>
 
                         {unitTypes.map((ut) => {
-                          const fName = (floorObj.floor_name || '').trim();
+                          const fName = (floorObj.floor_name || "").trim();
                           const utId = ut.id;
-                          const utTitle = (ut.title || '').trim();
+                          const utTitle = (ut.title || "").trim();
 
                           const rawStatus =
                             matrix[`${fName}___${utId}`] ||
                             matrix[`${fName}___${utTitle}`] ||
                             matrix[`${floorObj.floor_name}___${ut.id}`] ||
                             matrix[`${floorObj.floor_name}___${ut.title}`] ||
-                            'unavailable';
+                            "unavailable";
 
-                          const statusLower = (rawStatus || '').toLowerCase().trim();
-                          const isSelected = selectedUnits.some((u) => u.key === `${fName}___${utId}`);
+                          const statusLower = (rawStatus || "")
+                            .toLowerCase()
+                            .trim();
+                          const isSelected = selectedUnits.some(
+                            (u) => u.key === `${fName}___${utId}`,
+                          );
 
-                          let bgClass = 'bg-[#d92525] text-white cursor-not-allowed';
+                          let bgClass =
+                            "bg-[#d92525] text-white cursor-not-allowed";
                           let cellContent: React.ReactNode = null;
 
-                          if (statusLower === 'available') {
-                            bgClass = 'bg-[#00b050] hover:bg-emerald-600 cursor-pointer text-white';
+                          if (statusLower === "available") {
+                            bgClass =
+                              "bg-[#00b050] hover:bg-emerald-600 cursor-pointer text-white";
                             if (isSelected) {
                               cellContent = (
                                 <span className="text-[9px] bg-black text-amber-300 px-1 py-0.5 rounded font-black shadow">
@@ -1645,29 +1677,58 @@ export function MarketerDashboard() {
                                 </span>
                               );
                             }
-                          } else if (statusLower === 'pending') {
-                            bgClass = 'bg-gray-400 hover:bg-gray-500 text-white font-bold cursor-not-allowed';
-                            cellContent = <span className="text-[10px] uppercase">PENDING</span>;
-                          } else if (statusLower === 'reserved') {
-                            bgClass = 'bg-[#f2b827] hover:bg-amber-500 cursor-pointer text-black font-semibold';
-                            cellContent = <span className="text-[10px] uppercase">RESERVED</span>;
-                          } else if (statusLower === 'shop' || statusLower === 'business') {
-                            bgClass = 'bg-[#d92525] text-white font-bold cursor-not-allowed';
-                            cellContent = <span className="text-[10px] uppercase">{rawStatus}</span>;
-                          } else if (statusLower === 'unavailable' || !rawStatus) {
-                            bgClass = 'bg-[#d92525] text-white cursor-not-allowed';
+                          } else if (statusLower === "pending") {
+                            bgClass =
+                              "bg-gray-400 hover:bg-gray-500 text-white font-bold cursor-not-allowed";
+                            cellContent = (
+                              <span className="text-[10px] uppercase">
+                                PENDING
+                              </span>
+                            );
+                          } else if (statusLower === "reserved") {
+                            bgClass =
+                              "bg-[#f2b827] hover:bg-amber-500 cursor-pointer text-black font-semibold";
+                            cellContent = (
+                              <span className="text-[10px] uppercase">
+                                RESERVED
+                              </span>
+                            );
+                          } else if (
+                            statusLower === "shop" ||
+                            statusLower === "business"
+                          ) {
+                            bgClass =
+                              "bg-[#d92525] text-white font-bold cursor-not-allowed";
+                            cellContent = (
+                              <span className="text-[10px] uppercase">
+                                {rawStatus}
+                              </span>
+                            );
+                          } else if (
+                            statusLower === "unavailable" ||
+                            !rawStatus
+                          ) {
+                            bgClass =
+                              "bg-[#d92525] text-white cursor-not-allowed";
                             cellContent = null;
                           } else {
-                            bgClass = 'bg-[#d92525] text-white font-extrabold text-[10px] uppercase cursor-not-allowed';
+                            bgClass =
+                              "bg-[#d92525] text-white font-extrabold text-[10px] uppercase cursor-not-allowed";
                             cellContent = rawStatus.toUpperCase();
                           }
 
                           return (
                             <td
                               key={ut.id}
-                              onClick={() => handleCellClick(floorObj.floor_name, ut, rawStatus)}
+                              onClick={() =>
+                                handleCellClick(
+                                  floorObj.floor_name,
+                                  ut,
+                                  rawStatus,
+                                )
+                              }
                               className={`border border-gray-300 p-2.5 transition-all text-center ${bgClass} ${
-                                isSelected ? 'ring-2 ring-blue-600' : ''
+                                isSelected ? "ring-2 ring-blue-600" : ""
                               }`}
                               title={`Floor ${floorObj.floor_name} - ${ut.title} (${rawStatus.toUpperCase()})`}
                             >
@@ -1676,7 +1737,9 @@ export function MarketerDashboard() {
                           );
                         })}
 
-                        <td className="border border-gray-300 bg-white text-gray-500 p-1 text-[11px]">-</td>
+                        <td className="border border-gray-300 bg-white text-gray-500 p-1 text-[11px]">
+                          -
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1687,13 +1750,15 @@ export function MarketerDashboard() {
 
           {/* 📝 RIGHT: ACTION FORM & LEADS SECTION */}
           <div className="lg:col-span-5 xl:col-span-4 space-y-5">
-            
             {/* 1. Add Lead & Take Action Card */}
-            <div className={`p-4 rounded-lg shadow-sm border ${editingLeadId ? 'bg-amber-50/70 border-amber-300' : 'bg-white border-gray-200'}`}>
-              
+            <div
+              className={`p-4 rounded-lg shadow-sm border ${editingLeadId ? "bg-amber-50/70 border-amber-300" : "bg-white border-gray-200"}`}
+            >
               <div className="flex items-center justify-between mb-3 border-l-4 border-amber-400 pl-2.5">
                 <h2 className="font-bold text-gray-800 text-xs sm:text-sm">
-                  {editingLeadId ? '✏️ Edit Lead Record' : 'Add Lead & Take Action'}
+                  {editingLeadId
+                    ? "✏️ Edit Lead Record"
+                    : "Add Lead & Take Action"}
                 </h2>
 
                 {editingLeadId && (
@@ -1707,7 +1772,10 @@ export function MarketerDashboard() {
                 )}
               </div>
 
-              <form onSubmit={handleSaveLeadWithAction} className="space-y-3 text-xs">
+              <form
+                onSubmit={handleSaveLeadWithAction}
+                className="space-y-3 text-xs"
+              >
                 <div>
                   <label className="block font-semibold text-gray-700 mb-1">
                     Action / Status *
@@ -1716,20 +1784,24 @@ export function MarketerDashboard() {
                     value={actionStatus}
                     onChange={(e: any) => {
                       setActionStatus(normalizeStatus(e.target.value));
-                      if (e.target.value === 'New') {
+                      if (e.target.value === "New") {
                         setSelectedUnits([]);
                       }
                     }}
                     className="w-full p-2 bg-white border border-gray-300 rounded text-xs font-semibold text-gray-800 focus:ring-1 focus:ring-[#00474b] outline-none cursor-pointer"
                   >
                     <option value="New">New (Save Lead without Unit)</option>
-                    <option value="Request for Qualification">Request for Qualification (Reserve Unit)</option>
-                    <option value="Negotiation">Negotiation (Payment Terms)</option>
+                    <option value="Request for Qualification">
+                      Request for Qualification (Reserve Unit)
+                    </option>
+                    <option value="Negotiation">
+                      Negotiation (Payment Terms)
+                    </option>
                     <option value="Closed">Closed (Completed Deal)</option>
                   </select>
                 </div>
 
-                {actionStatus !== 'New' && (
+                {actionStatus !== "New" && (
                   <div>
                     <label className="block font-medium text-gray-700 mb-1">
                       Selected Units ({selectedUnits.length}) *
@@ -1746,11 +1818,17 @@ export function MarketerDashboard() {
                             className="bg-emerald-50 border border-emerald-300 rounded p-1.5 text-[11px] flex justify-between items-center"
                           >
                             <div>
-                              <span className="font-bold text-emerald-900">{u.label}</span>
+                              <span className="font-bold text-emerald-900">
+                                {u.label}
+                              </span>
                             </div>
                             <button
                               type="button"
-                              onClick={() => setSelectedUnits((prev) => prev.filter((item) => item.key !== u.key))}
+                              onClick={() =>
+                                setSelectedUnits((prev) =>
+                                  prev.filter((item) => item.key !== u.key),
+                                )
+                              }
                               className="text-red-500 font-bold hover:text-red-700 text-[10px]"
                             >
                               ✕
@@ -1802,8 +1880,8 @@ export function MarketerDashboard() {
                       onChange={(e) => setClientPhone(e.target.value)}
                       className={`flex-1 p-2 border rounded text-xs outline-none ${
                         isPhoneDisabled
-                          ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed font-medium'
-                          : 'border-gray-300 focus:ring-1 focus:ring-[#00474b]'
+                          ? "bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed font-medium"
+                          : "border-gray-300 focus:ring-1 focus:ring-[#00474b]"
                       }`}
                       required
                     />
@@ -1818,8 +1896,8 @@ export function MarketerDashboard() {
                     value={clientSource}
                     onChange={(e) => {
                       setClientSource(e.target.value);
-                      if (e.target.value !== 'Other') {
-                        setCustomSource('');
+                      if (e.target.value !== "Other") {
+                        setCustomSource("");
                       }
                     }}
                     className="w-full p-2 border border-gray-300 rounded text-xs bg-white outline-none focus:ring-1 focus:ring-[#00474b]"
@@ -1839,7 +1917,7 @@ export function MarketerDashboard() {
                     <option value="Other">Other...</option>
                   </select>
 
-                  {clientSource === 'Other' && (
+                  {clientSource === "Other" && (
                     <input
                       type="text"
                       placeholder="Please specify lead source..."
@@ -1852,7 +1930,7 @@ export function MarketerDashboard() {
                 </div>
 
                 {/* 🖼️ CPO Image Upload Field */}
-                {actionStatus === 'Request for Qualification' && (
+                {actionStatus === "Request for Qualification" && (
                   <div className="bg-amber-50/80 p-3 border border-amber-200 rounded space-y-2">
                     <label className="block font-bold text-amber-900 text-xs flex items-center gap-1.5">
                       <Upload className="w-3.5 h-3.5 text-amber-700" />
@@ -1875,7 +1953,9 @@ export function MarketerDashboard() {
                     )}
                     {!cpoFile && cpoUrl && (
                       <div className="text-[11px] flex items-center justify-between bg-white p-2 rounded border border-gray-200">
-                        <span className="text-gray-600 font-medium">Existing CPO Attachment:</span>
+                        <span className="text-gray-600 font-medium">
+                          Existing CPO Attachment:
+                        </span>
                         <a
                           href={cpoUrl}
                           target="_blank"
@@ -1890,7 +1970,7 @@ export function MarketerDashboard() {
                 )}
 
                 {/* 💳 negotiation details المحدّث بكل المتطلبات */}
-                {actionStatus === 'Negotiation' && (
+                {actionStatus === "Negotiation" && (
                   <div className="bg-teal-50/60 p-3 border border-teal-200 rounded space-y-2.5">
                     <h3 className="font-bold text-[#00474b] text-[11px] border-b border-teal-200 pb-1">
                       📝 Negotiation Details
@@ -1904,34 +1984,34 @@ export function MarketerDashboard() {
                       <div className="grid grid-cols-2 gap-2 bg-white p-1 border border-gray-300 rounded">
                         <label
                           className={`flex items-center justify-center gap-1.5 p-1.5 text-xs font-bold rounded cursor-pointer transition ${
-                            paymentType === 'full'
-                              ? 'bg-[#00474b] text-white'
-                              : 'text-gray-600 hover:bg-gray-100'
+                            paymentType === "full"
+                              ? "bg-[#00474b] text-white"
+                              : "text-gray-600 hover:bg-gray-100"
                           }`}
                         >
                           <input
                             type="radio"
                             name="paymentType"
                             value="full"
-                            checked={paymentType === 'full'}
-                            onChange={() => setPaymentType('full')}
+                            checked={paymentType === "full"}
+                            onChange={() => setPaymentType("full")}
                             className="hidden"
                           />
                           Full Payment
                         </label>
                         <label
                           className={`flex items-center justify-center gap-1.5 p-1.5 text-xs font-bold rounded cursor-pointer transition ${
-                            paymentType === 'progressive'
-                              ? 'bg-[#00474b] text-white'
-                              : 'text-gray-600 hover:bg-gray-100'
+                            paymentType === "progressive"
+                              ? "bg-[#00474b] text-white"
+                              : "text-gray-600 hover:bg-gray-100"
                           }`}
                         >
                           <input
                             type="radio"
                             name="paymentType"
                             value="progressive"
-                            checked={paymentType === 'progressive'}
-                            onChange={() => setPaymentType('progressive')}
+                            checked={paymentType === "progressive"}
+                            onChange={() => setPaymentType("progressive")}
                             className="hidden"
                           />
                           Progressive Payment
@@ -1967,7 +2047,7 @@ export function MarketerDashboard() {
                     </div>
 
                     {/* Installment Plan: يظهر فقط عند اختيار Progressive Payment بعد حقل Down Payment */}
-                    {paymentType === 'progressive' && (
+                    {paymentType === "progressive" && (
                       <div>
                         <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
                           Installment Plan
@@ -2000,13 +2080,14 @@ export function MarketerDashboard() {
                 <button
                   type="submit"
                   disabled={uploadingCpo}
-                  className="w-full font-bold py-2.5 rounded text-xs text-white transition bg-[#00474b] hover:bg-[#00383b] shadow-sm mt-2 disabled:opacity-50"
+                  className="w-full font-bold py-2.5 rounded text-xs text-white hover:text-white transition bg-[#00474b] hover:bg-[#00383b] shadow-sm mt-2 disabled:opacity-50"
+                  style={{ color: "#ffffff" }}
                 >
                   {uploadingCpo
-                    ? 'Uploading CPO Image...'
+                    ? "Uploading CPO Image..."
                     : editingLeadId
-                    ? `Update Lead Record`
-                    : `Save Lead as "${actionStatus}"`}
+                      ? `Update Lead Record`
+                      : `Save Lead as "${actionStatus}"`}
                 </button>
               </form>
             </div>
@@ -2020,18 +2101,19 @@ export function MarketerDashboard() {
               <div className="flex border-b border-gray-200 mb-3 overflow-x-auto gap-2 text-[11px]">
                 {(
                   [
-                    'All',
-                    'New',
-                    'Request for Qualification',
-                    'Qualified',
-                    'Negotiation',
-                    'Closed',
+                    "All",
+                    "New",
+                    "Request for Qualification",
+                    "Qualified",
+                    "Negotiation",
+                    "Closed",
                   ] as const
                 ).map((tab) => {
                   const count =
-                    tab === 'All'
+                    tab === "All"
                       ? leads.length
-                      : leads.filter((l) => normalizeStatus(l.status) === tab).length;
+                      : leads.filter((l) => normalizeStatus(l.status) === tab)
+                          .length;
 
                   return (
                     <button
@@ -2040,8 +2122,8 @@ export function MarketerDashboard() {
                       onClick={() => setLeadTab(tab)}
                       className={`pb-1.5 font-semibold whitespace-nowrap border-b-2 transition-all ${
                         leadTab === tab
-                          ? 'border-[#00474b] text-[#00474b]'
-                          : 'border-transparent text-gray-500 hover:text-gray-800'
+                          ? "border-[#00474b] text-[#00474b]"
+                          : "border-transparent text-gray-500 hover:text-gray-800"
                       }`}
                     >
                       {tab} ({count})
@@ -2051,29 +2133,37 @@ export function MarketerDashboard() {
               </div>
 
               {filteredLeads.length === 0 ? (
-                <p className="text-gray-400 text-xs py-3 text-center">No leads found in "{leadTab}".</p>
+                <p className="text-gray-400 text-xs py-3 text-center">
+                  No leads found in "{leadTab}".
+                </p>
               ) : (
                 <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
                   {filteredLeads.map((lead) => {
-                    const matchedProj = projects.find((p) => p.id === lead.project_id) || selectedProject;
+                    const matchedProj =
+                      projects.find((p) => p.id === lead.project_id) ||
+                      selectedProject;
                     const normalizedLeadStatus = normalizeStatus(lead.status);
-                    const rawDigits = (lead.phone || '').replace(/[^0-9]/g, '');
+                    const rawDigits = (lead.phone || "").replace(/[^0-9]/g, "");
 
                     return (
                       <div
                         key={lead.id}
                         className={`p-3 border rounded-md flex flex-col gap-1 text-xs transition ${
                           editingLeadId === lead.id
-                            ? 'bg-amber-50 border-amber-400'
-                            : 'bg-white border-gray-200'
+                            ? "bg-amber-50 border-amber-400"
+                            : "bg-white border-gray-200"
                         }`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-bold text-gray-900">{lead.name}</p>
-                            
+                            <p className="font-bold text-gray-900">
+                              {lead.name}
+                            </p>
+
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-gray-600 text-[11px]">{lead.phone}</span>
+                              <span className="text-gray-600 text-[11px]">
+                                {lead.phone}
+                              </span>
                               {rawDigits && (
                                 <div className="flex items-center gap-1">
                                   <a
@@ -2096,18 +2186,19 @@ export function MarketerDashboard() {
                               )}
                             </div>
                           </div>
-                          
+
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap ${
-                              normalizedLeadStatus === 'New'
-                                ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                                : normalizedLeadStatus === 'Request for Qualification'
-                                ? 'bg-gray-100 text-gray-800 border border-gray-300'
-                                : normalizedLeadStatus === 'Qualified'
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                : normalizedLeadStatus === 'Negotiation'
-                                ? 'bg-purple-100 text-purple-900 border border-purple-200'
-                                : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                              normalizedLeadStatus === "New"
+                                ? "bg-blue-50 text-blue-800 border border-blue-200"
+                                : normalizedLeadStatus ===
+                                    "Request for Qualification"
+                                  ? "bg-gray-100 text-gray-800 border border-gray-300"
+                                  : normalizedLeadStatus === "Qualified"
+                                    ? "bg-amber-100 text-amber-900 border border-amber-300"
+                                    : normalizedLeadStatus === "Negotiation"
+                                      ? "bg-purple-100 text-purple-900 border border-purple-200"
+                                      : "bg-emerald-100 text-emerald-900 border border-emerald-300"
                             }`}
                           >
                             {normalizedLeadStatus}
@@ -2116,13 +2207,19 @@ export function MarketerDashboard() {
 
                         {matchedProj && (
                           <p className="text-[10px] text-gray-500">
-                            Project: <span className="font-medium text-gray-700">{matchedProj.name}</span>
+                            Project:{" "}
+                            <span className="font-medium text-gray-700">
+                              {matchedProj.name}
+                            </span>
                           </p>
                         )}
 
                         {lead.source && (
                           <p className="text-[10px] text-gray-500">
-                            Source: <span className="font-medium text-gray-700">{lead.source}</span>
+                            Source:{" "}
+                            <span className="font-medium text-gray-700">
+                              {lead.source}
+                            </span>
                           </p>
                         )}
 
