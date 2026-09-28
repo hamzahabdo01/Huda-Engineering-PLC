@@ -668,14 +668,19 @@ export function AdminDashboardd() {
       {/* Title Bar */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">⚙️ Admin Portal - Real Estate Manager</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            ⚙️ Admin Portal - Real Estate Manager
+          </h1>
           <p className="text-xs text-gray-500">
-            Manage floors, unit types, pricing & payment plans, and manage marketer requests
+            Manage floors, unit types, pricing & payment plans, and manage
+            marketer requests
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-xs font-bold text-gray-700 whitespace-nowrap">Active Project:</label>
+          <label className="text-xs font-bold text-gray-700 whitespace-nowrap">
+            Active Project:
+          </label>
           <select
             value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
@@ -683,7 +688,7 @@ export function AdminDashboardd() {
           >
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name || p.title || 'Untitled Project'}
+                {p.name || p.title || "Untitled Project"}
               </option>
             ))}
           </select>
@@ -693,33 +698,41 @@ export function AdminDashboardd() {
       {/* Navigation Tabs */}
       <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-300 pb-2">
         <button
-          onClick={() => setActiveTab('matrix')}
+          onClick={() => setActiveTab("matrix")}
           className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
-            activeTab === 'matrix' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+            activeTab === "matrix"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "bg-white text-gray-700 hover:bg-gray-200"
           }`}
         >
           📊 Matrix & Floors Stock
         </button>
         <button
-          onClick={() => setActiveTab('pricing')}
+          onClick={() => setActiveTab("pricing")}
           className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
-            activeTab === 'pricing' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+            activeTab === "pricing"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "bg-white text-gray-700 hover:bg-gray-200"
           }`}
         >
           💳 Pricing & Payment Plans ({marketerClients.length})
         </button>
         <button
-          onClick={() => setActiveTab('clients')}
+          onClick={() => setActiveTab("clients")}
           className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
-            activeTab === 'clients' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+            activeTab === "clients"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "bg-white text-gray-700 hover:bg-gray-200"
           }`}
         >
           👥 Marketers & Clients ({marketerClients.length})
         </button>
         <button
-          onClick={() => setActiveTab('marketers')}
+          onClick={() => setActiveTab("marketers")}
           className={`px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2 ${
-            activeTab === 'marketers' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200'
+            activeTab === "marketers"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "bg-white text-gray-700 hover:bg-gray-200"
           }`}
         >
           🔑 Marketers & Approvals ({marketerAccounts.length})
@@ -732,24 +745,38 @@ export function AdminDashboardd() {
       </div>
 
       {/* TAB 1: MATRIX & FLOORS STOCK */}
-      {activeTab === 'matrix' && (
+      {activeTab === "matrix" && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
             <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
-              <p className="text-gray-500 text-xs font-semibold">Total Matrix Units</p>
+              <p className="text-gray-500 text-xs font-semibold">
+                Total Matrix Units
+              </p>
               <p className="text-2xl font-bold text-gray-800">{totalCells}</p>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-emerald-500">
-              <p className="text-emerald-600 text-xs font-semibold">🟢 Available</p>
-              <p className="text-2xl font-bold text-emerald-700">{availableCount}</p>
+              <p className="text-emerald-600 text-xs font-semibold">
+                🟢 Available
+              </p>
+              <p className="text-2xl font-bold text-emerald-700">
+                {availableCount}
+              </p>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
-              <p className="text-amber-600 text-xs font-semibold">🟡 Reserved</p>
-              <p className="text-2xl font-bold text-amber-700">{reservedCount}</p>
+              <p className="text-amber-600 text-xs font-semibold">
+                🟡 Reserved
+              </p>
+              <p className="text-2xl font-bold text-amber-700">
+                {reservedCount}
+              </p>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500">
-              <p className="text-red-600 text-xs font-semibold">🔴 Sold / Unavailable</p>
-              <p className="text-2xl font-bold text-red-700">{unavailableCount}</p>
+              <p className="text-red-600 text-xs font-semibold">
+                🔴 Sold / Unavailable
+              </p>
+              <p className="text-2xl font-bold text-red-700">
+                {unavailableCount}
+              </p>
             </div>
           </div>
 
@@ -757,32 +784,39 @@ export function AdminDashboardd() {
             <div className="lg:col-span-1 space-y-6">
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                 <h2 className="font-bold text-gray-800 text-sm mb-1">
-                  📐 1. Add Floors to [{selectedProject?.name || selectedProject?.title}]
+                  📐 1. Add Floors to [
+                  {selectedProject?.name || selectedProject?.title}]
                 </h2>
                 <form onSubmit={handleAddFloors} className="space-y-3 mt-3">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-600 mb-1">Single Floor Name</label>
+                      <label className="block text-[10px] font-bold text-gray-600 mb-1">
+                        Single Floor Name
+                      </label>
                       <input
                         type="text"
                         placeholder="e.g. Ground / First"
                         value={newFloorName}
                         onChange={(e) => {
                           setNewFloorName(e.target.value);
-                          if (e.target.value) setTypicalFloorCount('');
+                          if (e.target.value) setTypicalFloorCount("");
                         }}
                         className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-blue-700 mb-1">Typical Count</label>
+                      <label className="block text-[10px] font-bold text-blue-700 mb-1">
+                        Typical Count
+                      </label>
                       <input
                         type="number"
                         placeholder="e.g. 10"
                         value={typicalFloorCount}
                         onChange={(e) => {
-                          setTypicalFloorCount(e.target.value ? Number(e.target.value) : '');
-                          if (e.target.value) setNewFloorName('');
+                          setTypicalFloorCount(
+                            e.target.value ? Number(e.target.value) : "",
+                          );
+                          if (e.target.value) setNewFloorName("");
                         }}
                         className="w-full p-2 border border-blue-400 bg-blue-50 rounded-lg text-xs outline-none focus:ring-1 focus:ring-blue-500 font-bold"
                       />
@@ -790,18 +824,26 @@ export function AdminDashboardd() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-gray-800 hover:bg-black text-white font-bold py-2 rounded-lg text-xs transition"
+                    className="w-full bg-gray-800 hover:bg-black text-white !text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm"
+                    style={{ color: "#ffffff" }}
                   >
-                    + {typicalFloorCount ? `Generate ${typicalFloorCount} Typical Floors` : 'Add Single Floor'}
+                    +{" "}
+                    {typicalFloorCount
+                      ? `Generate ${typicalFloorCount} Typical Floors`
+                      : "Add Single Floor"}
                   </button>
                 </form>
               </div>
 
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                <h2 className="font-bold text-gray-800 text-sm mb-3">🏠 2. Add House Type</h2>
+                <h2 className="font-bold text-gray-800 text-sm mb-3">
+                  🏠 2. Add House Type
+                </h2>
                 <form onSubmit={handleAddUnitType} className="space-y-3">
                   <div>
-                    <label className="block text-[11px] font-medium text-gray-700 mb-1">House Title *</label>
+                    <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                      House Title *
+                    </label>
                     <input
                       type="text"
                       placeholder="e.g. 3 Bed Room"
@@ -812,12 +854,18 @@ export function AdminDashboardd() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-medium text-gray-700 mb-1">Area (m²) *</label>
+                    <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                      Area (m²) *
+                    </label>
                     <input
                       type="number"
                       placeholder="e.g. 120"
                       value={newUnitArea}
-                      onChange={(e) => setNewUnitArea(e.target.value ? Number(e.target.value) : '')}
+                      onChange={(e) =>
+                        setNewUnitArea(
+                          e.target.value ? Number(e.target.value) : "",
+                        )
+                      }
                       className="w-full p-2 border rounded-lg text-xs border-gray-300 outline-none focus:ring-1 focus:ring-blue-500"
                       required
                     />
@@ -835,24 +883,27 @@ export function AdminDashboardd() {
               {activeCellKey && (
                 <div className="bg-amber-50 p-4 rounded-xl border border-amber-300 shadow-sm space-y-3">
                   <p className="text-xs font-bold text-amber-900">
-                    Selected Cell: <span className="underline">{activeCellKey.replace('__', ' / ')}</span>
+                    Selected Cell:{" "}
+                    <span className="underline">
+                      {activeCellKey.replace("__", " / ")}
+                    </span>
                   </p>
-                  
+
                   <div className="grid grid-cols-3 gap-2">
                     <button
-                      onClick={() => handleExplicitStatusChange('available')}
+                      onClick={() => handleExplicitStatusChange("available")}
                       className="bg-[#00b050] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
                       🟢 Available
                     </button>
                     <button
-                      onClick={() => handleExplicitStatusChange('reserved')}
+                      onClick={() => handleExplicitStatusChange("reserved")}
                       className="bg-[#f2b827] text-black py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
                       🟡 Reserved
                     </button>
                     <button
-                      onClick={() => handleExplicitStatusChange('unavailable')}
+                      onClick={() => handleExplicitStatusChange("unavailable")}
                       className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
                       🔴 Sold/Off
@@ -861,26 +912,29 @@ export function AdminDashboardd() {
 
                   <div className="grid grid-cols-3 gap-2 pt-1 border-t border-amber-200">
                     <button
-                      onClick={() => handleExplicitStatusChange('Business')}
+                      onClick={() => handleExplicitStatusChange("Business")}
                       className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
                       🏢 Business
                     </button>
                     <button
-                      onClick={() => handleExplicitStatusChange('office')}
+                      onClick={() => handleExplicitStatusChange("office")}
                       className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
                       💼 Office
                     </button>
                     <button
-                      onClick={() => handleExplicitStatusChange('Shops')}
+                      onClick={() => handleExplicitStatusChange("Shops")}
                       className="bg-[#ff0000] text-white py-1.5 rounded text-[10px] font-bold shadow-sm hover:opacity-90 transition"
                     >
                       🛍️ Shops
                     </button>
                   </div>
 
-                  <form onSubmit={handleApplyCustomText} className="flex gap-2 pt-1">
+                  <form
+                    onSubmit={handleApplyCustomText}
+                    className="flex gap-2 pt-1"
+                  >
                     <input
                       type="text"
                       placeholder="Or enter custom text (e.g. Gym)"
@@ -906,7 +960,7 @@ export function AdminDashboardd() {
                   AVAILABLE STOCKS (ADMIN MATRIX)
                 </div>
                 <div className="bg-[#00474b] text-white text-xs sm:text-sm font-semibold uppercase px-6 py-1.5 rounded-md mt-2 shadow-sm">
-                  {selectedProject?.subtitle || 'PROJECT DETAILS'}
+                  {selectedProject?.subtitle || "PROJECT DETAILS"}
                 </div>
               </div>
 
@@ -914,17 +968,35 @@ export function AdminDashboardd() {
                 <table className="w-full border-collapse text-center text-xs font-sans">
                   <thead>
                     <tr className="bg-[#00474b] text-white">
-                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[90px]">Floor</th>
-                      <th colSpan={unitTypes.length || 1} className="border border-gray-400 p-1.5 font-bold italic text-sm">
+                      <th
+                        rowSpan={2}
+                        className="border border-gray-400 p-2 font-bold min-w-[90px]"
+                      >
+                        Floor
+                      </th>
+                      <th
+                        colSpan={unitTypes.length || 1}
+                        className="border border-gray-400 p-1.5 font-bold italic text-sm"
+                      >
                         Type of Houses
                       </th>
-                      <th rowSpan={2} className="border border-gray-400 p-2 font-bold min-w-[80px]">Remark</th>
+                      <th
+                        rowSpan={2}
+                        className="border border-gray-400 p-2 font-bold min-w-[80px]"
+                      >
+                        Remark
+                      </th>
                     </tr>
                     <tr className="bg-[#00474b] text-white">
                       {unitTypes.map((ut) => (
-                        <th key={ut.id} className="border border-gray-400 p-2 font-semibold">
+                        <th
+                          key={ut.id}
+                          className="border border-gray-400 p-2 font-semibold"
+                        >
                           {ut.title} <br />
-                          <span className="font-normal text-[11px]">[area={ut.area}]</span>
+                          <span className="font-normal text-[11px]">
+                            [area={ut.area}]
+                          </span>
                         </th>
                       ))}
                     </tr>
@@ -937,35 +1009,39 @@ export function AdminDashboardd() {
                         </td>
                         {unitTypes.map((ut) => {
                           const key = `${f.floor_name}__${ut.id}`;
-                          const status = matrix[key] || 'unavailable';
+                          const status = matrix[key] || "unavailable";
                           const isActive = activeCellKey === key;
 
-                          let bgClass = 'bg-[#ff0000] text-white';
+                          let bgClass = "bg-[#ff0000] text-white";
                           let cellContent: React.ReactNode = null;
 
-                          if (status === 'available') {
-                            bgClass = 'bg-[#00b050] text-black';
-                            cellContent = '🟢';
-                          } else if (status === 'reserved') {
-                            bgClass = 'bg-[#f2b827] text-black';
-                            cellContent = '🟡';
-                          } else if (status === 'unavailable') {
-                            bgClass = 'bg-[#ff0000] text-white';
-                            cellContent = '🔴';
-                          } else if (status.toLowerCase() === 'pending') {
-                            bgClass = 'bg-gray-400 text-white font-extrabold';
-                            cellContent = 'PENDING';
+                          if (status === "available") {
+                            bgClass = "bg-[#00b050] text-black";
+                            cellContent = "🟢";
+                          } else if (status === "reserved") {
+                            bgClass = "bg-[#f2b827] text-black";
+                            cellContent = "🟡";
+                          } else if (status === "unavailable") {
+                            bgClass = "bg-[#ff0000] text-white";
+                            cellContent = "🔴";
+                          } else if (status.toLowerCase() === "pending") {
+                            bgClass = "bg-gray-400 text-white font-extrabold";
+                            cellContent = "PENDING";
                           } else {
-                            bgClass = 'bg-[#ff0000] text-white font-extrabold';
+                            bgClass = "bg-[#ff0000] text-white font-extrabold";
                             cellContent = status;
                           }
 
                           return (
                             <td
                               key={ut.id}
-                              onClick={() => handleCellClick(f.floor_name, ut.id)}
+                              onClick={() =>
+                                handleCellClick(f.floor_name, ut.id)
+                              }
                               className={`border border-black p-2 font-bold transition-all cursor-pointer hover:opacity-80 select-none ${bgClass} ${
-                                isActive ? 'ring-4 ring-blue-600 scale-95 z-10' : ''
+                                isActive
+                                  ? "ring-4 ring-blue-600 scale-95 z-10"
+                                  : ""
                               }`}
                             >
                               <span className="text-[11px] uppercase tracking-wider font-black break-words">
@@ -974,7 +1050,9 @@ export function AdminDashboardd() {
                             </td>
                           );
                         })}
-                        <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">-</td>
+                        <td className="border border-black bg-white text-gray-800 p-1 text-[11px]">
+                          -
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -985,141 +1063,162 @@ export function AdminDashboardd() {
         </>
       )}
 
-{/* TAB 2: PRICING & PAYMENT PLANS */}
-{activeTab === 'pricing' && (
-  <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-      <div>
-        <h2 className="text-lg font-bold text-gray-800">
-          💳 Marketer Payment Plans & Pricing
-        </h2>
-        <p className="text-xs text-gray-500">
-          View client payment details (Full Payment vs Progressive Payment) entered by marketers
-        </p>
-      </div>
-      <button
-        onClick={fetchMarketerClients}
-        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 transition"
-      >
-        🔄 Refresh
-      </button>
-    </div>
-
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs text-left border border-gray-200">
-        <thead className="bg-gray-800 text-white uppercase font-bold">
-          <tr>
-            <th className="p-3 border">Project Name</th>
-            <th className="p-3 border">Client Name</th>
-            <th className="p-3 border">Apartment / Unit</th>
-            <th className="p-3 border">Payment Type</th>
-            <th className="p-3 border">Total Price (ETB)</th>
-            <th className="p-3 border">Down Payment (ETB)</th>
-            <th className="p-3 border">Paid & Unpaid</th>
-            <th className="p-3 border">Installment Plan</th>
-            <th className="p-3 border">Marketer</th>
-            <th className="p-3 border">Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {marketerClients.length === 0 ? (
-            <tr>
-              <td colSpan={10} className="p-6 text-center text-gray-500 font-semibold">
-                No payment or client records submitted by marketers.
-              </td>
-            </tr>
-          ) : (
-            marketerClients.map((client) => {
-              const paymentTypeStr = (
-                client.payment_type ||
-                (client.installment_plan ? 'progressive payment' : 'full payment')
-              ).toLowerCase();
-
-              const isFullPayment = paymentTypeStr.includes('full');
-
-              // حساب المبالغ
-              const totalVal = Number(client.total_payment) || 0;
-              const downVal = Number(client.down_payment) || 0;
-              const remainingVal = totalVal > downVal ? totalVal - downVal : 0;
-
-              return (
-                <tr key={client.id} className="border-b hover:bg-gray-50">
-                  <td className="p-3 border font-bold text-gray-800">
-                    {getProjectName(client)}
-                  </td>
-                  <td className="p-3 border font-semibold text-blue-900">
-                    {client.name || client.client_name || '—'}
-                  </td>
-                  <td className="p-3 border font-medium text-amber-900">
-                    {client.apartment_id || client.apartmentId || '—'}
-                  </td>
-                  <td className="p-3 border">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
-                        isFullPayment
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : 'bg-purple-100 text-purple-800 border border-purple-300'
-                      }`}
-                    >
-                      {isFullPayment ? '💵 Full Payment' : '📅 Progressive Payment'}
-                    </span>
-                  </td>
-                  <td className="p-3 border font-semibold text-emerald-700">
-                    {client.total_payment
-                      ? `${Number(client.total_payment).toLocaleString()} ETB`
-                      : '—'}
-                  </td>
-                  <td className="p-3 border font-semibold text-blue-700">
-                    {client.down_payment
-                      ? `${Number(client.down_payment).toLocaleString()} ETB`
-                      : isFullPayment
-                      ? 'N/A'
-                      : '—'}
-                  </td>
-                  {/* العمود الجديد Paid & Unpaid */}
-                  <td className="p-3 border font-semibold">
-                    {client.total_payment ? (
-                      isFullPayment ? (
-                        <span className="text-emerald-600 font-bold">Paid in Full (0 ETB Unpaid)</span>
-                      ) : (
-                        <div className="flex flex-col text-[11px]">
-                          <span className="text-emerald-700">Paid: {downVal.toLocaleString()} ETB</span>
-                          <span className="text-rose-600">Unpaid: {remainingVal.toLocaleString()} ETB</span>
-                        </div>
-                      )
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="p-3 border text-gray-700 font-medium">
-                    {client.installment_plan || (isFullPayment ? 'Full Cash' : '—')}
-                  </td>
-                  <td className="p-3 border font-bold text-gray-700">
-                    {client.marketer_name || client.marketerName || '—'}
-                  </td>
-                  <td className="p-3 border text-gray-500 whitespace-nowrap">
-                    {client.created_at
-                      ? new Date(client.created_at).toLocaleDateString('en-US')
-                      : '—'}
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
-
-      {/* TAB 3: MARKETERS & CLIENTS FILTER, SEARCH & SORT */}
-      {activeTab === 'clients' && (
+      {/* TAB 2: PRICING & PAYMENT PLANS */}
+      {activeTab === "pricing" && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-              <h2 className="text-lg font-bold text-gray-800">👥 Marketer Registered Clients</h2>
+              <h2 className="text-lg font-bold text-gray-800">
+                💳 Marketer Payment Plans & Pricing
+              </h2>
               <p className="text-xs text-gray-500">
-                Search, filter by marketer or lead status, approve qualification requests and view CPO files
+                View client payment details (Full Payment vs Progressive
+                Payment) entered by marketers
+              </p>
+            </div>
+            <button
+              onClick={fetchMarketerClients}
+              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 transition"
+            >
+              🔄 Refresh
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border border-gray-200">
+              <thead className="bg-gray-800 text-white uppercase font-bold">
+                <tr>
+                  <th className="p-3 border">Project Name</th>
+                  <th className="p-3 border">Client Name</th>
+                  <th className="p-3 border">Apartment / Unit</th>
+                  <th className="p-3 border">Payment Type</th>
+                  <th className="p-3 border">Total Price (ETB)</th>
+                  <th className="p-3 border">Down Payment (ETB)</th>
+                  <th className="p-3 border">Paid & Unpaid</th>
+                  <th className="p-3 border">Installment Plan</th>
+                  <th className="p-3 border">Marketer</th>
+                  <th className="p-3 border">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {marketerClients.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={10}
+                      className="p-6 text-center text-gray-500 font-semibold"
+                    >
+                      No payment or client records submitted by marketers.
+                    </td>
+                  </tr>
+                ) : (
+                  marketerClients.map((client) => {
+                    const paymentTypeStr = (
+                      client.payment_type ||
+                      (client.installment_plan
+                        ? "progressive payment"
+                        : "full payment")
+                    ).toLowerCase();
+
+                    const isFullPayment = paymentTypeStr.includes("full");
+
+                    // حساب المبالغ
+                    const totalVal = Number(client.total_payment) || 0;
+                    const downVal = Number(client.down_payment) || 0;
+                    const remainingVal =
+                      totalVal > downVal ? totalVal - downVal : 0;
+
+                    return (
+                      <tr key={client.id} className="border-b hover:bg-gray-50">
+                        <td className="p-3 border font-bold text-gray-800">
+                          {getProjectName(client)}
+                        </td>
+                        <td className="p-3 border font-semibold text-blue-900">
+                          {client.name || client.client_name || "—"}
+                        </td>
+                        <td className="p-3 border font-medium text-amber-900">
+                          {client.apartment_id || client.apartmentId || "—"}
+                        </td>
+                        <td className="p-3 border">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
+                              isFullPayment
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                : "bg-purple-100 text-purple-800 border border-purple-300"
+                            }`}
+                          >
+                            {isFullPayment
+                              ? "💵 Full Payment"
+                              : "📅 Progressive Payment"}
+                          </span>
+                        </td>
+                        <td className="p-3 border font-semibold text-emerald-700">
+                          {client.total_payment
+                            ? `${Number(client.total_payment).toLocaleString()} ETB`
+                            : "—"}
+                        </td>
+                        <td className="p-3 border font-semibold text-blue-700">
+                          {client.down_payment
+                            ? `${Number(client.down_payment).toLocaleString()} ETB`
+                            : isFullPayment
+                              ? "N/A"
+                              : "—"}
+                        </td>
+                        {/* العمود الجديد Paid & Unpaid */}
+                        <td className="p-3 border font-semibold">
+                          {client.total_payment ? (
+                            isFullPayment ? (
+                              <span className="text-emerald-600 font-bold">
+                                Paid in Full (0 ETB Unpaid)
+                              </span>
+                            ) : (
+                              <div className="flex flex-col text-[11px]">
+                                <span className="text-emerald-700">
+                                  Paid: {downVal.toLocaleString()} ETB
+                                </span>
+                                <span className="text-rose-600">
+                                  Unpaid: {remainingVal.toLocaleString()} ETB
+                                </span>
+                              </div>
+                            )
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="p-3 border text-gray-700 font-medium">
+                          {client.installment_plan ||
+                            (isFullPayment ? "Full Cash" : "—")}
+                        </td>
+                        <td className="p-3 border font-bold text-gray-700">
+                          {client.marketer_name || client.marketerName || "—"}
+                        </td>
+                        <td className="p-3 border text-gray-500 whitespace-nowrap">
+                          {client.created_at
+                            ? new Date(client.created_at).toLocaleDateString(
+                                "en-US",
+                              )
+                            : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: MARKETERS & CLIENTS FILTER, SEARCH & SORT */}
+      {activeTab === "clients" && (
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">
+                👥 Marketer Registered Clients
+              </h2>
+              <p className="text-xs text-gray-500">
+                Search, filter by marketer or lead status, approve qualification
+                requests and view CPO files
               </p>
             </div>
 
@@ -1135,7 +1234,7 @@ export function AdminDashboardd() {
                 />
                 {clientSearch && (
                   <button
-                    onClick={() => setClientSearch('')}
+                    onClick={() => setClientSearch("")}
                     className="text-xs text-gray-400 hover:text-gray-600 font-bold"
                   >
                     ✕
@@ -1149,10 +1248,12 @@ export function AdminDashboardd() {
                   onChange={(e) => setSelectedMarketerFilter(e.target.value)}
                   className="p-1.5 bg-white border border-gray-300 font-bold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
-                  <option value="all">-- All Marketers ({marketerClients.length}) --</option>
+                  <option value="all">
+                    -- All Marketers ({marketerClients.length}) --
+                  </option>
                   {marketerOptions.map((name) => {
                     const count = marketerClients.filter(
-                      (c) => (c.marketer_name || c.marketerName) === name
+                      (c) => (c.marketer_name || c.marketerName) === name,
                     ).length;
                     return (
                       <option key={name} value={name}>
@@ -1170,7 +1271,9 @@ export function AdminDashboardd() {
                   className="p-1.5 bg-white border border-gray-300 font-semibold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
                   <option value="all">All Statuses</option>
-                  <option value="Request for Qualification">Request for Qualification</option>
+                  <option value="Request for Qualification">
+                    Request for Qualification
+                  </option>
                   <option value="Qualified">Qualified</option>
                   <option value="New">New</option>
                   <option value="Negotiation">Negotiation</option>
@@ -1187,12 +1290,14 @@ export function AdminDashboardd() {
                 🔄 Refresh
               </button>
 
-              {(clientSearch || selectedMarketerFilter !== 'all' || clientStatusFilter !== 'all') && (
+              {(clientSearch ||
+                selectedMarketerFilter !== "all" ||
+                clientStatusFilter !== "all") && (
                 <button
                   onClick={() => {
-                    setClientSearch('');
-                    setSelectedMarketerFilter('all');
-                    setClientStatusFilter('all');
+                    setClientSearch("");
+                    setSelectedMarketerFilter("all");
+                    setClientStatusFilter("all");
                   }}
                   className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 font-bold text-xs rounded-lg transition"
                 >
@@ -1207,17 +1312,27 @@ export function AdminDashboardd() {
               <thead className="bg-gray-100 text-gray-700 uppercase font-bold select-none">
                 <tr>
                   <th
-                    onClick={() => handleClientSortToggle('marketer_name')}
+                    onClick={() => handleClientSortToggle("marketer_name")}
                     className="p-3 border cursor-pointer hover:bg-gray-200 transition"
                   >
-                    Marketer Name {clientSortField === 'marketer_name' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                    Marketer Name{" "}
+                    {clientSortField === "marketer_name"
+                      ? clientSortOrder === "asc"
+                        ? "▲"
+                        : "▼"
+                      : "⇅"}
                   </th>
                   <th className="p-3 border">Marketer Type</th>
                   <th
-                    onClick={() => handleClientSortToggle('name')}
+                    onClick={() => handleClientSortToggle("name")}
                     className="p-3 border cursor-pointer hover:bg-gray-200 transition"
                   >
-                    Client Name {clientSortField === 'name' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                    Client Name{" "}
+                    {clientSortField === "name"
+                      ? clientSortOrder === "asc"
+                        ? "▲"
+                        : "▼"
+                      : "⇅"}
                   </th>
                   <th className="p-3 border">Phone</th>
                   <th className="p-3 border">Project Name</th>
@@ -1226,23 +1341,36 @@ export function AdminDashboardd() {
                   <th className="p-3 border">Status</th>
                   <th className="p-3 border text-center">CPO Document</th>
                   <th
-                    onClick={() => handleClientSortToggle('total_payment')}
+                    onClick={() => handleClientSortToggle("total_payment")}
                     className="p-3 border cursor-pointer hover:bg-gray-200 transition"
                   >
-                    Negotiation Details {clientSortField === 'total_payment' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                    Negotiation Details{" "}
+                    {clientSortField === "total_payment"
+                      ? clientSortOrder === "asc"
+                        ? "▲"
+                        : "▼"
+                      : "⇅"}
                   </th>
                   <th
-                    onClick={() => handleClientSortToggle('created_at')}
+                    onClick={() => handleClientSortToggle("created_at")}
                     className="p-3 border cursor-pointer hover:bg-gray-200 transition"
                   >
-                    Date & Time {clientSortField === 'created_at' ? (clientSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                    Date & Time{" "}
+                    {clientSortField === "created_at"
+                      ? clientSortOrder === "asc"
+                        ? "▲"
+                        : "▼"
+                      : "⇅"}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredAndSortedClients.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="p-6 text-center text-gray-500 font-semibold">
+                    <td
+                      colSpan={11}
+                      className="p-6 text-center text-gray-500 font-semibold"
+                    >
                       No clients found matching current filter/search criteria.
                     </td>
                   </tr>
@@ -1250,16 +1378,21 @@ export function AdminDashboardd() {
                   filteredAndSortedClients.map((client) => {
                     const cpoUrl = getCpoFileUrl(client);
                     const isRequestForQualification =
-                      client.status?.toLowerCase() === 'request for qualification';
+                      client.status?.toLowerCase() ===
+                      "request for qualification";
 
                     return (
                       <tr key={client.id} className="border-b hover:bg-gray-50">
                         <td className="p-3 border font-bold text-blue-800">
-                          {client.marketer_name || client.marketerName || 'Unknown'}
+                          {client.marketer_name ||
+                            client.marketerName ||
+                            "Unknown"}
                         </td>
                         <td className="p-3 border">
                           <span className="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-[10px] border border-blue-200">
-                            {client.marketer_type || client.marketerType || 'Standard'}
+                            {client.marketer_type ||
+                              client.marketerType ||
+                              "Standard"}
                           </span>
                         </td>
                         <td className="p-3 border font-semibold">
@@ -1270,11 +1403,11 @@ export function AdminDashboardd() {
                           {getProjectName(client)}
                         </td>
                         <td className="p-3 border font-medium text-amber-900">
-                          {client.apartment_id || client.apartmentId || '-'}
+                          {client.apartment_id || client.apartmentId || "-"}
                         </td>
                         <td className="p-3 border">
                           <span className="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded text-[10px]">
-                            {client.source || client.lead_source || 'Direct'}
+                            {client.source || client.lead_source || "Direct"}
                           </span>
                         </td>
 
@@ -1283,29 +1416,39 @@ export function AdminDashboardd() {
                             <span
                               className={`font-bold px-2.5 py-1 rounded-full text-[10px] ${
                                 isRequestForQualification
-                                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                  : client.status === 'Qualified'
-                                  ? 'bg-emerald-100 text-emerald-800 font-extrabold'
-                                  : client.status === 'Rejected'
-                                  ? 'bg-red-100 text-red-800'
-                                  : client.status === 'Negotiation'
-                                  ? 'bg-orange-100 text-orange-800'
-                                  : 'bg-blue-100 text-blue-800'
+                                  ? "bg-blue-100 text-blue-800 border border-blue-300"
+                                  : client.status === "Qualified"
+                                    ? "bg-emerald-100 text-emerald-800 font-extrabold"
+                                    : client.status === "Rejected"
+                                      ? "bg-red-100 text-red-800"
+                                      : client.status === "Negotiation"
+                                        ? "bg-orange-100 text-orange-800"
+                                        : "bg-blue-100 text-blue-800"
                               }`}
                             >
-                              {client.status || 'Reserved'}
+                              {client.status || "Reserved"}
                             </span>
 
                             {isRequestForQualification && (
                               <div className="flex items-center gap-1 mt-1">
                                 <button
-                                  onClick={() => handleUpdateClientStatus(client.id, 'Qualified')}
+                                  onClick={() =>
+                                    handleUpdateClientStatus(
+                                      client.id,
+                                      "Qualified",
+                                    )
+                                  }
                                   className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px] shadow-sm transition"
                                 >
                                   Approve
                                 </button>
                                 <button
-                                  onClick={() => handleUpdateClientStatus(client.id, 'Rejected')}
+                                  onClick={() =>
+                                    handleUpdateClientStatus(
+                                      client.id,
+                                      "Rejected",
+                                    )
+                                  }
                                   className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded text-[10px] shadow-sm transition"
                                 >
                                   Reject
@@ -1326,25 +1469,41 @@ export function AdminDashboardd() {
                               📄 View CPO
                             </a>
                           ) : (
-                            <span className="text-gray-400 italic text-[11px]">—</span>
+                            <span className="text-gray-400 italic text-[11px]">
+                              —
+                            </span>
                           )}
                         </td>
 
                         <td className="p-3 border">
-                          {client.total_payment || client.installment_plan || client.memo ? (
+                          {client.total_payment ||
+                          client.installment_plan ||
+                          client.memo ? (
                             <div className="bg-slate-50 p-2 rounded border border-slate-200 space-y-1 min-w-[170px] text-[11px]">
-                             {client.total_payment && (
-                            <div className="font-semibold text-slate-800">
-                             💵 Total: <span className="text-emerald-600">{Number(client.total_payment).toLocaleString()} ETB</span>
-                             </div>
-                             )}
+                              {client.total_payment && (
+                                <div className="font-semibold text-slate-800">
+                                  💵 Total:{" "}
+                                  <span className="text-emerald-600">
+                                    {Number(
+                                      client.total_payment,
+                                    ).toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                              )}
                               {client.installment_plan && (
                                 <div className="text-slate-600">
-                                  📅 Plan: <span className="font-medium text-slate-700">{client.installment_plan}</span>
+                                  📅 Plan:{" "}
+                                  <span className="font-medium text-slate-700">
+                                    {client.installment_plan}
+                                  </span>
                                 </div>
                               )}
                               {client.memo && (
-                                <div className="text-slate-500 italic truncate max-w-[200px]" title={client.memo}>
+                                <div
+                                  className="text-slate-500 italic truncate max-w-[200px]"
+                                  title={client.memo}
+                                >
                                   📝 {client.memo}
                                 </div>
                               )}
@@ -1356,15 +1515,18 @@ export function AdminDashboardd() {
 
                         <td className="p-3 border text-gray-500 whitespace-nowrap">
                           {client.created_at
-                            ? new Date(client.created_at).toLocaleString('en-US', {
-                                year: 'numeric',
-                                month: 'numeric',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true,
-                              })
-                            : '-'}
+                            ? new Date(client.created_at).toLocaleString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "numeric",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                },
+                              )
+                            : "-"}
                         </td>
                       </tr>
                     );
@@ -1377,12 +1539,16 @@ export function AdminDashboardd() {
       )}
 
       {/* TAB 4: MARKETERS & APPROVALS */}
-      {activeTab === 'marketers' && (
+      {activeTab === "marketers" && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-              <h2 className="text-lg font-bold text-gray-800">🔑 Marketer Registration Approvals</h2>
-              <p className="text-xs text-gray-500">Search, filter, and manage marketer account requests</p>
+              <h2 className="text-lg font-bold text-gray-800">
+                🔑 Marketer Registration Approvals
+              </h2>
+              <p className="text-xs text-gray-500">
+                Search, filter, and manage marketer account requests
+              </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -1397,7 +1563,7 @@ export function AdminDashboardd() {
                 />
                 {marketerSearch && (
                   <button
-                    onClick={() => setMarketerSearch('')}
+                    onClick={() => setMarketerSearch("")}
                     className="text-xs text-gray-400 hover:text-gray-600 font-bold"
                   >
                     ✕
@@ -1427,7 +1593,8 @@ export function AdminDashboardd() {
 
           {marketersFetchError && (
             <div className="mb-4 p-3 bg-red-50 border border-red-300 text-red-800 text-xs rounded">
-              ⚠️ <strong>Error Loading Data from Supabase:</strong> {marketersFetchError}
+              ⚠️ <strong>Error Loading Data from Supabase:</strong>{" "}
+              {marketersFetchError}
             </div>
           )}
 
@@ -1436,30 +1603,50 @@ export function AdminDashboardd() {
               <thead className="bg-gray-800 text-white uppercase font-bold select-none">
                 <tr>
                   <th
-                    onClick={() => handleMarketerSortToggle('name')}
+                    onClick={() => handleMarketerSortToggle("name")}
                     className="p-3 border cursor-pointer hover:bg-gray-700 transition"
                   >
-                    Marketer Name {marketerSortField === 'name' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                    Marketer Name{" "}
+                    {marketerSortField === "name"
+                      ? marketerSortOrder === "asc"
+                        ? "▲"
+                        : "▼"
+                      : "⇅"}
                   </th>
                   <th className="p-3 border">Marketer Type</th>
                   <th
-                    onClick={() => handleMarketerSortToggle('email')}
+                    onClick={() => handleMarketerSortToggle("email")}
                     className="p-3 border cursor-pointer hover:bg-gray-700 transition"
                   >
-                    Email {marketerSortField === 'email' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                    Email{" "}
+                    {marketerSortField === "email"
+                      ? marketerSortOrder === "asc"
+                        ? "▲"
+                        : "▼"
+                      : "⇅"}
                   </th>
                   <th className="p-3 border">Phone</th>
                   <th
-                    onClick={() => handleMarketerSortToggle('status')}
+                    onClick={() => handleMarketerSortToggle("status")}
                     className="p-3 border cursor-pointer hover:bg-gray-700 transition"
                   >
-                    Status {marketerSortField === 'status' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                    Status{" "}
+                    {marketerSortField === "status"
+                      ? marketerSortOrder === "asc"
+                        ? "▲"
+                        : "▼"
+                      : "⇅"}
                   </th>
                   <th
-                    onClick={() => handleMarketerSortToggle('created_at')}
+                    onClick={() => handleMarketerSortToggle("created_at")}
                     className="p-3 border cursor-pointer hover:bg-gray-700 transition"
                   >
-                    Created At {marketerSortField === 'created_at' ? (marketerSortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                    Created At{" "}
+                    {marketerSortField === "created_at"
+                      ? marketerSortOrder === "asc"
+                        ? "▲"
+                        : "▼"
+                      : "⇅"}
                   </th>
                   <th className="p-3 border text-center">Actions</th>
                 </tr>
@@ -1467,63 +1654,87 @@ export function AdminDashboardd() {
               <tbody>
                 {filteredAndSortedMarketers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500 font-semibold">
+                    <td
+                      colSpan={7}
+                      className="p-4 text-center text-gray-500 font-semibold"
+                    >
                       No marketer accounts found matching criteria.
                     </td>
                   </tr>
                 ) : (
                   filteredAndSortedMarketers.map((marketer) => {
-                    const status = marketer.status || 'pending';
+                    const status = marketer.status || "pending";
                     return (
-                      <tr key={marketer.id} className="border-b hover:bg-gray-50">
-                        <td className="p-3 border font-bold text-gray-800">{marketer.name || 'Unnamed'}</td>
+                      <tr
+                        key={marketer.id}
+                        className="border-b hover:bg-gray-50"
+                      >
+                        <td className="p-3 border font-bold text-gray-800">
+                          {marketer.name || "Unnamed"}
+                        </td>
                         <td className="p-3 border">
                           <span className="bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded text-[10px] border border-indigo-200">
-                            {marketer.marketer_type || marketer.role || 'Broker / Agent'}
+                            {marketer.marketer_type ||
+                              marketer.role ||
+                              "Broker / Agent"}
                           </span>
                         </td>
-                        <td className="p-3 border text-gray-600">{marketer.email}</td>
-                        <td className="p-3 border">{marketer.phone || '-'}</td>
+                        <td className="p-3 border text-gray-600">
+                          {marketer.email}
+                        </td>
+                        <td className="p-3 border">{marketer.phone || "-"}</td>
                         <td className="p-3 border">
                           <span
                             className={`px-2 py-1 rounded-full text-[10px] font-extrabold uppercase ${
-                              status === 'approved'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-amber-100 text-amber-800 animate-pulse'
+                              status === "approved"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : status === "rejected"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-amber-100 text-amber-800 animate-pulse"
                             }`}
                           >
-                            {status === 'approved' && '✅ Approved'}
-                            {status === 'rejected' && '❌ Rejected'}
-                            {status === 'pending' && '⏳ Pending Approval'}
+                            {status === "approved" && "✅ Approved"}
+                            {status === "rejected" && "❌ Rejected"}
+                            {status === "pending" && "⏳ Pending Approval"}
                           </span>
                         </td>
                         <td className="p-3 border text-gray-500 whitespace-nowrap">
                           {marketer.created_at
-                            ? new Date(marketer.created_at).toLocaleDateString('en-US')
-                            : '-'}
+                            ? new Date(marketer.created_at).toLocaleDateString(
+                                "en-US",
+                              )
+                            : "-"}
                         </td>
                         <td className="p-3 border text-center">
                           <div className="flex items-center justify-center gap-2">
                             <button
-                              onClick={() => handleUpdateMarketerStatus(marketer.id, 'approved')}
-                              disabled={status === 'approved'}
+                              onClick={() =>
+                                handleUpdateMarketerStatus(
+                                  marketer.id,
+                                  "approved",
+                                )
+                              }
+                              disabled={status === "approved"}
                               className={`px-3 py-1 rounded text-xs font-bold transition ${
-                                status === 'approved'
-                                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                status === "approved"
+                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
                               }`}
                             >
                               Approve
                             </button>
                             <button
-                              onClick={() => handleUpdateMarketerStatus(marketer.id, 'rejected')}
-                              disabled={status === 'rejected'}
+                              onClick={() =>
+                                handleUpdateMarketerStatus(
+                                  marketer.id,
+                                  "rejected",
+                                )
+                              }
+                              disabled={status === "rejected"}
                               className={`px-3 py-1 rounded text-xs font-bold transition ${
-                                status === 'rejected'
-                                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                  : 'bg-red-600 hover:bg-red-700 text-white'
+                                status === "rejected"
+                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  : "bg-red-600 hover:bg-red-700 text-white"
                               }`}
                             >
                               Reject
