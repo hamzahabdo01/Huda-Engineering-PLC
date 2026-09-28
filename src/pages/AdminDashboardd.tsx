@@ -985,111 +985,132 @@ export function AdminDashboardd() {
         </>
       )}
 
-      {/* TAB 2: PRICING & PAYMENT PLANS */}
-      {activeTab === 'pricing' && (
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-lg font-bold text-gray-800">
-                💳 Marketer Payment Plans & Pricing
-              </h2>
-              <p className="text-xs text-gray-500">
-                View client payment details (Full Payment vs Progressive Payment) entered by marketers
-              </p>
-            </div>
-            <button
-              onClick={fetchMarketerClients}
-              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 transition"
-            >
-              🔄 Refresh
-            </button>
-          </div>
+{/* TAB 2: PRICING & PAYMENT PLANS */}
+{activeTab === 'pricing' && (
+  <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div>
+        <h2 className="text-lg font-bold text-gray-800">
+          💳 Marketer Payment Plans & Pricing
+        </h2>
+        <p className="text-xs text-gray-500">
+          View client payment details (Full Payment vs Progressive Payment) entered by marketers
+        </p>
+      </div>
+      <button
+        onClick={fetchMarketerClients}
+        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 transition"
+      >
+        🔄 Refresh
+      </button>
+    </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border border-gray-200">
-              <thead className="bg-gray-800 text-white uppercase font-bold">
-                <tr>
-                  <th className="p-3 border">Project Name</th>
-                  <th className="p-3 border">Client Name</th>
-                  <th className="p-3 border">Apartment / Unit</th>
-                  <th className="p-3 border">Payment Type</th>
-                  <th className="p-3 border">Total Price ($)</th>
-                  <th className="p-3 border">Down Payment ($)</th>
-                  <th className="p-3 border">Installment Plan</th>
-                  <th className="p-3 border">Marketer</th>
-                  <th className="p-3 border">Date</th>
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs text-left border border-gray-200">
+        <thead className="bg-gray-800 text-white uppercase font-bold">
+          <tr>
+            <th className="p-3 border">Project Name</th>
+            <th className="p-3 border">Client Name</th>
+            <th className="p-3 border">Apartment / Unit</th>
+            <th className="p-3 border">Payment Type</th>
+            <th className="p-3 border">Total Price (ETB)</th>
+            <th className="p-3 border">Down Payment (ETB)</th>
+            <th className="p-3 border">Paid & Unpaid</th>
+            <th className="p-3 border">Installment Plan</th>
+            <th className="p-3 border">Marketer</th>
+            <th className="p-3 border">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {marketerClients.length === 0 ? (
+            <tr>
+              <td colSpan={10} className="p-6 text-center text-gray-500 font-semibold">
+                No payment or client records submitted by marketers.
+              </td>
+            </tr>
+          ) : (
+            marketerClients.map((client) => {
+              const paymentTypeStr = (
+                client.payment_type ||
+                (client.installment_plan ? 'progressive payment' : 'full payment')
+              ).toLowerCase();
+
+              const isFullPayment = paymentTypeStr.includes('full');
+
+              // حساب المبالغ
+              const totalVal = Number(client.total_payment) || 0;
+              const downVal = Number(client.down_payment) || 0;
+              const remainingVal = totalVal > downVal ? totalVal - downVal : 0;
+
+              return (
+                <tr key={client.id} className="border-b hover:bg-gray-50">
+                  <td className="p-3 border font-bold text-gray-800">
+                    {getProjectName(client)}
+                  </td>
+                  <td className="p-3 border font-semibold text-blue-900">
+                    {client.name || client.client_name || '—'}
+                  </td>
+                  <td className="p-3 border font-medium text-amber-900">
+                    {client.apartment_id || client.apartmentId || '—'}
+                  </td>
+                  <td className="p-3 border">
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
+                        isFullPayment
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-purple-100 text-purple-800 border border-purple-300'
+                      }`}
+                    >
+                      {isFullPayment ? '💵 Full Payment' : '📅 Progressive Payment'}
+                    </span>
+                  </td>
+                  <td className="p-3 border font-semibold text-emerald-700">
+                    {client.total_payment
+                      ? `${Number(client.total_payment).toLocaleString()} ETB`
+                      : '—'}
+                  </td>
+                  <td className="p-3 border font-semibold text-blue-700">
+                    {client.down_payment
+                      ? `${Number(client.down_payment).toLocaleString()} ETB`
+                      : isFullPayment
+                      ? 'N/A'
+                      : '—'}
+                  </td>
+                  {/* العمود الجديد Paid & Unpaid */}
+                  <td className="p-3 border font-semibold">
+                    {client.total_payment ? (
+                      isFullPayment ? (
+                        <span className="text-emerald-600 font-bold">Paid in Full (0 ETB Unpaid)</span>
+                      ) : (
+                        <div className="flex flex-col text-[11px]">
+                          <span className="text-emerald-700">Paid: {downVal.toLocaleString()} ETB</span>
+                          <span className="text-rose-600">Unpaid: {remainingVal.toLocaleString()} ETB</span>
+                        </div>
+                      )
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td className="p-3 border text-gray-700 font-medium">
+                    {client.installment_plan || (isFullPayment ? 'Full Cash' : '—')}
+                  </td>
+                  <td className="p-3 border font-bold text-gray-700">
+                    {client.marketer_name || client.marketerName || '—'}
+                  </td>
+                  <td className="p-3 border text-gray-500 whitespace-nowrap">
+                    {client.created_at
+                      ? new Date(client.created_at).toLocaleDateString('en-US')
+                      : '—'}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {marketerClients.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="p-6 text-center text-gray-500 font-semibold">
-                      No payment or client records submitted by marketers.
-                    </td>
-                  </tr>
-                ) : (
-                  marketerClients.map((client) => {
-                    const paymentTypeStr = (
-                      client.payment_type ||
-                      (client.installment_plan ? 'progressive payment' : 'full payment')
-                    ).toLowerCase();
-
-                    const isFullPayment = paymentTypeStr.includes('full');
-
-                    return (
-                      <tr key={client.id} className="border-b hover:bg-gray-50">
-                        <td className="p-3 border font-bold text-gray-800">
-                          {getProjectName(client)}
-                        </td>
-                        <td className="p-3 border font-semibold text-blue-900">
-                          {client.name || client.client_name || '—'}
-                        </td>
-                        <td className="p-3 border font-medium text-amber-900">
-                          {client.apartment_id || client.apartmentId || '—'}
-                        </td>
-                        <td className="p-3 border">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
-                              isFullPayment
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                : 'bg-purple-100 text-purple-800 border border-purple-300'
-                            }`}
-                          >
-                            {isFullPayment ? '💵 Full Payment' : '📅 Progressive Payment'}
-                          </span>
-                        </td>
-                        <td className="p-3 border font-semibold text-emerald-700">
-                          {client.total_payment
-                            ? `$${Number(client.total_payment).toLocaleString()}`
-                            : '—'}
-                        </td>
-                        <td className="p-3 border font-semibold text-blue-700">
-                          {client.down_payment
-                            ? `$${Number(client.down_payment).toLocaleString()}`
-                            : isFullPayment
-                            ? 'N/A'
-                            : '—'}
-                        </td>
-                        <td className="p-3 border text-gray-700 font-medium">
-                          {client.installment_plan || (isFullPayment ? 'Full Cash' : '—')}
-                        </td>
-                        <td className="p-3 border font-bold text-gray-700">
-                          {client.marketer_name || client.marketerName || '—'}
-                        </td>
-                        <td className="p-3 border text-gray-500 whitespace-nowrap">
-                          {client.created_at
-                            ? new Date(client.created_at).toLocaleDateString('en-US')
-                            : '—'}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
 
       {/* TAB 3: MARKETERS & CLIENTS FILTER, SEARCH & SORT */}
       {activeTab === 'clients' && (
@@ -1312,11 +1333,11 @@ export function AdminDashboardd() {
                         <td className="p-3 border">
                           {client.total_payment || client.installment_plan || client.memo ? (
                             <div className="bg-slate-50 p-2 rounded border border-slate-200 space-y-1 min-w-[170px] text-[11px]">
-                              {client.total_payment && (
-                                <div className="font-semibold text-slate-800">
-                                  💵 Total: <span className="text-emerald-600">${Number(client.total_payment).toLocaleString()}</span>
-                                </div>
-                              )}
+                             {client.total_payment && (
+                            <div className="font-semibold text-slate-800">
+                             💵 Total: <span className="text-emerald-600">{Number(client.total_payment).toLocaleString()} ETB</span>
+                             </div>
+                             )}
                               {client.installment_plan && (
                                 <div className="text-slate-600">
                                   📅 Plan: <span className="font-medium text-slate-700">{client.installment_plan}</span>
