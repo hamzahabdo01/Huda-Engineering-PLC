@@ -45,7 +45,7 @@ function ConditionalBackToHome() {
   const location = useLocation();
   
   // قائمة الصفحات التي نريد إخفاء الزر فيها
-  const hiddenPaths = ["/admin-dashboardd", "/admin-dashboard", "/marketer-dashboard"];
+  const hiddenPaths = ["/admin-dashboarddCRM", "/admin-dashboard", "/marketer-dashboard"];
 
   if (hiddenPaths.includes(location.pathname)) {
     return null; // لا تعرض شيء
