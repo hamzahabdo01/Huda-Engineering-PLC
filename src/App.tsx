@@ -20,7 +20,7 @@ const ApartmentDetail = lazyLoad(() => import("./pages/ApartmentDetail"));
 const Contact = lazyLoad(() => import("./pages/Contact"));
 const Auth = lazyLoad(() => import("./pages/Auth"));
 const AdminDashboard = lazyLoad(() => import("./pages/AdminDashboard"));
-const AdminDashboardd = lazyLoad(() => import("./pages/AdminDashboardd"));
+const AdminDashboarddCRM = lazyLoad(() => import("./pages/AdminDashboarddCRM"));
 const MarketerDashboard = lazyLoad(() => import("./pages/MarketerDashboard"));
 const Booking = lazyLoad(() => import("./pages/Booking"));
 const Announcements = lazyLoad(() => import("./pages/Announcements"));
@@ -96,7 +96,7 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            <Route path="/admin-dashboardd" element={<AdminDashboardd />} />
+            <Route path="/admin-dashboarddCRM" element={<AdminDashboarddCRM />} />
             <Route path="/marketer-dashboard" element={<MarketerDashboard />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/announcements" element={<Announcements />} />
