@@ -1,4 +1,4 @@
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const RESEND_API_KEY = Deno.env.get("MARKETER_RESEND_API_KEY");
 const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "cj2281x@gmail.com";
 
 const corsHeaders = {
