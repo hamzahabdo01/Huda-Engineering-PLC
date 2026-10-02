@@ -33,7 +33,7 @@ Deno.serve(async (req: Request) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "CRM System <onboarding@resend.dev>",
+        from: "CRM System <crm.hudaengineering.com>",
         to: [ADMIN_EMAIL],
         subject: "🔔 New Marketer Registration Pending Approval",
         html: `
