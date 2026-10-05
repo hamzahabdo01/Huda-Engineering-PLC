@@ -79,6 +79,7 @@ export interface Lead {
   installment_plan?: string;
   memo?: string;
   cpo?: string;
+  receipt_url?: string; // 👈 أضف هذا السطر هنا
   receipts?: ReceiptRecord[];
   created_at?: string;
 }
@@ -318,6 +319,7 @@ export function MarketerDashboard() {
 
   // Receipt Upload State (For Closed Details)
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string>(""); // 🟢 إضافة حالة لحفظ رابط الإيصال
   const [uploadingReceipt, setUploadingReceipt] = useState<boolean>(false);
 
   // Leads State & Country Code State
@@ -860,6 +862,7 @@ export function MarketerDashboard() {
     setCpoFile(null);
     setCpoUrl("");
     setReceiptFile(null);
+    setReceiptUrl(""); // 🟢 إعادة تعيين رابط الإيصال
   };
 
   const handleEditLead = (lead: Lead) => {
@@ -916,6 +919,7 @@ export function MarketerDashboard() {
     setMemo(lead.memo || "");
     setCpoUrl(lead.cpo || "");
     setCpoFile(null);
+    setReceiptUrl(lead.receipt_url || ""); // 🟢 جلب رابط الإيصال الموجود مسبقاً
     setReceiptFile(null);
 
     if (lead.unit_key) {
@@ -1136,14 +1140,12 @@ export function MarketerDashboard() {
 
     // 🧾 📤 رفع صورة/ملف الإيصال Receipt إن وجدت (في حالة Closed)
     // 🧾 📤 رفع صورة/ملف الإيصال إلى مجلد receipts داخل bucket (cpo-files)
-    let uploadedReceiptUrl = "";
+    let uploadedReceiptUrl = receiptUrl; // 🟢 الاحتفاظ بالرابط القديم في حال عدم اختيار ملف جديد
     if (targetStatus === "Closed" && receiptFile) {
       setUploadingReceipt(true);
       try {
         const fileExt = receiptFile.name.split(".").pop();
         const fileName = `receipt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-
-        // تحديد المسار داخل مجلد receipts
         const filePath = `receipts/${fileName}`;
 
         // 🟢 الرفع إلى cpo-files داخل مجلد receipts
@@ -1158,6 +1160,7 @@ export function MarketerDashboard() {
           const { data: publicUrlData } = supabase.storage
             .from("cpo-files")
             .getPublicUrl(filePath);
+          // 🟢 استخراج الرابط المباشر
           uploadedReceiptUrl = publicUrlData.publicUrl;
         }
       } catch (err: any) {
@@ -1184,6 +1187,7 @@ export function MarketerDashboard() {
       marketer_name: currentMarketer?.name,
       status: targetStatus,
       cpo: uploadedCpoUrl || null,
+      receipt_url: uploadedReceiptUrl || null, // 👈 حفظ الرابط مباشرة كرابط URL
       payment_type:
         targetStatus === "Negotiation" || targetStatus === "Closed"
           ? paymentType
@@ -1321,7 +1325,7 @@ export function MarketerDashboard() {
     } catch (err: any) {
       alert(`❌ Unexpected Error: ${err.message}`);
     }
-  };;
+  };
 
   const filteredLeads =
     leadTab === "All"
