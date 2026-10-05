@@ -38,6 +38,14 @@ export interface Project {
   subtitle?: string;
 }
 
+export interface PaymentRecord {
+  id: string;
+  payment_name: string;
+  date: string;
+  amount: number;
+  receipt_url?: string | null;
+}
+
 export interface MarketerClient {
   id: string;
   marketer_name?: string;
@@ -72,6 +80,7 @@ export interface MarketerClient {
   receipt_image?: string | null;
   receipt_file?: string | null;
   receipt_status?: string | null;
+  payment_history?: PaymentRecord[] | null;
 }
 
 export interface MarketerAccount {
@@ -83,6 +92,13 @@ export interface MarketerAccount {
   role?: string;
   status: "pending" | "approved" | "rejected" | string;
   created_at?: string;
+}
+
+// Helper to calculate ordinal payment names (1st Payment, 2nd Payment, 3rd Payment...)
+function getOrdinalPaymentName(index: number): string {
+  const suffixes = ["th", "st", "nd", "rd"];
+  const v = index % 100;
+  return `${index}${suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]} Payment`;
 }
 
 export function AdminDashboardd() {
@@ -100,6 +116,25 @@ export function AdminDashboardd() {
   const [marketersFetchError, setMarketersFetchError] = useState<string | null>(
     null,
   );
+
+  // --- Pricing Sub-Tab State ---
+  const [pricingSubTab, setPricingSubTab] = useState<"full" | "progressive">(
+    "full",
+  );
+
+  // --- Payment Modal State ---
+  const [selectedClientForPayment, setSelectedClientForPayment] =
+    useState<MarketerClient | null>(null);
+  const [clientPayments, setClientPayments] = useState<PaymentRecord[]>([]);
+
+  // Add Payment Form States
+  const [newPaymentDate, setNewPaymentDate] = useState<string>("");
+  const [newPaymentAmount, setNewPaymentAmount] = useState<string>("");
+  const [newReceiptFile, setNewReceiptFile] = useState<File | null>(null);
+  const [newReceiptPreview, setNewReceiptPreview] = useState<string | null>(
+    null,
+  );
+  const [isSavingPayment, setIsSavingPayment] = useState<boolean>(false);
 
   // --- Clients Search, Filter & Sort States ---
   const [selectedMarketerFilter, setSelectedMarketerFilter] =
@@ -200,6 +235,17 @@ export function AdminDashboardd() {
       supabase.removeChannel(channel);
     };
   }, [selectedProjectId]);
+
+  // Sync payments history when client is selected for payment modal
+  useEffect(() => {
+    if (selectedClientForPayment) {
+      setClientPayments(selectedClientForPayment.payment_history || []);
+      setNewPaymentDate(new Date().toISOString().split("T")[0]);
+      setNewPaymentAmount("");
+      setNewReceiptFile(null);
+      setNewReceiptPreview(null);
+    }
+  }, [selectedClientForPayment]);
 
   // --- Supabase API Calls ---
 
@@ -314,15 +360,38 @@ export function AdminDashboardd() {
     }
   };
 
-  // Helper function to extract receipt or CPO file URLs
-  const getReceiptOrCpoUrl = (
+  // Helper function to extract RECEIPT file URL specifically
+  const getReceiptUrl = (
     client: MarketerClient & Record<string, any>,
   ): string | null => {
     const file =
       client.receipt_url ||
       client.receipt_image ||
       client.receipt_file ||
-      client.receipt ||
+      client.receipt;
+
+    if (!file || typeof file !== "string" || file.trim() === "") {
+      return null;
+    }
+
+    const cleanFile = file.trim();
+    if (
+      cleanFile.startsWith("http://") ||
+      cleanFile.startsWith("https://") ||
+      cleanFile.startsWith("data:")
+    ) {
+      return cleanFile;
+    }
+
+    const { data } = supabase.storage.from("cpo-files").getPublicUrl(cleanFile);
+    return data?.publicUrl || null;
+  };
+
+  // Helper function to extract CPO file URL specifically
+  const getCpoUrl = (
+    client: MarketerClient & Record<string, any>,
+  ): string | null => {
+    const file =
       client.cpo_image ||
       client.cpoImage ||
       client.cpo_image_url ||
@@ -339,11 +408,10 @@ export function AdminDashboardd() {
     }
 
     const cleanFile = file.trim();
-
     if (
       cleanFile.startsWith("http://") ||
       cleanFile.startsWith("https://") ||
-      cleanFile.startsWith("data:image")
+      cleanFile.startsWith("data:")
     ) {
       return cleanFile;
     }
@@ -371,6 +439,88 @@ export function AdminDashboardd() {
       );
       alert(`✅ Marketer status updated to ${newStatus}`);
     }
+  };
+
+  // File Change & Preview Handler
+  const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setNewReceiptFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setNewReceiptPreview(previewUrl);
+    }
+  };
+
+  // Handle Add Payment Submit
+  const handleAddPaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedClientForPayment) return;
+    if (!newPaymentDate || !newPaymentAmount || Number(newPaymentAmount) <= 0) {
+      alert("Please enter a valid Date and Amount.");
+      return;
+    }
+
+    setIsSavingPayment(true);
+    let uploadedReceiptUrl: string | null = newReceiptPreview;
+
+    // Upload receipt file if provided
+    if (newReceiptFile) {
+      const fileExt = newReceiptFile.name.split(".").pop();
+      const fileName = `receipt_${selectedClientForPayment.id}_${Date.now()}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("cpo-files")
+        .upload(fileName, newReceiptFile);
+
+      if (!uploadError && uploadData) {
+        const { data: publicData } = supabase.storage
+          .from("cpo-files")
+          .getPublicUrl(fileName);
+        uploadedReceiptUrl = publicData?.publicUrl || uploadedReceiptUrl;
+      }
+    }
+
+    const nextPaymentNumber = clientPayments.length + 1;
+    const paymentName = getOrdinalPaymentName(nextPaymentNumber);
+
+    const newEntry: PaymentRecord = {
+      id: `pay_${Date.now()}`,
+      payment_name: paymentName,
+      date: newPaymentDate,
+      amount: Number(newPaymentAmount),
+      receipt_url: uploadedReceiptUrl,
+    };
+
+    const updatedPayments = [...clientPayments, newEntry];
+
+    // Persist to Supabase
+    const { error: updateError } = await supabase
+      .from("leads")
+      .update({ payment_history: updatedPayments as any })
+      .eq("id", selectedClientForPayment.id);
+
+    setIsSavingPayment(false);
+
+    if (updateError) {
+      console.warn(
+        "Notice updating payment_history column:",
+        updateError.message,
+      );
+    }
+
+    setClientPayments(updatedPayments);
+    setMarketerClients((prev) =>
+      prev.map((c) =>
+        c.id === selectedClientForPayment.id
+          ? { ...c, payment_history: updatedPayments }
+          : c,
+      ),
+    );
+
+    // Reset Form
+    setNewPaymentAmount("");
+    setNewReceiptFile(null);
+    setNewReceiptPreview(null);
+    alert(`✅ Successfully added ${paymentName}!`);
   };
 
   const getOrdinalFloorName = (num: number): string => {
@@ -581,6 +731,20 @@ export function AdminDashboardd() {
         .filter(Boolean),
     ]),
   );
+
+  // --- Filtering Clients for Pricing Sub-Tabs ---
+  const pricingFilteredClients = useMemo(() => {
+    return marketerClients.filter((client) => {
+      const paymentTypeStr = (
+        client.payment_type ||
+        (client.installment_plan ? "progressive payment" : "full payment")
+      ).toLowerCase();
+
+      const isFull = paymentTypeStr.includes("full");
+      if (pricingSubTab === "full") return isFull;
+      return !isFull; // Progressive Payment
+    });
+  }, [marketerClients, pricingSubTab]);
 
   // --- Sorting & Filtering Logic for CLIENTS ---
   const handleClientSortToggle = (field: typeof clientSortField) => {
@@ -1153,14 +1317,14 @@ export function AdminDashboardd() {
       {/* TAB 2: PRICING & PAYMENT PLANS */}
       {activeTab === "pricing" && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
               <h2 className="text-lg font-bold text-gray-800">
                 💳 Marketer Payment Plans & Pricing
               </h2>
               <p className="text-xs text-gray-500">
-                View client payment details, receipts, and approve
-                progressive/full payment requests
+                View client payment details and manage progressive payment
+                schedules (Click any row to open payment manager)
               </p>
             </div>
             <button
@@ -1168,6 +1332,30 @@ export function AdminDashboardd() {
               className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 transition"
             >
               🔄 Refresh
+            </button>
+          </div>
+
+          {/* Sub-Tabs: Full Payment vs Progressive Payment */}
+          <div className="flex items-center gap-2 mb-6 bg-slate-100 p-1 rounded-lg w-fit border border-slate-300">
+            <button
+              onClick={() => setPricingSubTab("full")}
+              className={`px-5 py-2 text-xs font-extrabold rounded-md transition ${
+                pricingSubTab === "full"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              💵 Full Payment
+            </button>
+            <button
+              onClick={() => setPricingSubTab("progressive")}
+              className={`px-5 py-2 text-xs font-extrabold rounded-md transition ${
+                pricingSubTab === "progressive"
+                  ? "bg-purple-600 text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              📅 Progressive Payment
             </button>
           </div>
 
@@ -1183,24 +1371,26 @@ export function AdminDashboardd() {
                   <th className="p-3 border">Down Payment (ETB)</th>
                   <th className="p-3 border">Paid & Unpaid</th>
                   <th className="p-3 border">Installment Plan</th>
-                  <th className="p-3 border text-center">Receipt / CPO</th>
-                  <th className="p-3 border text-center">Status & Actions</th>
                   <th className="p-3 border">Marketer</th>
                   <th className="p-3 border">Date</th>
                 </tr>
               </thead>
               <tbody>
-                {marketerClients.length === 0 ? (
+                {pricingFilteredClients.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={12}
+                      colSpan={10}
                       className="p-6 text-center text-gray-500 font-semibold"
                     >
-                      No payment or client records submitted by marketers.
+                      No records found for{" "}
+                      {pricingSubTab === "full"
+                        ? "Full Payment"
+                        : "Progressive Payment"}
+                      .
                     </td>
                   </tr>
                 ) : (
-                  marketerClients.map((client) => {
+                  pricingFilteredClients.map((client) => {
                     const paymentTypeStr = (
                       client.payment_type ||
                       (client.installment_plan
@@ -1209,23 +1399,23 @@ export function AdminDashboardd() {
                     ).toLowerCase();
 
                     const isFullPayment = paymentTypeStr.includes("full");
-                    const receiptUrl = getReceiptOrCpoUrl(client);
 
-                    // حساب المبالغ
                     const totalVal = Number(client.total_payment) || 0;
                     const downVal = Number(client.down_payment) || 0;
                     const remainingVal =
                       totalVal > downVal ? totalVal - downVal : 0;
 
-                    const isQualified = client.status === "Qualified";
-                    const isRejected = client.status === "Rejected";
-
                     return (
-                      <tr key={client.id} className="border-b hover:bg-gray-50">
+                      <tr
+                        key={client.id}
+                        onClick={() => setSelectedClientForPayment(client)}
+                        className="border-b hover:bg-indigo-50/60 cursor-pointer transition"
+                        title="Click to view installment schedule and add payments"
+                      >
                         <td className="p-3 border font-bold text-gray-800">
                           {getProjectName(client)}
                         </td>
-                        <td className="p-3 border font-semibold text-blue-900">
+                        <td className="p-3 border font-semibold text-blue-900 underline decoration-dashed">
                           {client.name || client.client_name || "—"}
                         </td>
                         <td className="p-3 border font-medium text-amber-900">
@@ -1256,7 +1446,6 @@ export function AdminDashboardd() {
                               ? "N/A"
                               : "—"}
                         </td>
-                        {/* Paid & Unpaid */}
                         <td className="p-3 border font-semibold">
                           {client.total_payment ? (
                             isFullPayment ? (
@@ -1281,77 +1470,6 @@ export function AdminDashboardd() {
                           {client.installment_plan ||
                             (isFullPayment ? "Full Cash" : "—")}
                         </td>
-
-                        {/* View Receipt Column */}
-                        <td className="p-3 border text-center">
-                          {receiptUrl ? (
-                            <a
-                              href={receiptUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-bold text-[10px] shadow-sm transition"
-                            >
-                              📄 View Receipt
-                            </a>
-                          ) : (
-                            <span className="text-gray-400 italic text-[11px]">
-                              No Receipt
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Status & Approval Column */}
-                        <td className="p-3 border text-center">
-                          <div className="flex flex-col items-center justify-center gap-1.5">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
-                                isQualified
-                                  ? "bg-emerald-100 text-emerald-800"
-                                  : isRejected
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-blue-100 text-blue-800"
-                              }`}
-                            >
-                              {client.status || "Pending"}
-                            </span>
-
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() =>
-                                  handleUpdateClientStatus(
-                                    client.id,
-                                    "Qualified",
-                                  )
-                                }
-                                disabled={isQualified}
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold shadow-sm transition ${
-                                  isQualified
-                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                                }`}
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleUpdateClientStatus(
-                                    client.id,
-                                    "Rejected",
-                                  )
-                                }
-                                disabled={isRejected}
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold shadow-sm transition ${
-                                  isRejected
-                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                    : "bg-red-600 hover:bg-red-700 text-white"
-                                }`}
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-
                         <td className="p-3 border font-bold text-gray-700">
                           {client.marketer_name || client.marketerName || "—"}
                         </td>
@@ -1368,6 +1486,253 @@ export function AdminDashboardd() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Progressive Payment Schedule & Admin Entry */}
+      {selectedClientForPayment && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden border border-gray-300 max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  📋 Payment Manager -{" "}
+                  {selectedClientForPayment.name ||
+                    selectedClientForPayment.client_name ||
+                    "Client"}
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Unit:{" "}
+                  <span className="text-amber-300 font-semibold">
+                    {selectedClientForPayment.apartment_id ||
+                      selectedClientForPayment.apartmentId ||
+                      "N/A"}
+                  </span>{" "}
+                  | Project:{" "}
+                  <span className="text-blue-300 font-semibold">
+                    {getProjectName(selectedClientForPayment)}
+                  </span>
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedClientForPayment(null)}
+                className="text-slate-400 hover:text-white text-xl font-bold bg-slate-800 hover:bg-slate-700 w-8 h-8 rounded-full transition flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+              {/* Installment Plan Banner (Above Table) */}
+              <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white p-4 rounded-xl shadow-md border border-purple-500/30 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 block">
+                    📌 Selected Installment Plan
+                  </span>
+                  <p className="text-base font-extrabold text-amber-300 mt-0.5">
+                    {selectedClientForPayment.installment_plan ||
+                      "Standard Progressive Payment Plan"}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs font-semibold bg-white/10 px-4 py-2 rounded-lg border border-white/10">
+                  <div>
+                    <span className="text-slate-300 text-[10px] block">
+                      Total Price
+                    </span>
+                    <span className="text-emerald-400 font-bold">
+                      {selectedClientForPayment.total_payment
+                        ? `${Number(selectedClientForPayment.total_payment).toLocaleString()} ETB`
+                        : "N/A"}
+                    </span>
+                  </div>
+                  <div className="w-px h-6 bg-white/20"></div>
+                  <div>
+                    <span className="text-slate-300 text-[10px] block">
+                      Down Payment
+                    </span>
+                    <span className="text-blue-300 font-bold">
+                      {selectedClientForPayment.down_payment
+                        ? `${Number(selectedClientForPayment.down_payment).toLocaleString()} ETB`
+                        : "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Content: Table + Add Form */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left: Payments Schedule Table */}
+                <div className="lg:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <h4 className="font-bold text-slate-800 text-sm mb-3 flex items-center justify-between">
+                    <span>📊 Payment History Schedule</span>
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-black">
+                      {clientPayments.length} Payments Saved
+                    </span>
+                  </h4>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left border border-slate-200 bg-white">
+                      <thead className="bg-slate-800 text-white uppercase font-bold text-[11px]">
+                        <tr>
+                          <th className="p-2.5 border">Payment #</th>
+                          <th className="p-2.5 border">Date</th>
+                          <th className="p-2.5 border">Amount (ETB)</th>
+                          <th className="p-2.5 border text-center">
+                            Receipt File
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {clientPayments.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="p-6 text-center text-slate-400 italic"
+                            >
+                              No installment payments entered yet. Use the form
+                              on the right to add payments.
+                            </td>
+                          </tr>
+                        ) : (
+                          clientPayments.map((pay, idx) => (
+                            <tr
+                              key={pay.id || idx}
+                              className="border-b hover:bg-slate-100"
+                            >
+                              <td className="p-2.5 border font-extrabold text-purple-900">
+                                {pay.payment_name ||
+                                  getOrdinalPaymentName(idx + 1)}
+                              </td>
+                              <td className="p-2.5 border font-medium text-slate-700">
+                                {pay.date}
+                              </td>
+                              <td className="p-2.5 border font-bold text-emerald-700">
+                                {Number(pay.amount).toLocaleString()} ETB
+                              </td>
+                              <td className="p-2.5 border text-center">
+                                {pay.receipt_url ? (
+                                  <a
+                                    href={pay.receipt_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[10px] inline-flex items-center gap-1 transition"
+                                  >
+                                    📄 View
+                                  </a>
+                                ) : (
+                                  <span className="text-slate-400 italic text-[10px]">
+                                    No Receipt
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Right: Add Payment Form */}
+                <div className="bg-slate-900 text-white p-5 rounded-xl border border-slate-700 shadow-md flex flex-col justify-between">
+                  <div>
+                    <h4 className="font-bold text-amber-400 text-sm mb-1">
+                      ➕ Add Payment Entry
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mb-4">
+                      Next entry will save as:{" "}
+                      <span className="text-emerald-300 font-extrabold underline">
+                        {getOrdinalPaymentName(clientPayments.length + 1)}
+                      </span>
+                    </p>
+
+                    <form
+                      onSubmit={handleAddPaymentSubmit}
+                      className="space-y-4"
+                    >
+                      {/* Field 1: Date */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                          1. Date (Calendar) *
+                        </label>
+                        <input
+                          type="date"
+                          value={newPaymentDate}
+                          onChange={(e) => setNewPaymentDate(e.target.value)}
+                          className="w-full p-2 bg-slate-800 border border-slate-600 rounded-lg text-xs text-white outline-none focus:ring-2 focus:ring-amber-500"
+                          required
+                        />
+                      </div>
+
+                      {/* Field 2: Amount */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                          2. Amount (ETB) *
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 500000"
+                          value={newPaymentAmount}
+                          onChange={(e) => setNewPaymentAmount(e.target.value)}
+                          className="w-full p-2 bg-slate-800 border border-slate-600 rounded-lg text-xs text-white outline-none focus:ring-2 focus:ring-amber-500 font-bold text-emerald-400"
+                          required
+                        />
+                      </div>
+
+                      {/* Field 3: Select or Upload Receipt */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                          3. Select or Upload Receipt
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={handleReceiptFileChange}
+                            className="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-slate-700 file:text-white hover:file:bg-slate-600 cursor-pointer"
+                          />
+
+                          {/* View Preview Button before/after selection */}
+                          {newReceiptPreview && (
+                            <a
+                              href={newReceiptPreview}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold rounded-md whitespace-nowrap transition flex items-center gap-1 shadow-sm"
+                            >
+                              👁️ View
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSavingPayment}
+                        className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-lg text-xs transition shadow-md flex items-center justify-center gap-2"
+                      >
+                        {isSavingPayment
+                          ? "⏳ Saving..."
+                          : `Save as ${getOrdinalPaymentName(clientPayments.length + 1)}`}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-100 p-4 border-t border-slate-200 flex justify-end">
+              <button
+                onClick={() => setSelectedClientForPayment(null)}
+                className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-lg transition"
+              >
+                Close Manager
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1503,9 +1868,8 @@ export function AdminDashboardd() {
                   <th className="p-3 border">Unit / Details</th>
                   <th className="p-3 border">Source</th>
                   <th className="p-3 border">Status & Actions</th>
-                  <th className="p-3 border text-center">
-                    Receipt / CPO Document
-                  </th>
+                  <th className="p-3 border text-center">Receipt File</th>
+                  <th className="p-3 border text-center">CPO Document</th>
                   <th
                     onClick={() => handleClientSortToggle("total_payment")}
                     className="p-3 border cursor-pointer hover:bg-gray-200 transition"
@@ -1534,7 +1898,7 @@ export function AdminDashboardd() {
                 {filteredAndSortedClients.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={12}
                       className="p-6 text-center text-gray-500 font-semibold"
                     >
                       No clients found matching current filter/search criteria.
@@ -1542,10 +1906,13 @@ export function AdminDashboardd() {
                   </tr>
                 ) : (
                   filteredAndSortedClients.map((client) => {
-                    const receiptOrCpoUrl = getReceiptOrCpoUrl(client);
-                    const isRequestForQualification =
-                      client.status?.toLowerCase() ===
-                      "request for qualification";
+                    const receiptUrl = getReceiptUrl(client);
+                    const cpoUrl = getCpoUrl(client);
+
+                    const currentStatus = (
+                      client.status || "Reserved"
+                    ).toLowerCase();
+                    const isClosed = currentStatus === "closed";
 
                     return (
                       <tr key={client.id} className="border-b hover:bg-gray-50">
@@ -1577,24 +1944,24 @@ export function AdminDashboardd() {
                           </span>
                         </td>
 
+                        {/* Status & Actions Column */}
                         <td className="p-3 border">
                           <div className="flex flex-col items-start gap-1.5">
                             <span
-                              className={`font-bold px-2.5 py-1 rounded-full text-[10px] ${
-                                isRequestForQualification
-                                  ? "bg-blue-100 text-blue-800 border border-blue-300"
+                              className={`font-bold px-2.5 py-1 rounded-full text-[10px] uppercase ${
+                                isClosed
+                                  ? "bg-slate-800 text-white font-extrabold"
                                   : client.status === "Qualified"
                                     ? "bg-emerald-100 text-emerald-800 font-extrabold"
                                     : client.status === "Rejected"
                                       ? "bg-red-100 text-red-800"
-                                      : client.status === "Negotiation"
-                                        ? "bg-orange-100 text-orange-800"
-                                        : "bg-blue-100 text-blue-800"
+                                      : "bg-blue-100 text-blue-800"
                               }`}
                             >
                               {client.status || "Reserved"}
                             </span>
 
+                            {/* Approve & Reject Active ONLY when status is "Closed" */}
                             <div className="flex items-center gap-1 mt-1">
                               <button
                                 onClick={() =>
@@ -1603,10 +1970,15 @@ export function AdminDashboardd() {
                                     "Qualified",
                                   )
                                 }
-                                disabled={client.status === "Qualified"}
+                                disabled={!isClosed}
+                                title={
+                                  !isClosed
+                                    ? "Approve is active only when status is Closed"
+                                    : "Approve Client"
+                                }
                                 className={`px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition ${
-                                  client.status === "Qualified"
-                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  !isClosed
+                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
                                     : "bg-emerald-600 hover:bg-emerald-700 text-white"
                                 }`}
                               >
@@ -1619,10 +1991,15 @@ export function AdminDashboardd() {
                                     "Rejected",
                                   )
                                 }
-                                disabled={client.status === "Rejected"}
+                                disabled={!isClosed}
+                                title={
+                                  !isClosed
+                                    ? "Reject is active only when status is Closed"
+                                    : "Reject Client"
+                                }
                                 className={`px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition ${
-                                  client.status === "Rejected"
-                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  !isClosed
+                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
                                     : "bg-red-600 hover:bg-red-700 text-white"
                                 }`}
                               >
@@ -1632,15 +2009,34 @@ export function AdminDashboardd() {
                           </div>
                         </td>
 
+                        {/* View Receipt Column */}
                         <td className="p-3 border text-center">
-                          {receiptOrCpoUrl ? (
+                          {receiptUrl ? (
                             <a
-                              href={receiptOrCpoUrl}
+                              href={receiptUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-bold text-[10px] shadow-sm transition"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-bold text-[10px] shadow-sm transition"
                             >
-                              📄 View Receipt / CPO
+                              📄 View Receipt
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 italic text-[11px]">
+                              —
+                            </span>
+                          )}
+                        </td>
+
+                        {/* View CPO Column */}
+                        <td className="p-3 border text-center">
+                          {cpoUrl ? (
+                            <a
+                              href={cpoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-bold text-[10px] shadow-sm transition"
+                            >
+                              📜 View CPO
                             </a>
                           ) : (
                             <span className="text-gray-400 italic text-[11px]">
