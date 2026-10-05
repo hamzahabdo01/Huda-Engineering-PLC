@@ -348,28 +348,8 @@ export function AdminDashboardd() {
     }
   };
 
-  const getReceiptUrl = (
-    client: MarketerClient & Record<string, any>,
-  ): string | null => {
-    const file =
-      client.receipt_url ||
-      client.receipt_image ||
-      client.receipt_file ||
-      client.receipt ||
-      client.receipt_path ||
-      client.receipt_doc ||
-      client.payment_receipt ||
-      client.receipt_file_url ||
-      client.receipt_image_url ||
-      client.receiptUrl ||
-      (Array.isArray(client.payment_history) &&
-        client.payment_history.find((p) => p?.receipt_url)?.receipt_url);
-
-    if (!file || typeof file !== "string" || file.trim() === "") {
-      return null;
-    }
-
-    const cleanFile = file.trim();
+  const formatStorageUrl = (filePath: string): string => {
+    const cleanFile = filePath.trim();
     if (
       cleanFile.startsWith("http://") ||
       cleanFile.startsWith("https://") ||
@@ -377,9 +357,59 @@ export function AdminDashboardd() {
     ) {
       return cleanFile;
     }
-
     const { data } = supabase.storage.from("cpo-files").getPublicUrl(cleanFile);
-    return data?.publicUrl || null;
+    return data?.publicUrl || cleanFile;
+  };
+
+  const getAllReceiptFiles = (
+    client: MarketerClient & Record<string, any>,
+  ): { label: string; url: string }[] => {
+    const receipts: { label: string; url: string }[] = [];
+
+    // Prioritize receipt_file and direct fields
+    const directFile =
+      client.receipt_file ||
+      client.receipt_url ||
+      client.receipt_image ||
+      client.receipt ||
+      client.receipt_path ||
+      client.receipt_doc ||
+      client.payment_receipt ||
+      client.receipt_file_url ||
+      client.receipt_image_url ||
+      client.receiptUrl;
+
+    if (
+      directFile &&
+      typeof directFile === "string" &&
+      directFile.trim() !== ""
+    ) {
+      receipts.push({
+        label: "Receipt File",
+        url: formatStorageUrl(directFile),
+      });
+    }
+
+    // Check payment history records
+    if (Array.isArray(client.payment_history)) {
+      client.payment_history.forEach((pay, idx) => {
+        if (
+          pay?.receipt_url &&
+          typeof pay.receipt_url === "string" &&
+          pay.receipt_url.trim() !== ""
+        ) {
+          const url = formatStorageUrl(pay.receipt_url);
+          if (!receipts.some((r) => r.url === url)) {
+            receipts.push({
+              label: pay.payment_name || `Receipt #${idx + 1}`,
+              url: url,
+            });
+          }
+        }
+      });
+    }
+
+    return receipts;
   };
 
   const getCpoUrl = (
@@ -401,17 +431,7 @@ export function AdminDashboardd() {
       return null;
     }
 
-    const cleanFile = file.trim();
-    if (
-      cleanFile.startsWith("http://") ||
-      cleanFile.startsWith("https://") ||
-      cleanFile.startsWith("data:")
-    ) {
-      return cleanFile;
-    }
-
-    const { data } = supabase.storage.from("cpo-files").getPublicUrl(cleanFile);
-    return data?.publicUrl || null;
+    return formatStorageUrl(file);
   };
 
   const handleUpdateMarketerStatus = async (
@@ -489,7 +509,11 @@ export function AdminDashboardd() {
 
     const { error: updateError } = await supabase
       .from("leads")
-      .update({ payment_history: updatedPayments as any })
+      .update({
+        payment_history: updatedPayments as any,
+        receipt_file:
+          uploadedReceiptUrl || selectedClientForPayment.receipt_file,
+      })
       .eq("id", selectedClientForPayment.id);
 
     setIsSavingPayment(false);
@@ -505,7 +529,11 @@ export function AdminDashboardd() {
     setMarketerClients((prev) =>
       prev.map((c) =>
         c.id === selectedClientForPayment.id
-          ? { ...c, payment_history: updatedPayments }
+          ? {
+              ...c,
+              payment_history: updatedPayments,
+              receipt_file: uploadedReceiptUrl || c.receipt_file,
+            }
           : c,
       ),
     );
@@ -1594,7 +1622,7 @@ export function AdminDashboardd() {
                                     rel="noopener noreferrer"
                                     className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[10px] inline-flex items-center gap-1 transition"
                                   >
-                                    📄 View
+                                    📄 View Receipt
                                   </a>
                                 ) : (
                                   <span className="text-slate-400 italic text-[10px]">
@@ -1689,7 +1717,7 @@ export function AdminDashboardd() {
                                   rel="noopener noreferrer"
                                   className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold rounded-md whitespace-nowrap transition flex items-center gap-1 shadow-sm"
                                 >
-                                  👁️ View
+                                  👁️️ View
                                 </a>
                               )}
                             </div>
@@ -1893,7 +1921,7 @@ export function AdminDashboardd() {
                   </tr>
                 ) : (
                   filteredAndSortedClients.map((client) => {
-                    const receiptUrl = getReceiptUrl(client);
+                    const receiptFiles = getAllReceiptFiles(client);
                     const cpoUrl = getCpoUrl(client);
                     const rawStatus = client.status || "Reserved";
                     const currentStatus = rawStatus.toLowerCase();
@@ -1979,17 +2007,22 @@ export function AdminDashboardd() {
                           </div>
                         </td>
 
-                        {/* View Receipt Column */}
+                        {/* View Receipt File Column */}
                         <td className="p-3 border text-center">
-                          {receiptUrl ? (
-                            <a
-                              href={receiptUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-bold text-[10px] shadow-sm transition"
-                            >
-                              📄 View Receipt
-                            </a>
+                          {receiptFiles.length > 0 ? (
+                            <div className="flex flex-col items-center gap-1">
+                              {receiptFiles.map((rf, idx) => (
+                                <a
+                                  key={idx}
+                                  href={rf.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-bold text-[10px] shadow-sm transition whitespace-nowrap"
+                                >
+                                  📄 {rf.label}
+                                </a>
+                              ))}
+                            </div>
                           ) : (
                             <span className="text-gray-400 italic text-[11px]">
                               —
