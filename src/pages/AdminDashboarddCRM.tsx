@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { supabase } from '../integrations/supabase/client';
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase } from "../integrations/supabase/client";
 
 // --- Types & Interfaces ---
 export type UnitStatus =
-  | 'available'
-  | 'reserved'
-  | 'unavailable'
-  | 'office'
-  | 'business'
-  | 'shop'
+  | "available"
+  | "reserved"
+  | "unavailable"
+  | "office"
+  | "business"
+  | "shop"
   | string;
 
 export interface PaymentPlan {
@@ -68,6 +68,10 @@ export interface MarketerClient {
   cpo_file_url?: string | null;
   cpo_url?: string | null;
   cpo_file?: string | null;
+  receipt_url?: string | null;
+  receipt_image?: string | null;
+  receipt_file?: string | null;
+  receipt_status?: string | null;
 }
 
 export interface MarketerAccount {
@@ -77,48 +81,64 @@ export interface MarketerAccount {
   phone?: string;
   marketer_type?: string;
   role?: string;
-  status: 'pending' | 'approved' | 'rejected' | string;
+  status: "pending" | "approved" | "rejected" | string;
   created_at?: string;
 }
 
 export function AdminDashboardd() {
   // --- States ---
   const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
 
   const [floors, setFloors] = useState<Floor[]>([]);
   const [unitTypes, setUnitTypes] = useState<UnitType[]>([]);
   const [matrix, setMatrix] = useState<Record<string, UnitStatus>>({});
   const [marketerClients, setMarketerClients] = useState<MarketerClient[]>([]);
-  const [marketerAccounts, setMarketerAccounts] = useState<MarketerAccount[]>([]);
-  const [marketersFetchError, setMarketersFetchError] = useState<string | null>(null);
+  const [marketerAccounts, setMarketerAccounts] = useState<MarketerAccount[]>(
+    [],
+  );
+  const [marketersFetchError, setMarketersFetchError] = useState<string | null>(
+    null,
+  );
 
   // --- Clients Search, Filter & Sort States ---
-  const [selectedMarketerFilter, setSelectedMarketerFilter] = useState<string>('all');
-  const [clientSearch, setClientSearch] = useState<string>('');
-  const [clientStatusFilter, setClientStatusFilter] = useState<string>('all');
-  const [clientSortField, setClientSortField] = useState<'created_at' | 'name' | 'marketer_name' | 'total_payment'>('created_at');
-  const [clientSortOrder, setClientSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [selectedMarketerFilter, setSelectedMarketerFilter] =
+    useState<string>("all");
+  const [clientSearch, setClientSearch] = useState<string>("");
+  const [clientStatusFilter, setClientStatusFilter] = useState<string>("all");
+  const [clientSortField, setClientSortField] = useState<
+    "created_at" | "name" | "marketer_name" | "total_payment"
+  >("created_at");
+  const [clientSortOrder, setClientSortOrder] = useState<"asc" | "desc">(
+    "desc",
+  );
 
   // --- Marketers Search, Filter & Sort States ---
-  const [marketerSearch, setMarketerSearch] = useState<string>('');
-  const [marketerStatusFilter, setMarketerStatusFilter] = useState<string>('all');
-  const [marketerSortField, setMarketerSortField] = useState<'name' | 'email' | 'created_at' | 'status'>('created_at');
-  const [marketerSortOrder, setMarketerSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [marketerSearch, setMarketerSearch] = useState<string>("");
+  const [marketerStatusFilter, setMarketerStatusFilter] =
+    useState<string>("all");
+  const [marketerSortField, setMarketerSortField] = useState<
+    "name" | "email" | "created_at" | "status"
+  >("created_at");
+  const [marketerSortOrder, setMarketerSortOrder] = useState<"asc" | "desc">(
+    "desc",
+  );
 
   const [loading, setLoading] = useState<boolean>(true);
 
   // Floor Form States
-  const [newFloorName, setNewFloorName] = useState('');
-  const [typicalFloorCount, setTypicalFloorCount] = useState<number | ''>('');
+  const [newFloorName, setNewFloorName] = useState("");
+  const [typicalFloorCount, setTypicalFloorCount] = useState<number | "">("");
 
   // Unit Type Form States
-  const [newUnitTitle, setNewUnitTitle] = useState('');
-  const [newUnitArea, setNewUnitArea] = useState<number | ''>('');
+  const [newUnitTitle, setNewUnitTitle] = useState("");
+  const [newUnitArea, setNewUnitArea] = useState<number | "">("");
 
   const [activeCellKey, setActiveCellKey] = useState<string | null>(null);
-  const [customCellText, setCustomCellText] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'matrix' | 'pricing' | 'clients' | 'marketers'>('clients');
+  const [customCellText, setCustomCellText] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<
+    "matrix" | "pricing" | "clients" | "marketers"
+  >("clients");
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
@@ -129,13 +149,13 @@ export function AdminDashboardd() {
     fetchMarketerAccounts();
 
     const leadsChannel = supabase
-      .channel('realtime-leads-changes')
+      .channel("realtime-leads-changes")
       .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'leads' },
+        "postgres_changes",
+        { event: "*", schema: "public", table: "leads" },
         () => {
           fetchMarketerClients();
-        }
+        },
       )
       .subscribe();
 
@@ -161,18 +181,18 @@ export function AdminDashboardd() {
     fetchProjectDetails(selectedProjectId);
 
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel("schema-db-changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'srm_matrix_cells',
+          event: "*",
+          schema: "public",
+          table: "srm_matrix_cells",
           filter: `project_id=eq.${selectedProjectId}`,
         },
         () => {
           fetchMatrixData(selectedProjectId);
-        }
+        },
       )
       .subscribe();
 
@@ -185,9 +205,9 @@ export function AdminDashboardd() {
 
   const fetchProjects = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('projects').select('*');
+    const { data, error } = await supabase.from("projects").select("*");
     if (error) {
-      console.error('Error fetching projects:', error);
+      console.error("Error fetching projects:", error);
     } else if (data && data.length > 0) {
       setProjects(data);
       setSelectedProjectId(data[0].id);
@@ -197,10 +217,10 @@ export function AdminDashboardd() {
 
   const fetchFloors = async (projectId: string) => {
     const { data, error } = await supabase
-      .from('srm_floors')
-      .select('*')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: true });
+      .from("srm_floors")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: true });
 
     if (!error && data) {
       setFloors(data);
@@ -209,10 +229,10 @@ export function AdminDashboardd() {
 
   const fetchUnitTypes = async (projectId: string) => {
     const { data, error } = await supabase
-      .from('srm_unit_types')
-      .select('*')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: true });
+      .from("srm_unit_types")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: true });
 
     if (!error && data) {
       setUnitTypes(data);
@@ -221,9 +241,9 @@ export function AdminDashboardd() {
 
   const fetchMatrixData = async (projectId: string) => {
     const { data, error } = await supabase
-      .from('srm_matrix_cells')
-      .select('*')
-      .eq('project_id', projectId);
+      .from("srm_matrix_cells")
+      .select("*")
+      .eq("project_id", projectId);
 
     if (!error && data) {
       const matrixMap: Record<string, UnitStatus> = {};
@@ -237,9 +257,9 @@ export function AdminDashboardd() {
 
   const fetchMarketerClients = async () => {
     const { data, error } = await supabase
-      .from('leads')
-      .select('*, projects(name, title)')
-      .order('created_at', { ascending: false });
+      .from("leads")
+      .select("*, projects(name, title)")
+      .order("created_at", { ascending: false });
 
     if (!error && data) {
       const formattedData = data.map((item: any) => ({
@@ -253,9 +273,9 @@ export function AdminDashboardd() {
       setMarketerClients(formattedData);
     } else if (error) {
       const { data: rawData } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("leads")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (rawData) setMarketerClients(rawData);
     }
   };
@@ -263,36 +283,46 @@ export function AdminDashboardd() {
   const fetchMarketerAccounts = async () => {
     setMarketersFetchError(null);
     const { data, error } = await supabase
-      .from('marketers')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .from("marketers")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (error) {
-      console.error('Error fetching marketer accounts:', error);
+      console.error("Error fetching marketer accounts:", error);
       setMarketersFetchError(error.message);
     } else if (data) {
       setMarketerAccounts(data);
     }
   };
 
-  const handleUpdateClientStatus = async (clientId: string, newStatus: string) => {
+  const handleUpdateClientStatus = async (
+    clientId: string,
+    newStatus: string,
+  ) => {
     const { error } = await supabase
-      .from('leads')
+      .from("leads")
       .update({ status: newStatus })
-      .eq('id', clientId);
+      .eq("id", clientId);
 
     if (error) {
       alert(`Error updating status: ${error.message}`);
     } else {
       setMarketerClients((prev) =>
-        prev.map((c) => (c.id === clientId ? { ...c, status: newStatus } : c))
+        prev.map((c) => (c.id === clientId ? { ...c, status: newStatus } : c)),
       );
       alert(`✅ Client status updated to ${newStatus}`);
     }
   };
 
-  const getCpoFileUrl = (client: MarketerClient & Record<string, any>): string | null => {
+  // Helper function to extract receipt or CPO file URLs
+  const getReceiptOrCpoUrl = (
+    client: MarketerClient & Record<string, any>,
+  ): string | null => {
     const file =
+      client.receipt_url ||
+      client.receipt_image ||
+      client.receipt_file ||
+      client.receipt ||
       client.cpo_image ||
       client.cpoImage ||
       client.cpo_image_url ||
@@ -304,35 +334,40 @@ export function AdminDashboardd() {
       client.cpo ||
       client.cpo_document;
 
-    if (!file || typeof file !== 'string' || file.trim() === '') {
+    if (!file || typeof file !== "string" || file.trim() === "") {
       return null;
     }
 
     const cleanFile = file.trim();
 
     if (
-      cleanFile.startsWith('http://') ||
-      cleanFile.startsWith('https://') ||
-      cleanFile.startsWith('data:image')
+      cleanFile.startsWith("http://") ||
+      cleanFile.startsWith("https://") ||
+      cleanFile.startsWith("data:image")
     ) {
       return cleanFile;
     }
 
-    const { data } = supabase.storage.from('cpo-files').getPublicUrl(cleanFile);
+    const { data } = supabase.storage.from("cpo-files").getPublicUrl(cleanFile);
     return data?.publicUrl || null;
   };
 
-  const handleUpdateMarketerStatus = async (marketerId: string, newStatus: 'approved' | 'rejected') => {
+  const handleUpdateMarketerStatus = async (
+    marketerId: string,
+    newStatus: "approved" | "rejected",
+  ) => {
     const { error } = await supabase
-      .from('marketers')
+      .from("marketers")
       .update({ status: newStatus })
-      .eq('id', marketerId);
+      .eq("id", marketerId);
 
     if (error) {
       alert(`Error updating marketer status: ${error.message}`);
     } else {
       setMarketerAccounts((prev) =>
-        prev.map((m) => (m.id === marketerId ? { ...m, status: newStatus } : m))
+        prev.map((m) =>
+          m.id === marketerId ? { ...m, status: newStatus } : m,
+        ),
       );
       alert(`✅ Marketer status updated to ${newStatus}`);
     }
@@ -340,19 +375,44 @@ export function AdminDashboardd() {
 
   const getOrdinalFloorName = (num: number): string => {
     const ordinals = [
-      'First', 'Second', 'Third', 'Fourth', 'Fifth',
-      'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth',
-      'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth',
-      'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth',
-      'Twenty-First', 'Twenty-Second', 'Twenty-Third', 'Twenty-Fourth', 'Twenty-Fifth',
-      'Twenty-Sixth', 'Twenty-Seventh', 'Twenty-Eighth', 'Twenty-Ninth', 'Thirtieth'
+      "First",
+      "Second",
+      "Third",
+      "Fourth",
+      "Fifth",
+      "Sixth",
+      "Seventh",
+      "Eighth",
+      "Ninth",
+      "Tenth",
+      "Eleventh",
+      "Twelfth",
+      "Thirteenth",
+      "Fourteenth",
+      "Fifteenth",
+      "Sixteenth",
+      "Seventeenth",
+      "Eighteenth",
+      "Nineteenth",
+      "Twentieth",
+      "Twenty-First",
+      "Twenty-Second",
+      "Twenty-Third",
+      "Twenty-Fourth",
+      "Twenty-Fifth",
+      "Twenty-Sixth",
+      "Twenty-Seventh",
+      "Twenty-Eighth",
+      "Twenty-Ninth",
+      "Thirtieth",
     ];
 
     if (num <= ordinals.length) {
       return `${ordinals[num - 1]} Floor`;
     }
 
-    const j = num % 10, k = num % 100;
+    const j = num % 10,
+      k = num % 100;
     if (j === 1 && k !== 11) return `${num}st Floor`;
     if (j === 2 && k !== 12) return `${num}nd Floor`;
     if (j === 3 && k !== 13) return `${num}rd Floor`;
@@ -370,7 +430,9 @@ export function AdminDashboardd() {
       for (let i = 1; i <= count; i++) {
         const name = getOrdinalFloorName(i);
 
-        if (!floors.some((f) => f.floor_name.toLowerCase() === name.toLowerCase())) {
+        if (
+          !floors.some((f) => f.floor_name.toLowerCase() === name.toLowerCase())
+        ) {
           floorsToCreate.push({
             project_id: selectedProjectId,
             floor_name: name,
@@ -379,32 +441,34 @@ export function AdminDashboardd() {
       }
     } else if (newFloorName.trim()) {
       const name = newFloorName.trim();
-      if (floors.some((f) => f.floor_name.toLowerCase() === name.toLowerCase())) {
-        return alert('Floor already exists in this project!');
+      if (
+        floors.some((f) => f.floor_name.toLowerCase() === name.toLowerCase())
+      ) {
+        return alert("Floor already exists in this project!");
       }
       floorsToCreate.push({
         project_id: selectedProjectId,
         floor_name: name,
       });
     } else {
-      return alert('Please enter floor name or typical count (e.g., 20)');
+      return alert("Please enter floor name or typical count (e.g., 20)");
     }
 
     if (floorsToCreate.length === 0) {
-      return alert('No new floors were added (they might already exist).');
+      return alert("No new floors were added (they might already exist).");
     }
 
     const { data, error } = await supabase
-      .from('srm_floors')
+      .from("srm_floors")
       .insert(floorsToCreate)
       .select();
 
     if (error) {
-      alert('Error adding floor(s): ' + error.message);
+      alert("Error adding floor(s): " + error.message);
     } else if (data) {
       setFloors([...floors, ...data]);
-      setNewFloorName('');
-      setTypicalFloorCount('');
+      setNewFloorName("");
+      setTypicalFloorCount("");
       alert(`✅ Successfully created ${data.length} floor(s)!`);
     }
   };
@@ -414,7 +478,7 @@ export function AdminDashboardd() {
     if (!newUnitTitle.trim() || !newUnitArea || !selectedProjectId) return;
 
     const { data, error } = await supabase
-      .from('srm_unit_types')
+      .from("srm_unit_types")
       .insert([
         {
           project_id: selectedProjectId,
@@ -425,21 +489,25 @@ export function AdminDashboardd() {
       .select();
 
     if (error) {
-      alert('Error adding unit type: ' + error.message);
+      alert("Error adding unit type: " + error.message);
     } else if (data) {
       setUnitTypes([...unitTypes, data[0]]);
-      setNewUnitTitle('');
-      setNewUnitArea('');
-      alert('✅ Unit Type added successfully!');
+      setNewUnitTitle("");
+      setNewUnitArea("");
+      alert("✅ Unit Type added successfully!");
     }
   };
 
-  const saveStatusToSupabase = async (floorName: string, unitTypeId: string, newStatus: UnitStatus) => {
+  const saveStatusToSupabase = async (
+    floorName: string,
+    unitTypeId: string,
+    newStatus: UnitStatus,
+  ) => {
     const key = `${floorName}__${unitTypeId}`;
 
     setMatrix((prev) => ({ ...prev, [key]: newStatus }));
 
-    const { error } = await supabase.from('srm_matrix_cells').upsert(
+    const { error } = await supabase.from("srm_matrix_cells").upsert(
       {
         project_id: selectedProjectId,
         floor_name: floorName,
@@ -447,31 +515,31 @@ export function AdminDashboardd() {
         status: newStatus,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: 'project_id,floor_name,unit_type_id' }
+      { onConflict: "project_id,floor_name,unit_type_id" },
     );
 
     if (error) {
-      console.error('Failed to update matrix status:', error);
-      alert('Could not update status on server: ' + error.message);
+      console.error("Failed to update matrix status:", error);
+      alert("Could not update status on server: " + error.message);
       fetchMatrixData(selectedProjectId);
     }
   };
 
   const handleCellClick = (floorName: string, unitTypeId: string) => {
     const key = `${floorName}__${unitTypeId}`;
-    const currentStatus = matrix[key] || 'unavailable';
+    const currentStatus = matrix[key] || "unavailable";
 
-    let nextStatus: UnitStatus = 'available';
-    if (currentStatus === 'available') nextStatus = 'reserved';
-    else if (currentStatus === 'reserved') nextStatus = 'unavailable';
-    else if (currentStatus === 'unavailable') nextStatus = 'available';
-    else nextStatus = 'available';
+    let nextStatus: UnitStatus = "available";
+    if (currentStatus === "available") nextStatus = "reserved";
+    else if (currentStatus === "reserved") nextStatus = "unavailable";
+    else if (currentStatus === "unavailable") nextStatus = "available";
+    else nextStatus = "available";
 
     setActiveCellKey(key);
-    if (!['available', 'reserved', 'unavailable'].includes(currentStatus)) {
+    if (!["available", "reserved", "unavailable"].includes(currentStatus)) {
       setCustomCellText(currentStatus);
     } else {
-      setCustomCellText('');
+      setCustomCellText("");
     }
 
     saveStatusToSupabase(floorName, unitTypeId, nextStatus);
@@ -479,7 +547,7 @@ export function AdminDashboardd() {
 
   const handleExplicitStatusChange = (status: UnitStatus) => {
     if (!activeCellKey) return;
-    const [floorName, unitTypeId] = activeCellKey.split('__');
+    const [floorName, unitTypeId] = activeCellKey.split("__");
     if (floorName && unitTypeId) {
       saveStatusToSupabase(floorName, unitTypeId, status);
     }
@@ -491,54 +559,60 @@ export function AdminDashboardd() {
     handleExplicitStatusChange(customCellText.trim());
   };
 
-  const getProjectName = useCallback((client: MarketerClient) => {
-    if (client.project_name && client.project_name !== '-') {
-      return client.project_name;
-    }
-    if (client.project_id) {
-      const match = projects.find((p) => p.id === client.project_id);
-      if (match) return match.name || match.title || '-';
-    }
-    return '-';
-  }, [projects]);
+  const getProjectName = useCallback(
+    (client: MarketerClient) => {
+      if (client.project_name && client.project_name !== "-") {
+        return client.project_name;
+      }
+      if (client.project_id) {
+        const match = projects.find((p) => p.id === client.project_id);
+        if (match) return match.name || match.title || "-";
+      }
+      return "-";
+    },
+    [projects],
+  );
 
   const marketerOptions = Array.from(
     new Set([
       ...marketerAccounts.map((m) => m.name).filter(Boolean),
-      ...marketerClients.map((c) => c.marketer_name || c.marketerName || '').filter(Boolean),
-    ])
+      ...marketerClients
+        .map((c) => c.marketer_name || c.marketerName || "")
+        .filter(Boolean),
+    ]),
   );
 
   // --- Sorting & Filtering Logic for CLIENTS ---
   const handleClientSortToggle = (field: typeof clientSortField) => {
     if (clientSortField === field) {
-      setClientSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      setClientSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setClientSortField(field);
-      setClientSortOrder('asc');
+      setClientSortOrder("asc");
     }
   };
 
   const filteredAndSortedClients = useMemo(() => {
     return marketerClients
       .filter((c) => {
-        if (selectedMarketerFilter !== 'all') {
-          const mName = c.marketer_name || c.marketerName || '';
+        if (selectedMarketerFilter !== "all") {
+          const mName = c.marketer_name || c.marketerName || "";
           if (mName !== selectedMarketerFilter) return false;
         }
 
-        if (clientStatusFilter !== 'all') {
-          const status = c.status || 'Reserved';
-          if (status.toLowerCase() !== clientStatusFilter.toLowerCase()) return false;
+        if (clientStatusFilter !== "all") {
+          const status = c.status || "Reserved";
+          if (status.toLowerCase() !== clientStatusFilter.toLowerCase())
+            return false;
         }
 
-        if (clientSearch.trim() !== '') {
+        if (clientSearch.trim() !== "") {
           const query = clientSearch.toLowerCase();
-          const mName = (c.marketer_name || c.marketerName || '').toLowerCase();
-          const cName = (c.name || c.client_name || '').toLowerCase();
-          const phone = (c.phone || '').toLowerCase();
+          const mName = (c.marketer_name || c.marketerName || "").toLowerCase();
+          const cName = (c.name || c.client_name || "").toLowerCase();
+          const phone = (c.phone || "").toLowerCase();
           const projName = getProjectName(c).toLowerCase();
-          const source = (c.source || c.lead_source || '').toLowerCase();
+          const source = (c.source || c.lead_source || "").toLowerCase();
 
           const matches =
             mName.includes(query) ||
@@ -553,25 +627,25 @@ export function AdminDashboardd() {
         return true;
       })
       .sort((a, b) => {
-        let valA: any = '';
-        let valB: any = '';
+        let valA: any = "";
+        let valB: any = "";
 
-        if (clientSortField === 'name') {
-          valA = (a.name || a.client_name || '').toLowerCase();
-          valB = (b.name || b.client_name || '').toLowerCase();
-        } else if (clientSortField === 'marketer_name') {
-          valA = (a.marketer_name || a.marketerName || '').toLowerCase();
-          valB = (b.marketer_name || b.marketerName || '').toLowerCase();
-        } else if (clientSortField === 'total_payment') {
+        if (clientSortField === "name") {
+          valA = (a.name || a.client_name || "").toLowerCase();
+          valB = (b.name || b.client_name || "").toLowerCase();
+        } else if (clientSortField === "marketer_name") {
+          valA = (a.marketer_name || a.marketerName || "").toLowerCase();
+          valB = (b.marketer_name || b.marketerName || "").toLowerCase();
+        } else if (clientSortField === "total_payment") {
           valA = Number(a.total_payment) || 0;
           valB = Number(b.total_payment) || 0;
         } else {
-          valA = a.created_at || '';
-          valB = b.created_at || '';
+          valA = a.created_at || "";
+          valB = b.created_at || "";
         }
 
-        if (valA < valB) return clientSortOrder === 'asc' ? -1 : 1;
-        if (valA > valB) return clientSortOrder === 'asc' ? 1 : -1;
+        if (valA < valB) return clientSortOrder === "asc" ? -1 : 1;
+        if (valA > valB) return clientSortOrder === "asc" ? 1 : -1;
         return 0;
       });
   }, [
@@ -587,29 +661,32 @@ export function AdminDashboardd() {
   // --- Sorting & Filtering Logic for MARKETERS ---
   const handleMarketerSortToggle = (field: typeof marketerSortField) => {
     if (marketerSortField === field) {
-      setMarketerSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      setMarketerSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setMarketerSortField(field);
-      setMarketerSortOrder('asc');
+      setMarketerSortOrder("asc");
     }
   };
 
   const filteredAndSortedMarketers = useMemo(() => {
     return marketerAccounts
       .filter((m) => {
-        if (marketerStatusFilter !== 'all') {
-          const st = m.status || 'pending';
-          if (st.toLowerCase() !== marketerStatusFilter.toLowerCase()) return false;
+        if (marketerStatusFilter !== "all") {
+          const st = m.status || "pending";
+          if (st.toLowerCase() !== marketerStatusFilter.toLowerCase())
+            return false;
         }
 
-        if (marketerSearch.trim() !== '') {
+        if (marketerSearch.trim() !== "") {
           const query = marketerSearch.toLowerCase();
-          const name = (m.name || '').toLowerCase();
-          const email = (m.email || '').toLowerCase();
-          const phone = (m.phone || '').toLowerCase();
+          const name = (m.name || "").toLowerCase();
+          const email = (m.email || "").toLowerCase();
+          const phone = (m.phone || "").toLowerCase();
 
           const matches =
-            name.includes(query) || email.includes(query) || phone.includes(query);
+            name.includes(query) ||
+            email.includes(query) ||
+            phone.includes(query);
 
           if (!matches) return false;
         }
@@ -617,28 +694,34 @@ export function AdminDashboardd() {
         return true;
       })
       .sort((a, b) => {
-        let valA: any = '';
-        let valB: any = '';
+        let valA: any = "";
+        let valB: any = "";
 
-        if (marketerSortField === 'name') {
-          valA = (a.name || '').toLowerCase();
-          valB = (b.name || '').toLowerCase();
-        } else if (marketerSortField === 'email') {
-          valA = (a.email || '').toLowerCase();
-          valB = (b.email || '').toLowerCase();
-        } else if (marketerSortField === 'status') {
-          valA = (a.status || 'pending').toLowerCase();
-          valB = (b.status || 'pending').toLowerCase();
+        if (marketerSortField === "name") {
+          valA = (a.name || "").toLowerCase();
+          valB = (b.name || "").toLowerCase();
+        } else if (marketerSortField === "email") {
+          valA = (a.email || "").toLowerCase();
+          valB = (b.email || "").toLowerCase();
+        } else if (marketerSortField === "status") {
+          valA = (a.status || "pending").toLowerCase();
+          valB = (b.status || "pending").toLowerCase();
         } else {
-          valA = a.created_at || '';
-          valB = b.created_at || '';
+          valA = a.created_at || "";
+          valB = b.created_at || "";
         }
 
-        if (valA < valB) return marketerSortOrder === 'asc' ? -1 : 1;
-        if (valA > valB) return marketerSortOrder === 'asc' ? 1 : -1;
+        if (valA < valB) return marketerSortOrder === "asc" ? -1 : 1;
+        if (valA > valB) return marketerSortOrder === "asc" ? 1 : -1;
         return 0;
       });
-  }, [marketerAccounts, marketerStatusFilter, marketerSearch, marketerSortField, marketerSortOrder]);
+  }, [
+    marketerAccounts,
+    marketerStatusFilter,
+    marketerSearch,
+    marketerSortField,
+    marketerSortOrder,
+  ]);
 
   const totalCells = floors.length * unitTypes.length;
   let availableCount = 0;
@@ -648,19 +731,23 @@ export function AdminDashboardd() {
   floors.forEach((f) => {
     unitTypes.forEach((ut) => {
       const key = `${f.floor_name}__${ut.id}`;
-      const st = matrix[key] || 'unavailable';
-      if (st === 'available') availableCount++;
-      else if (st === 'reserved') reservedCount++;
+      const st = matrix[key] || "unavailable";
+      if (st === "available") availableCount++;
+      else if (st === "reserved") reservedCount++;
       else unavailableCount++;
     });
   });
 
   const pendingMarketersCount = marketerAccounts.filter(
-    (m) => m.status === 'pending' || !m.status
+    (m) => m.status === "pending" || !m.status,
   ).length;
 
   if (loading && projects.length === 0) {
-    return <div className="p-10 text-center font-bold text-gray-600">⏳ Loading Matrix Data...</div>;
+    return (
+      <div className="p-10 text-center font-bold text-gray-600">
+        ⏳ Loading Matrix Data...
+      </div>
+    );
   }
 
   return (
@@ -1072,8 +1159,8 @@ export function AdminDashboardd() {
                 💳 Marketer Payment Plans & Pricing
               </h2>
               <p className="text-xs text-gray-500">
-                View client payment details (Full Payment vs Progressive
-                Payment) entered by marketers
+                View client payment details, receipts, and approve
+                progressive/full payment requests
               </p>
             </div>
             <button
@@ -1096,6 +1183,8 @@ export function AdminDashboardd() {
                   <th className="p-3 border">Down Payment (ETB)</th>
                   <th className="p-3 border">Paid & Unpaid</th>
                   <th className="p-3 border">Installment Plan</th>
+                  <th className="p-3 border text-center">Receipt / CPO</th>
+                  <th className="p-3 border text-center">Status & Actions</th>
                   <th className="p-3 border">Marketer</th>
                   <th className="p-3 border">Date</th>
                 </tr>
@@ -1104,7 +1193,7 @@ export function AdminDashboardd() {
                 {marketerClients.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={10}
+                      colSpan={12}
                       className="p-6 text-center text-gray-500 font-semibold"
                     >
                       No payment or client records submitted by marketers.
@@ -1120,12 +1209,16 @@ export function AdminDashboardd() {
                     ).toLowerCase();
 
                     const isFullPayment = paymentTypeStr.includes("full");
+                    const receiptUrl = getReceiptOrCpoUrl(client);
 
                     // حساب المبالغ
                     const totalVal = Number(client.total_payment) || 0;
                     const downVal = Number(client.down_payment) || 0;
                     const remainingVal =
                       totalVal > downVal ? totalVal - downVal : 0;
+
+                    const isQualified = client.status === "Qualified";
+                    const isRejected = client.status === "Rejected";
 
                     return (
                       <tr key={client.id} className="border-b hover:bg-gray-50">
@@ -1163,7 +1256,7 @@ export function AdminDashboardd() {
                               ? "N/A"
                               : "—"}
                         </td>
-                        {/* العمود الجديد Paid & Unpaid */}
+                        {/* Paid & Unpaid */}
                         <td className="p-3 border font-semibold">
                           {client.total_payment ? (
                             isFullPayment ? (
@@ -1188,6 +1281,77 @@ export function AdminDashboardd() {
                           {client.installment_plan ||
                             (isFullPayment ? "Full Cash" : "—")}
                         </td>
+
+                        {/* View Receipt Column */}
+                        <td className="p-3 border text-center">
+                          {receiptUrl ? (
+                            <a
+                              href={receiptUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-bold text-[10px] shadow-sm transition"
+                            >
+                              📄 View Receipt
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 italic text-[11px]">
+                              No Receipt
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Status & Approval Column */}
+                        <td className="p-3 border text-center">
+                          <div className="flex flex-col items-center justify-center gap-1.5">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                                isQualified
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : isRejected
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-blue-100 text-blue-800"
+                              }`}
+                            >
+                              {client.status || "Pending"}
+                            </span>
+
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() =>
+                                  handleUpdateClientStatus(
+                                    client.id,
+                                    "Qualified",
+                                  )
+                                }
+                                disabled={isQualified}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold shadow-sm transition ${
+                                  isQualified
+                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                }`}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleUpdateClientStatus(
+                                    client.id,
+                                    "Rejected",
+                                  )
+                                }
+                                disabled={isRejected}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold shadow-sm transition ${
+                                  isRejected
+                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                    : "bg-red-600 hover:bg-red-700 text-white"
+                                }`}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+
                         <td className="p-3 border font-bold text-gray-700">
                           {client.marketer_name || client.marketerName || "—"}
                         </td>
@@ -1218,7 +1382,7 @@ export function AdminDashboardd() {
               </h2>
               <p className="text-xs text-gray-500">
                 Search, filter by marketer or lead status, approve qualification
-                requests and view CPO files
+                requests and view receipt/CPO files
               </p>
             </div>
 
@@ -1338,8 +1502,10 @@ export function AdminDashboardd() {
                   <th className="p-3 border">Project Name</th>
                   <th className="p-3 border">Unit / Details</th>
                   <th className="p-3 border">Source</th>
-                  <th className="p-3 border">Status</th>
-                  <th className="p-3 border text-center">CPO Document</th>
+                  <th className="p-3 border">Status & Actions</th>
+                  <th className="p-3 border text-center">
+                    Receipt / CPO Document
+                  </th>
                   <th
                     onClick={() => handleClientSortToggle("total_payment")}
                     className="p-3 border cursor-pointer hover:bg-gray-200 transition"
@@ -1376,7 +1542,7 @@ export function AdminDashboardd() {
                   </tr>
                 ) : (
                   filteredAndSortedClients.map((client) => {
-                    const cpoUrl = getCpoFileUrl(client);
+                    const receiptOrCpoUrl = getReceiptOrCpoUrl(client);
                     const isRequestForQualification =
                       client.status?.toLowerCase() ===
                       "request for qualification";
@@ -1429,44 +1595,52 @@ export function AdminDashboardd() {
                               {client.status || "Reserved"}
                             </span>
 
-                            {isRequestForQualification && (
-                              <div className="flex items-center gap-1 mt-1">
-                                <button
-                                  onClick={() =>
-                                    handleUpdateClientStatus(
-                                      client.id,
-                                      "Qualified",
-                                    )
-                                  }
-                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px] shadow-sm transition"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleUpdateClientStatus(
-                                      client.id,
-                                      "Rejected",
-                                    )
-                                  }
-                                  className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded text-[10px] shadow-sm transition"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-1 mt-1">
+                              <button
+                                onClick={() =>
+                                  handleUpdateClientStatus(
+                                    client.id,
+                                    "Qualified",
+                                  )
+                                }
+                                disabled={client.status === "Qualified"}
+                                className={`px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition ${
+                                  client.status === "Qualified"
+                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                }`}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleUpdateClientStatus(
+                                    client.id,
+                                    "Rejected",
+                                  )
+                                }
+                                disabled={client.status === "Rejected"}
+                                className={`px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition ${
+                                  client.status === "Rejected"
+                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                    : "bg-red-600 hover:bg-red-700 text-white"
+                                }`}
+                              >
+                                Reject
+                              </button>
+                            </div>
                           </div>
                         </td>
 
                         <td className="p-3 border text-center">
-                          {cpoUrl ? (
+                          {receiptOrCpoUrl ? (
                             <a
-                              href={cpoUrl}
+                              href={receiptOrCpoUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-bold text-[10px] shadow-sm transition"
                             >
-                              📄 View CPO
+                              📄 View Receipt / CPO
                             </a>
                           ) : (
                             <span className="text-gray-400 italic text-[11px]">
