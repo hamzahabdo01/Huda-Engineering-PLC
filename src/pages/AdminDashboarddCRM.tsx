@@ -348,6 +348,7 @@ export function AdminDashboardd() {
     }
   };
 
+  // 🛠️ دالة جلب رابط الوصل المحسّنة للتحقق من جميع المسميات وسجل المدفوعات
   const getReceiptUrl = (
     client: MarketerClient & Record<string, any>,
   ): string | null => {
@@ -460,6 +461,8 @@ export function AdminDashboardd() {
     if (hasReceipt && newReceiptFile) {
       const fileExt = newReceiptFile.name.split(".").pop();
       const fileName = `receipt_${selectedClientForPayment.id}_${Date.now()}.${fileExt}`;
+
+      // 🟢 تحديد المسار ليكون داخل مجلد receipts
       const filePath = `receipts/${fileName}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -1932,6 +1935,7 @@ export function AdminDashboardd() {
                           </span>
                         </td>
 
+                        {/* Status & Actions Column - تظهر الأزرار فقط للطلبات التي تتطلب موافقة */}
                         <td className="p-3 border">
                           <div className="flex flex-col items-start gap-1.5">
                             <span
@@ -1948,6 +1952,7 @@ export function AdminDashboardd() {
                               {client.status || "Reserved"}
                             </span>
 
+                            {/* ظهور أزرار القبول والرفض حصرياً عند وجود طلب من المسوق */}
                             {isRequestForQual && (
                               <div className="flex items-center gap-1 mt-1">
                                 <button
@@ -1979,6 +1984,7 @@ export function AdminDashboardd() {
                           </div>
                         </td>
 
+                        {/* View Receipt Column */}
                         <td className="p-3 border text-center">
                           {receiptUrl ? (
                             <a
@@ -1996,6 +2002,7 @@ export function AdminDashboardd() {
                           )}
                         </td>
 
+                        {/* View CPO Column */}
                         <td className="p-3 border text-center">
                           {cpoUrl ? (
                             <a
@@ -2217,70 +2224,66 @@ export function AdminDashboardd() {
                               "Broker / Agent"}
                           </span>
                         </td>
-                        <td className="p-3 border font-medium text-gray-700">
-                          {marketer.email || "—"}
+                        <td className="p-3 border text-gray-600">
+                          {marketer.email}
                         </td>
-                        <td className="p-3 border font-medium text-gray-700">
-                          {marketer.phone || "—"}
-                        </td>
+                        <td className="p-3 border">{marketer.phone || "-"}</td>
                         <td className="p-3 border">
                           <span
-                            className={`font-bold px-2.5 py-1 rounded-full text-[10px] uppercase ${
+                            className={`px-2 py-1 rounded-full text-[10px] font-extrabold uppercase ${
                               status === "approved"
-                                ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                ? "bg-emerald-100 text-emerald-800"
                                 : status === "rejected"
-                                  ? "bg-red-100 text-red-800 border border-red-300"
-                                  : "bg-amber-100 text-amber-800 border border-amber-300"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-amber-100 text-amber-800 animate-pulse"
                             }`}
                           >
-                            {status}
+                            {status === "approved" && "✅ Approved"}
+                            {status === "rejected" && "❌ Rejected"}
+                            {status === "pending" && "⏳ Pending Approval"}
                           </span>
                         </td>
                         <td className="p-3 border text-gray-500 whitespace-nowrap">
                           {marketer.created_at
-                            ? new Date(marketer.created_at).toLocaleString(
+                            ? new Date(marketer.created_at).toLocaleDateString(
                                 "en-US",
-                                {
-                                  year: "numeric",
-                                  month: "numeric",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                },
                               )
-                            : "—"}
+                            : "-"}
                         </td>
                         <td className="p-3 border text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            {status !== "approved" && (
-                              <button
-                                onClick={() =>
-                                  handleUpdateMarketerStatus(
-                                    marketer.id,
-                                    "approved",
-                                  )
-                                }
-                                title="Approve Marketer"
-                                className="px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                              >
-                                Approve
-                              </button>
-                            )}
-                            {status !== "rejected" && (
-                              <button
-                                onClick={() =>
-                                  handleUpdateMarketerStatus(
-                                    marketer.id,
-                                    "rejected",
-                                  )
-                                }
-                                title="Reject Marketer"
-                                className="px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition bg-red-600 hover:bg-red-700 text-white cursor-pointer"
-                              >
-                                Reject
-                              </button>
-                            )}
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() =>
+                                handleUpdateMarketerStatus(
+                                  marketer.id,
+                                  "approved",
+                                )
+                              }
+                              disabled={status === "approved"}
+                              className={`px-3 py-1 rounded text-xs font-bold transition ${
+                                status === "approved"
+                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                              }`}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleUpdateMarketerStatus(
+                                  marketer.id,
+                                  "rejected",
+                                )
+                              }
+                              disabled={status === "rejected"}
+                              className={`px-3 py-1 rounded text-xs font-bold transition ${
+                                status === "rejected"
+                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  : "bg-red-600 hover:bg-red-700 text-white"
+                              }`}
+                            >
+                              Reject
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -2295,3 +2298,5 @@ export function AdminDashboardd() {
     </div>
   );
 }
+
+export default AdminDashboardd;
