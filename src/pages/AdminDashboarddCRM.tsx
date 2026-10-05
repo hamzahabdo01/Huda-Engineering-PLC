@@ -461,14 +461,18 @@ export function AdminDashboardd() {
     if (hasReceipt && newReceiptFile) {
       const fileExt = newReceiptFile.name.split(".").pop();
       const fileName = `receipt_${selectedClientForPayment.id}_${Date.now()}.${fileExt}`;
+
+      // 🟢 تحديد المسار ليكون داخل مجلد receipts
+      const filePath = `receipts/${fileName}`;
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("cpo-files")
-        .upload(fileName, newReceiptFile);
+        .upload(filePath, newReceiptFile);
 
       if (!uploadError && uploadData) {
         const { data: publicData } = supabase.storage
           .from("cpo-files")
-          .getPublicUrl(fileName);
+          .getPublicUrl(filePath);
         uploadedReceiptUrl = publicData?.publicUrl || uploadedReceiptUrl;
       }
     }
