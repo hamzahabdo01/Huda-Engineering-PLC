@@ -1135,35 +1135,26 @@ export function MarketerDashboard() {
     }
 
     // 🧾 📤 رفع صورة/ملف الإيصال Receipt إن وجدت (في حالة Closed)
+    // 🧾 📤 رفع صورة/ملف الإيصال إلى Bucket مخصص (receipts)
     let uploadedReceiptUrl = "";
     if (targetStatus === "Closed" && receiptFile) {
       setUploadingReceipt(true);
       try {
         const fileExt = receiptFile.name.split(".").pop();
         const fileName = `receipt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-        const filePath = `receipts/${fileName}`;
+        const filePath = `${fileName}`;
 
+        // 🟢 الرفع المباشر إلى bucket الـ receipts
         const { error: uploadError } = await supabase.storage
-          .from("leads")
+          .from("receipts")
           .upload(filePath, receiptFile);
 
         if (uploadError) {
-          const { error: fallbackError } = await supabase.storage
-            .from("cpo-files")
-            .upload(filePath, receiptFile);
-
-          if (!fallbackError) {
-            const { data: publicUrlData } = supabase.storage
-              .from("cpo-files")
-              .getPublicUrl(filePath);
-            uploadedReceiptUrl = publicUrlData.publicUrl;
-          } else {
-            console.error("Receipt Upload Error:", uploadError);
-            alert(`⚠️ Error uploading receipt file: ${uploadError.message}`);
-          }
+          console.error("Receipt Upload Error:", uploadError);
+          alert(`⚠️ خطأ أثناء رفع الإيصال: ${uploadError.message}`);
         } else {
           const { data: publicUrlData } = supabase.storage
-            .from("leads")
+            .from("receipts")
             .getPublicUrl(filePath);
           uploadedReceiptUrl = publicUrlData.publicUrl;
         }
