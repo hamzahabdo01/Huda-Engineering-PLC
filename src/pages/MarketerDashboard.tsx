@@ -1135,18 +1135,20 @@ export function MarketerDashboard() {
     }
 
     // 🧾 📤 رفع صورة/ملف الإيصال Receipt إن وجدت (في حالة Closed)
-    // 🧾 📤 رفع صورة/ملف الإيصال إلى Bucket مخصص (receipts)
+    // 🧾 📤 رفع صورة/ملف الإيصال إلى مجلد receipts داخل bucket (cpo-files)
     let uploadedReceiptUrl = "";
     if (targetStatus === "Closed" && receiptFile) {
       setUploadingReceipt(true);
       try {
         const fileExt = receiptFile.name.split(".").pop();
         const fileName = `receipt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-        const filePath = `${fileName}`;
 
-        // 🟢 الرفع المباشر إلى bucket الـ receipts
+        // تحديد المسار داخل مجلد receipts
+        const filePath = `receipts/${fileName}`;
+
+        // 🟢 الرفع إلى cpo-files داخل مجلد receipts
         const { error: uploadError } = await supabase.storage
-          .from("receipts")
+          .from("cpo-files")
           .upload(filePath, receiptFile);
 
         if (uploadError) {
@@ -1154,7 +1156,7 @@ export function MarketerDashboard() {
           alert(`⚠️ خطأ أثناء رفع الإيصال: ${uploadError.message}`);
         } else {
           const { data: publicUrlData } = supabase.storage
-            .from("receipts")
+            .from("cpo-files")
             .getPublicUrl(filePath);
           uploadedReceiptUrl = publicUrlData.publicUrl;
         }
@@ -1319,7 +1321,7 @@ export function MarketerDashboard() {
     } catch (err: any) {
       alert(`❌ Unexpected Error: ${err.message}`);
     }
-  };
+  };;
 
   const filteredLeads =
     leadTab === "All"
