@@ -466,31 +466,31 @@ export function AdminDashboardd() {
 
   const handleAddPaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClientForPayment) return;
-    if (!newPaymentDate || !newPaymentAmount || Number(newPaymentAmount) <= 0) {
-      alert("Please enter a valid Date and Amount.");
-      return;
-    }
 
-    setIsSavingPayment(true);
-    let uploadedReceiptUrl: string | null = hasReceipt
-      ? newReceiptPreview
-      : null;
+    let finalReceiptUrl: string | null = null;
 
-    if (hasReceipt && newReceiptFile) {
+    // 1. Upload new file if selected by Admin
+    if (newReceiptFile) {
       const fileExt = newReceiptFile.name.split(".").pop();
-      const fileName = `receipt_${selectedClientForPayment.id}_${Date.now()}.${fileExt}`;
-      const filePath = `receipts/${fileName}`;
+      const filePath = `receipts/${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("cpo-files")
+      const { data, error } = await supabase.storage
+        .from("receipts")
         .upload(filePath, newReceiptFile);
 
-      if (!uploadError && uploadData) {
-        const { data: publicData } = supabase.storage
-          .from("cpo-files")
+      if (!error && data) {
+        const { data: publicUrlData } = supabase.storage
+          .from("receipts")
           .getPublicUrl(filePath);
-        uploadedReceiptUrl = publicData?.publicUrl || uploadedReceiptUrl;
+
+        finalReceiptUrl = publicUrlData.publicUrl;
+      }
+    }
+    // 2. Fallback to existing client receipt from DB if no new file is selected
+    else {
+      const existingReceipts = getAllReceiptFiles(selectedClientForPayment);
+      if (existingReceipts.length > 0) {
+        finalReceiptUrl = existingReceipts[0].url;
       }
     }
 
@@ -502,46 +502,15 @@ export function AdminDashboardd() {
       payment_name: paymentName,
       date: newPaymentDate,
       amount: Number(newPaymentAmount),
-      receipt_url: hasReceipt ? uploadedReceiptUrl : null,
+      receipt_url: finalReceiptUrl,
     };
 
-    const updatedPayments = [...clientPayments, newEntry];
+    // Add the payment record to state / database
+    setClientPayments((prev) => [...prev, newEntry]);
 
-    const { error: updateError } = await supabase
-      .from("leads")
-      .update({
-        payment_history: updatedPayments as any,
-        receipt_file:
-          uploadedReceiptUrl || selectedClientForPayment.receipt_file,
-      })
-      .eq("id", selectedClientForPayment.id);
-
-    setIsSavingPayment(false);
-
-    if (updateError) {
-      console.warn(
-        "Notice updating payment_history column:",
-        updateError.message,
-      );
-    }
-
-    setClientPayments(updatedPayments);
-    setMarketerClients((prev) =>
-      prev.map((c) =>
-        c.id === selectedClientForPayment.id
-          ? {
-              ...c,
-              payment_history: updatedPayments,
-              receipt_file: uploadedReceiptUrl || c.receipt_file,
-            }
-          : c,
-      ),
-    );
-
-    setNewPaymentAmount("");
+    // Reset form state
     setNewReceiptFile(null);
-    setNewReceiptPreview(null);
-    alert(`✅ Successfully added ${paymentName}!`);
+    setNewPaymentAmount("");
   };
 
   const getOrdinalFloorName = (num: number): string => {
@@ -1683,46 +1652,67 @@ export function AdminDashboardd() {
 
                       <div>
                         <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                          3. Receipt Selection (وصل الاستلام)
+                          3. Receipt File (Upload New or Use Existing)
                         </label>
-                        <div className="space-y-2">
-                          <select
-                            value={hasReceipt ? "yes" : "no"}
-                            onChange={(e) =>
-                              setHasReceipt(e.target.value === "yes")
-                            }
-                            className="w-full p-2 bg-slate-800 border border-slate-600 rounded-lg text-xs text-white outline-none focus:ring-2 focus:ring-amber-500 font-semibold cursor-pointer"
-                          >
-                            <option value="yes">
-                              Yes - Has Receipt (يوجد وصل استلام)
-                            </option>
-                            <option value="no">
-                              No - No Receipt (لا يوجد وصل استلام)
-                            </option>
-                          </select>
 
-                          {hasReceipt && (
-                            <div className="flex items-center gap-2 pt-1">
-                              <input
-                                type="file"
-                                accept="image/*,.pdf"
-                                onChange={handleReceiptFileChange}
-                                className="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-slate-700 file:text-white hover:file:bg-slate-600 cursor-pointer"
-                              />
-
-                              {newReceiptPreview && (
-                                <a
-                                  href={newReceiptPreview}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold rounded-md whitespace-nowrap transition flex items-center gap-1 shadow-sm"
-                                >
-                                  👁️️ View
-                                </a>
-                              )}
-                            </div>
-                          )}
+                        {/* File Upload Input */}
+                        <div className="mb-3">
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setNewReceiptFile(file);
+                              }
+                            }}
+                            className="block w-full text-xs text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-slate-800 border border-slate-700 rounded-lg"
+                          />
                         </div>
+
+                        {/* Display Existing Client Receipts from Database */}
+                        {(() => {
+                          const existingReceipts = getAllReceiptFiles(
+                            selectedClientForPayment,
+                          );
+
+                          if (existingReceipts.length > 0) {
+                            return (
+                              <div className="p-3 bg-slate-800 border border-slate-700 rounded-lg space-y-2">
+                                <p className="text-[11px] text-emerald-400 font-bold">
+                                  📄 Receipts Available in Database:
+                                </p>
+                                <div className="flex flex-col gap-1.5">
+                                  {existingReceipts.map((rf, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center justify-between bg-slate-900 p-2 rounded border border-slate-700 text-xs"
+                                    >
+                                      <span className="text-slate-300 font-medium truncate max-w-[180px]">
+                                        {rf.label}
+                                      </span>
+                                      <a
+                                        href={rf.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded transition"
+                                      >
+                                        View Receipt
+                                      </a>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="p-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 text-xs italic">
+                              ⚠️ No existing receipt files found in the database
+                              for this client.
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       <button
