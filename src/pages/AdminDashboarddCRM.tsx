@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../integrations/supabase/client";
 
-// --- Types & Interfaces ---
+// --- الأنواع والواجهات (Types & Interfaces) ---
 export type UnitStatus =
   | "available"
   | "reserved"
@@ -348,7 +348,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // 🛠️ دالة جلب رابط الوصل المحسّنة للتحقق من جميع المسميات وسجل المدفوعات
   const getReceiptUrl = (
     client: MarketerClient & Record<string, any>,
   ): string | null => {
@@ -461,8 +460,6 @@ export function AdminDashboardd() {
     if (hasReceipt && newReceiptFile) {
       const fileExt = newReceiptFile.name.split(".").pop();
       const fileName = `receipt_${selectedClientForPayment.id}_${Date.now()}.${fileExt}`;
-
-      // 🟢 تحديد المسار ليكون داخل مجلد receipts
       const filePath = `receipts/${fileName}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -1062,7 +1059,6 @@ export function AdminDashboardd() {
                   <button
                     type="submit"
                     className="w-full bg-gray-800 hover:bg-black text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm"
-                    style={{ color: "#ffffff" }}
                   >
                     +{" "}
                     {typicalFloorCount
@@ -1935,7 +1931,7 @@ export function AdminDashboardd() {
                           </span>
                         </td>
 
-                        {/* Status & Actions Column - تظهر الأزرار فقط للطلبات التي تتطلب موافقة */}
+                        {/* Status & Actions Column */}
                         <td className="p-3 border">
                           <div className="flex flex-col items-start gap-1.5">
                             <span
@@ -1952,7 +1948,6 @@ export function AdminDashboardd() {
                               {client.status || "Reserved"}
                             </span>
 
-                            {/* ظهور أزرار القبول والرفض حصرياً عند وجود طلب من المسوق */}
                             {isRequestForQual && (
                               <div className="flex items-center gap-1 mt-1">
                                 <button
