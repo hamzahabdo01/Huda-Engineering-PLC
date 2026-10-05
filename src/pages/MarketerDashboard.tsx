@@ -14,6 +14,11 @@ import {
   KeyRound,
   Briefcase,
   Upload,
+  Calendar,
+  Receipt as ReceiptIcon,
+  CheckCircle2,
+  XCircle,
+  Clock,
 } from "lucide-react";
 
 // --- Types & Interfaces ---
@@ -48,6 +53,15 @@ export interface Project {
   subtitle?: string;
 }
 
+export interface ReceiptRecord {
+  id: string;
+  lead_id: string;
+  receipt_url: string;
+  upload_date: string;
+  status: "pending" | "approved" | "rejected";
+  notes?: string;
+}
+
 export interface Lead {
   id: string;
   name: string;
@@ -65,6 +79,7 @@ export interface Lead {
   installment_plan?: string;
   memo?: string;
   cpo?: string;
+  receipts?: ReceiptRecord[];
   created_at?: string;
 }
 
@@ -287,19 +302,23 @@ export function MarketerDashboard() {
     "New" | "Request for Qualification" | "Qualified" | "Negotiation" | "Closed"
   >("New");
 
-  // Negotiation Extra Fields State
+  // Negotiation & Closed Extra Fields State
   const [paymentType, setPaymentType] = useState<"full" | "progressive">(
     "progressive",
   );
   const [totalPayment, setTotalPayment] = useState<string>("");
   const [downPayment, setDownPayment] = useState<string>("");
-  const [installmentPlan, setInstallmentPlan] = useState<string>("");
+  const [installmentPlan, setInstallmentPlan] = useState<string>(""); // YYYY-MM-DD or schedule
   const [memo, setMemo] = useState<string>("");
 
   // CPO Image Upload State
   const [cpoFile, setCpoFile] = useState<File | null>(null);
   const [cpoUrl, setCpoUrl] = useState<string>("");
   const [uploadingCpo, setUploadingCpo] = useState<boolean>(false);
+
+  // Receipt Upload State (For Closed Details)
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [uploadingReceipt, setUploadingReceipt] = useState<boolean>(false);
 
   // Leads State & Country Code State
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -483,14 +502,47 @@ export function MarketerDashboard() {
   const fetchLeadsForMarketer = useCallback(
     async (marketerId: string, marketerName: string) => {
       try {
-        const { data, error } = await supabase
+        const { data: leadsData, error } = await supabase
           .from("leads")
           .select("*")
           .or(`marketer_id.eq.${marketerId},marketer_name.eq.${marketerName}`)
           .order("created_at", { ascending: false });
 
-        if (!error && data) {
-          setLeads(data);
+        if (!error && leadsData) {
+          // جلب الإيصالات التابعة للعملاء إذا كان جدول receipts موجوداً
+          const leadIds = leadsData.map((l) => l.id);
+          const receiptsMap: Record<string, ReceiptRecord[]> = {};
+
+          if (leadIds.length > 0) {
+            const { data: receiptsData } = await supabase
+              .from("receipts")
+              .select("*")
+              .in("lead_id", leadIds)
+              .order("upload_date", { ascending: false });
+
+            if (receiptsData) {
+              receiptsData.forEach((rc: any) => {
+                if (!receiptsMap[rc.lead_id]) {
+                  receiptsMap[rc.lead_id] = [];
+                }
+                receiptsMap[rc.lead_id].push({
+                  id: rc.id,
+                  lead_id: rc.lead_id,
+                  receipt_url: rc.receipt_url,
+                  upload_date: rc.upload_date || rc.created_at,
+                  status: rc.status || "pending",
+                  notes: rc.notes,
+                });
+              });
+            }
+          }
+
+          const leadsWithReceipts = leadsData.map((l) => ({
+            ...l,
+            receipts: receiptsMap[l.id] || [],
+          }));
+
+          setLeads(leadsWithReceipts);
         }
       } catch (err) {
         console.error("Error fetching leads:", err);
@@ -807,6 +859,7 @@ export function MarketerDashboard() {
     setMemo("");
     setCpoFile(null);
     setCpoUrl("");
+    setReceiptFile(null);
   };
 
   const handleEditLead = (lead: Lead) => {
@@ -863,6 +916,7 @@ export function MarketerDashboard() {
     setMemo(lead.memo || "");
     setCpoUrl(lead.cpo || "");
     setCpoFile(null);
+    setReceiptFile(null);
 
     if (lead.unit_key) {
       const keys = lead.unit_key.split(" | ");
@@ -1080,6 +1134,46 @@ export function MarketerDashboard() {
       }
     }
 
+    // 🧾 📤 رفع صورة/ملف الإيصال Receipt إن وجدت (في حالة Closed)
+    let uploadedReceiptUrl = "";
+    if (targetStatus === "Closed" && receiptFile) {
+      setUploadingReceipt(true);
+      try {
+        const fileExt = receiptFile.name.split(".").pop();
+        const fileName = `receipt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+        const filePath = `receipts/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("leads")
+          .upload(filePath, receiptFile);
+
+        if (uploadError) {
+          const { error: fallbackError } = await supabase.storage
+            .from("cpo-files")
+            .upload(filePath, receiptFile);
+
+          if (!fallbackError) {
+            const { data: publicUrlData } = supabase.storage
+              .from("cpo-files")
+              .getPublicUrl(filePath);
+            uploadedReceiptUrl = publicUrlData.publicUrl;
+          } else {
+            console.error("Receipt Upload Error:", uploadError);
+            alert(`⚠️ Error uploading receipt file: ${uploadError.message}`);
+          }
+        } else {
+          const { data: publicUrlData } = supabase.storage
+            .from("leads")
+            .getPublicUrl(filePath);
+          uploadedReceiptUrl = publicUrlData.publicUrl;
+        }
+      } catch (err: any) {
+        console.error("Receipt Upload Error:", err);
+      } finally {
+        setUploadingReceipt(false);
+      }
+    }
+
     const apartmentLabels = selectedUnits.map((u) => u.label).join(" | ");
     const unitKeys = selectedUnits.map((u) => u.key).join(" | ");
 
@@ -1097,25 +1191,35 @@ export function MarketerDashboard() {
       marketer_name: currentMarketer?.name,
       status: targetStatus,
       cpo: uploadedCpoUrl || null,
-      payment_type: targetStatus === "Negotiation" ? paymentType : null,
+      payment_type:
+        targetStatus === "Negotiation" || targetStatus === "Closed"
+          ? paymentType
+          : null,
       total_payment:
-        targetStatus === "Negotiation" && totalPayment
+        (targetStatus === "Negotiation" || targetStatus === "Closed") &&
+        totalPayment
           ? parseFloat(totalPayment)
           : null,
       down_payment:
-        targetStatus === "Negotiation" && downPayment
+        (targetStatus === "Negotiation" || targetStatus === "Closed") &&
+        downPayment
           ? parseFloat(downPayment)
           : null,
       installment_plan:
-        targetStatus === "Negotiation" &&
+        (targetStatus === "Negotiation" || targetStatus === "Closed") &&
         paymentType === "progressive" &&
         installmentPlan
           ? installmentPlan
           : null,
-      memo: targetStatus === "Negotiation" && memo ? memo : null,
+      memo:
+        (targetStatus === "Negotiation" || targetStatus === "Closed") && memo
+          ? memo
+          : null,
     };
 
     try {
+      let savedLeadId = editingLeadId;
+
       if (editingLeadId) {
         const { data: updatedData, error: updateError } = await supabase
           .from("leads")
@@ -1153,13 +1257,54 @@ export function MarketerDashboard() {
         }
 
         if (leadData && leadData[0]) {
+          savedLeadId = leadData[0].id;
           setLeads((prev) => [leadData[0], ...prev]);
+        }
+      }
+
+      // 📜 حفظ الإيصال الجديد في جدول الإيصالات بحالة pending بانتظار موافقة الأدمن
+      if (uploadedReceiptUrl && savedLeadId) {
+        const receiptPayload = {
+          lead_id: savedLeadId,
+          receipt_url: uploadedReceiptUrl,
+          upload_date: new Date().toISOString(),
+          status: "pending",
+          notes: memo || `Receipt uploaded for Closed Deal`,
+        };
+
+        const { data: insertedReceipt, error: receiptDbError } = await supabase
+          .from("receipts")
+          .insert([receiptPayload])
+          .select();
+
+        if (!receiptDbError && insertedReceipt) {
+          setLeads((prev) =>
+            prev.map((l) => {
+              if (l.id === savedLeadId) {
+                return {
+                  ...l,
+                  receipts: [insertedReceipt[0], ...(l.receipts || [])],
+                };
+              }
+              return l;
+            }),
+          );
+        } else if (receiptDbError) {
+          console.warn(
+            "Could not insert to receipts table:",
+            receiptDbError.message,
+          );
         }
       }
 
       if (selectedUnits.length > 0 && targetStatus !== "New") {
         const newCellStatus =
-          targetStatus === "Request for Qualification" ? "pending" : "reserved";
+          targetStatus === "Request for Qualification"
+            ? "pending"
+            : targetStatus === "Closed"
+              ? "unavailable"
+              : "reserved";
+
         for (const unit of selectedUnits) {
           await supabase.from("srm_matrix_cells").upsert(
             {
@@ -2170,14 +2315,13 @@ export function MarketerDashboard() {
                   </div>
                 )}
 
-                {/* 💳 negotiation details المحدّث بكل المتطلبات */}
+                {/* 💳 Negotiation Details */}
                 {actionStatus === "Negotiation" && (
                   <div className="bg-teal-50/60 p-3 border border-teal-200 rounded space-y-2.5">
                     <h3 className="font-bold text-[#00474b] text-[11px] border-b border-teal-200 pb-1">
                       📝 Negotiation Details
                     </h3>
 
-                    {/* خيار نوع الدفع: Full Payment vs Progressive Payment */}
                     <div>
                       <label className="block text-[10px] font-bold text-gray-700 mb-1">
                         Payment Method *
@@ -2233,7 +2377,6 @@ export function MarketerDashboard() {
                       />
                     </div>
 
-                    {/* Down Payment */}
                     <div>
                       <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
                         Down Payment ($)
@@ -2247,18 +2390,17 @@ export function MarketerDashboard() {
                       />
                     </div>
 
-                    {/* Installment Plan */}
                     {paymentType === "progressive" && (
                       <div>
-                        <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
-                          Installment Plan
+                        <label className="block text-[10px] font-bold text-gray-700 mb-0.5 flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-teal-700" />
+                          Installment Plan Date / Schedule
                         </label>
                         <input
-                          type="text"
-                          placeholder="e.g. 20% down, 3 years"
+                          type="date"
                           value={installmentPlan}
                           onChange={(e) => setInstallmentPlan(e.target.value)}
-                          className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
+                          className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600 bg-white cursor-pointer"
                         />
                       </div>
                     )}
@@ -2278,17 +2420,154 @@ export function MarketerDashboard() {
                   </div>
                 )}
 
+                {/* 🔒 Closed Details المحدث بنفس المدخلات ورقع الإيصالات والتقويم */}
+                {actionStatus === "Closed" && (
+                  <div className="bg-emerald-50/70 p-3 border border-emerald-300 rounded space-y-2.5">
+                    <h3 className="font-bold text-emerald-900 text-[11px] border-b border-emerald-200 pb-1 flex items-center gap-1.5">
+                      <ReceiptIcon className="w-3.5 h-3.5 text-emerald-700" />
+                      Closed Details
+                    </h3>
+
+                    {/* طريقة الدفع */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-700 mb-1">
+                        Payment Method *
+                      </label>
+                      <div className="grid grid-cols-2 gap-1.5 bg-white p-1 border border-gray-300 rounded">
+                        <label
+                          className={`flex items-center justify-center gap-1 p-1.5 text-[11px] font-bold rounded cursor-pointer transition ${
+                            paymentType === "full"
+                              ? "bg-[#00474b] text-white"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="closedPaymentType"
+                            value="full"
+                            checked={paymentType === "full"}
+                            onChange={() => setPaymentType("full")}
+                            className="hidden"
+                          />
+                          Full Payment
+                        </label>
+                        <label
+                          className={`flex items-center justify-center gap-1 p-1.5 text-[11px] font-bold rounded cursor-pointer transition ${
+                            paymentType === "progressive"
+                              ? "bg-[#00474b] text-white"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="closedPaymentType"
+                            value="progressive"
+                            checked={paymentType === "progressive"}
+                            onChange={() => setPaymentType("progressive")}
+                            className="hidden"
+                          />
+                          Progressive
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* المبلغ الإجمالي */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
+                        Total Payment ($)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Agreed Total Payment"
+                        value={totalPayment}
+                        onChange={(e) => setTotalPayment(e.target.value)}
+                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
+                      />
+                    </div>
+
+                    {/* الدفعة الأولى */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
+                        Down Payment ($)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Down Payment Amount"
+                        value={downPayment}
+                        onChange={(e) => setDownPayment(e.target.value)}
+                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
+                      />
+                    </div>
+
+                    {/* خطة التقسيط بالرزنامة (Calendar Date Picker) */}
+                    {paymentType === "progressive" && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-700 mb-0.5 flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-emerald-700" />
+                          Installment Plan Date (Calendar)
+                        </label>
+                        <input
+                          type="date"
+                          value={installmentPlan}
+                          onChange={(e) => setInstallmentPlan(e.target.value)}
+                          className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600 bg-white cursor-pointer"
+                        />
+                      </div>
+                    )}
+
+                    {/* رفع الإيصال Upload Receipt */}
+                    <div className="bg-white p-2.5 border border-emerald-200 rounded space-y-1.5">
+                      <label className="block font-bold text-emerald-900 text-[10px] flex items-center gap-1">
+                        <Upload className="w-3.5 h-3.5 text-emerald-700" />
+                        Upload Receipt (To Admin for Approval)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setReceiptFile(e.target.files[0]);
+                          }
+                        }}
+                        className="w-full text-xs text-gray-700 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[11px] file:font-bold file:bg-[#00474b] file:text-white hover:file:bg-[#00383b] cursor-pointer bg-gray-50 border border-gray-300 rounded p-1"
+                      />
+                      {receiptFile && (
+                        <p className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                          ✓ Selected receipt file: {receiptFile.name} (Will
+                          record upload timestamp)
+                        </p>
+                      )}
+                    </div>
+
+                    {/* الملاحظات */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-700 mb-0.5">
+                        Memo / Notes
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="Write extra details for closed status..."
+                        value={memo}
+                        onChange={(e) => setMemo(e.target.value)}
+                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none resize-none focus:border-teal-600"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  disabled={uploadingCpo}
+                  disabled={uploadingCpo || uploadingReceipt}
                   className="w-full font-bold py-3 sm:py-2.5 rounded text-xs text-white hover:text-white transition bg-[#00474b] hover:bg-[#00383b] shadow-sm mt-2 disabled:opacity-50"
                   style={{ color: "#ffffff" }}
                 >
                   {uploadingCpo
-                    ? "Uploading CPO Image..."
-                    : editingLeadId
-                      ? `Update Lead Record`
-                      : `Save Lead as "${actionStatus}"`}
+                    ? "Uploading CPO..."
+                    : uploadingReceipt
+                      ? "Uploading Receipt..."
+                      : editingLeadId
+                        ? `Update Lead Record`
+                        : `Save Lead as "${actionStatus}"`}
                 </button>
               </form>
             </div>
@@ -2440,6 +2719,61 @@ export function MarketerDashboard() {
                             >
                               📎 View CPO Image
                             </a>
+                          </div>
+                        )}
+
+                        {/* 🧾 عرض سجل الإيصالات مع التواريخ وحالة الموافقة/الرفض */}
+                        {lead.receipts && lead.receipts.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-100 space-y-1">
+                            <p className="text-[10px] font-bold text-gray-700 flex items-center gap-1">
+                              <ReceiptIcon className="w-3 h-3 text-emerald-700" />
+                              Receipts History ({lead.receipts.length}):
+                            </p>
+                            <div className="space-y-1 max-h-24 overflow-y-auto">
+                              {lead.receipts.map((rc) => (
+                                <div
+                                  key={rc.id}
+                                  className="bg-gray-50 p-1.5 rounded border border-gray-200 flex items-center justify-between text-[10px]"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <a
+                                      href={rc.receipt_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="font-bold text-teal-800 underline hover:text-teal-900"
+                                    >
+                                      View Receipt 📎
+                                    </a>
+                                    <span className="text-gray-400">
+                                      (
+                                      {new Date(
+                                        rc.upload_date,
+                                      ).toLocaleDateString()}
+                                      )
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-1">
+                                    {rc.status === "approved" ? (
+                                      <span className="inline-flex items-center gap-0.5 text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded font-bold">
+                                        <CheckCircle2 className="w-2.5 h-2.5" />{" "}
+                                        Approved
+                                      </span>
+                                    ) : rc.status === "rejected" ? (
+                                      <span className="inline-flex items-center gap-0.5 text-red-700 bg-red-100 px-1.5 py-0.5 rounded font-bold">
+                                        <XCircle className="w-2.5 h-2.5" />{" "}
+                                        Rejected
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-0.5 text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded font-bold">
+                                        <Clock className="w-2.5 h-2.5" />{" "}
+                                        Pending Admin
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
 
