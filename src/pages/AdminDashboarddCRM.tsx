@@ -130,6 +130,7 @@ export function AdminDashboardd() {
   // Add Payment Form States
   const [newPaymentDate, setNewPaymentDate] = useState<string>("");
   const [newPaymentAmount, setNewPaymentAmount] = useState<string>("");
+  const [hasReceipt, setHasReceipt] = useState<boolean>(true);
   const [newReceiptFile, setNewReceiptFile] = useState<File | null>(null);
   const [newReceiptPreview, setNewReceiptPreview] = useState<string | null>(
     null,
@@ -177,7 +178,6 @@ export function AdminDashboardd() {
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
-  // 1. Fetch Initial Data and Setup Realtime Listeners
   useEffect(() => {
     fetchProjects();
     fetchMarketerClients();
@@ -199,7 +199,6 @@ export function AdminDashboardd() {
     };
   }, []);
 
-  // 2. Fetch Project Specific Data
   useEffect(() => {
     if (!selectedProjectId) return;
 
@@ -236,18 +235,16 @@ export function AdminDashboardd() {
     };
   }, [selectedProjectId]);
 
-  // Sync payments history when client is selected for payment modal
   useEffect(() => {
     if (selectedClientForPayment) {
       setClientPayments(selectedClientForPayment.payment_history || []);
       setNewPaymentDate(new Date().toISOString().split("T")[0]);
       setNewPaymentAmount("");
+      setHasReceipt(true);
       setNewReceiptFile(null);
       setNewReceiptPreview(null);
     }
   }, [selectedClientForPayment]);
-
-  // --- Supabase API Calls ---
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -360,7 +357,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // Helper function to extract RECEIPT file URL specifically
   const getReceiptUrl = (
     client: MarketerClient & Record<string, any>,
   ): string | null => {
@@ -387,7 +383,6 @@ export function AdminDashboardd() {
     return data?.publicUrl || null;
   };
 
-  // Helper function to extract CPO file URL specifically
   const getCpoUrl = (
     client: MarketerClient & Record<string, any>,
   ): string | null => {
@@ -441,7 +436,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // File Change & Preview Handler
   const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -451,7 +445,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // Handle Add Payment Submit
   const handleAddPaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClientForPayment) return;
@@ -461,10 +454,11 @@ export function AdminDashboardd() {
     }
 
     setIsSavingPayment(true);
-    let uploadedReceiptUrl: string | null = newReceiptPreview;
+    let uploadedReceiptUrl: string | null = hasReceipt
+      ? newReceiptPreview
+      : null;
 
-    // Upload receipt file if provided
-    if (newReceiptFile) {
+    if (hasReceipt && newReceiptFile) {
       const fileExt = newReceiptFile.name.split(".").pop();
       const fileName = `receipt_${selectedClientForPayment.id}_${Date.now()}.${fileExt}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -487,12 +481,11 @@ export function AdminDashboardd() {
       payment_name: paymentName,
       date: newPaymentDate,
       amount: Number(newPaymentAmount),
-      receipt_url: uploadedReceiptUrl,
+      receipt_url: hasReceipt ? uploadedReceiptUrl : null,
     };
 
     const updatedPayments = [...clientPayments, newEntry];
 
-    // Persist to Supabase
     const { error: updateError } = await supabase
       .from("leads")
       .update({ payment_history: updatedPayments as any })
@@ -516,7 +509,6 @@ export function AdminDashboardd() {
       ),
     );
 
-    // Reset Form
     setNewPaymentAmount("");
     setNewReceiptFile(null);
     setNewReceiptPreview(null);
@@ -579,7 +571,6 @@ export function AdminDashboardd() {
       const count = Number(typicalFloorCount);
       for (let i = 1; i <= count; i++) {
         const name = getOrdinalFloorName(i);
-
         if (
           !floors.some((f) => f.floor_name.toLowerCase() === name.toLowerCase())
         ) {
@@ -596,10 +587,7 @@ export function AdminDashboardd() {
       ) {
         return alert("Floor already exists in this project!");
       }
-      floorsToCreate.push({
-        project_id: selectedProjectId,
-        floor_name: name,
-      });
+      floorsToCreate.push({ project_id: selectedProjectId, floor_name: name });
     } else {
       return alert("Please enter floor name or typical count (e.g., 20)");
     }
@@ -654,7 +642,6 @@ export function AdminDashboardd() {
     newStatus: UnitStatus,
   ) => {
     const key = `${floorName}__${unitTypeId}`;
-
     setMatrix((prev) => ({ ...prev, [key]: newStatus }));
 
     const { error } = await supabase.from("srm_matrix_cells").upsert(
@@ -732,7 +719,6 @@ export function AdminDashboardd() {
     ]),
   );
 
-  // --- Filtering Clients for Pricing Sub-Tabs ---
   const pricingFilteredClients = useMemo(() => {
     return marketerClients.filter((client) => {
       const paymentTypeStr = (
@@ -742,11 +728,10 @@ export function AdminDashboardd() {
 
       const isFull = paymentTypeStr.includes("full");
       if (pricingSubTab === "full") return isFull;
-      return !isFull; // Progressive Payment
+      return !isFull;
     });
   }, [marketerClients, pricingSubTab]);
 
-  // --- Sorting & Filtering Logic for CLIENTS ---
   const handleClientSortToggle = (field: typeof clientSortField) => {
     if (clientSortField === field) {
       setClientSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -822,7 +807,6 @@ export function AdminDashboardd() {
     getProjectName,
   ]);
 
-  // --- Sorting & Filtering Logic for MARKETERS ---
   const handleMarketerSortToggle = (field: typeof marketerSortField) => {
     if (marketerSortField === field) {
       setMarketerSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -1075,7 +1059,7 @@ export function AdminDashboardd() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-gray-800 hover:bg-black text-white !text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm"
+                    className="w-full bg-gray-800 hover:bg-black text-white font-bold py-2.5 rounded-lg text-xs transition shadow-sm"
                     style={{ color: "#ffffff" }}
                   >
                     +{" "}
@@ -1335,7 +1319,6 @@ export function AdminDashboardd() {
             </button>
           </div>
 
-          {/* Sub-Tabs: Full Payment vs Progressive Payment */}
           <div className="flex items-center gap-2 mb-6 bg-slate-100 p-1 rounded-lg w-fit border border-slate-300">
             <button
               onClick={() => setPricingSubTab("full")}
@@ -1399,7 +1382,6 @@ export function AdminDashboardd() {
                     ).toLowerCase();
 
                     const isFullPayment = paymentTypeStr.includes("full");
-
                     const totalVal = Number(client.total_payment) || 0;
                     const downVal = Number(client.down_payment) || 0;
                     const remainingVal =
@@ -1525,7 +1507,6 @@ export function AdminDashboardd() {
             </div>
 
             <div className="p-6 overflow-y-auto space-y-6 flex-1">
-              {/* Installment Plan Banner (Above Table) */}
               <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white p-4 rounded-xl shadow-md border border-purple-500/30 flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 block">
@@ -1562,7 +1543,6 @@ export function AdminDashboardd() {
                 </div>
               </div>
 
-              {/* Main Content: Table + Add Form */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left: Payments Schedule Table */}
                 <div className="lg:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -1653,7 +1633,6 @@ export function AdminDashboardd() {
                       onSubmit={handleAddPaymentSubmit}
                       className="space-y-4"
                     >
-                      {/* Field 1: Date */}
                       <div>
                         <label className="block text-[11px] font-bold text-slate-300 mb-1">
                           1. Date (Calendar) *
@@ -1667,7 +1646,6 @@ export function AdminDashboardd() {
                         />
                       </div>
 
-                      {/* Field 2: Amount */}
                       <div>
                         <label className="block text-[11px] font-bold text-slate-300 mb-1">
                           2. Amount (ETB) *
@@ -1682,29 +1660,47 @@ export function AdminDashboardd() {
                         />
                       </div>
 
-                      {/* Field 3: Select or Upload Receipt */}
+                      {/* Select or Upload Receipt Option */}
                       <div>
                         <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                          3. Select or Upload Receipt
+                          3. Receipt Selection (وصل الاستلام)
                         </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="file"
-                            accept="image/*,.pdf"
-                            onChange={handleReceiptFileChange}
-                            className="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-slate-700 file:text-white hover:file:bg-slate-600 cursor-pointer"
-                          />
+                        <div className="space-y-2">
+                          <select
+                            value={hasReceipt ? "yes" : "no"}
+                            onChange={(e) =>
+                              setHasReceipt(e.target.value === "yes")
+                            }
+                            className="w-full p-2 bg-slate-800 border border-slate-600 rounded-lg text-xs text-white outline-none focus:ring-2 focus:ring-amber-500 font-semibold cursor-pointer"
+                          >
+                            <option value="yes">
+                              Yes - Has Receipt (يوجد وصل استلام)
+                            </option>
+                            <option value="no">
+                              No - No Receipt (لا يوجد وصل استلام)
+                            </option>
+                          </select>
 
-                          {/* View Preview Button before/after selection */}
-                          {newReceiptPreview && (
-                            <a
-                              href={newReceiptPreview}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold rounded-md whitespace-nowrap transition flex items-center gap-1 shadow-sm"
-                            >
-                              👁️ View
-                            </a>
+                          {hasReceipt && (
+                            <div className="flex items-center gap-2 pt-1">
+                              <input
+                                type="file"
+                                accept="image/*,.pdf"
+                                onChange={handleReceiptFileChange}
+                                className="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-slate-700 file:text-white hover:file:bg-slate-600 cursor-pointer"
+                              />
+
+                              {newReceiptPreview && (
+                                <a
+                                  href={newReceiptPreview}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold rounded-md whitespace-nowrap transition flex items-center gap-1 shadow-sm"
+                                >
+                                  👁️ View
+                                </a>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1724,7 +1720,6 @@ export function AdminDashboardd() {
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="bg-slate-100 p-4 border-t border-slate-200 flex justify-end">
               <button
                 onClick={() => setSelectedClientForPayment(null)}
@@ -1737,7 +1732,7 @@ export function AdminDashboardd() {
         </div>
       )}
 
-      {/* TAB 3: MARKETERS & CLIENTS FILTER, SEARCH & SORT */}
+      {/* TAB 3: MARKETERS & CLIENTS */}
       {activeTab === "clients" && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -1908,7 +1903,6 @@ export function AdminDashboardd() {
                   filteredAndSortedClients.map((client) => {
                     const receiptUrl = getReceiptUrl(client);
                     const cpoUrl = getCpoUrl(client);
-
                     const currentStatus = (
                       client.status || "Reserved"
                     ).toLowerCase();
@@ -1944,7 +1938,7 @@ export function AdminDashboardd() {
                           </span>
                         </td>
 
-                        {/* Status & Actions Column */}
+                        {/* Status & Actions Column (Reverted buttons to original fully functional state) */}
                         <td className="p-3 border">
                           <div className="flex flex-col items-start gap-1.5">
                             <span
@@ -1961,7 +1955,7 @@ export function AdminDashboardd() {
                               {client.status || "Reserved"}
                             </span>
 
-                            {/* Approve & Reject Active ONLY when status is "Closed" */}
+                            {/* Approve & Reject Active Buttons */}
                             <div className="flex items-center gap-1 mt-1">
                               <button
                                 onClick={() =>
@@ -1970,17 +1964,8 @@ export function AdminDashboardd() {
                                     "Qualified",
                                   )
                                 }
-                                disabled={!isClosed}
-                                title={
-                                  !isClosed
-                                    ? "Approve is active only when status is Closed"
-                                    : "Approve Client"
-                                }
-                                className={`px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition ${
-                                  !isClosed
-                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
-                                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                                }`}
+                                title="Approve Client"
+                                className="px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
                               >
                                 Approve
                               </button>
@@ -1991,17 +1976,8 @@ export function AdminDashboardd() {
                                     "Rejected",
                                   )
                                 }
-                                disabled={!isClosed}
-                                title={
-                                  !isClosed
-                                    ? "Reject is active only when status is Closed"
-                                    : "Reject Client"
-                                }
-                                className={`px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition ${
-                                  !isClosed
-                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
-                                    : "bg-red-600 hover:bg-red-700 text-white"
-                                }`}
+                                title="Reject Client"
+                                className="px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition bg-red-600 hover:bg-red-700 text-white cursor-pointer"
                               >
                                 Reject
                               </button>
