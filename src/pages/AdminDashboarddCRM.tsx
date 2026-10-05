@@ -94,7 +94,6 @@ export interface MarketerAccount {
   created_at?: string;
 }
 
-// Helper to calculate ordinal payment names (1st Payment, 2nd Payment, 3rd Payment...)
 function getOrdinalPaymentName(index: number): string {
   const suffixes = ["th", "st", "nd", "rd"];
   const v = index % 100;
@@ -102,7 +101,6 @@ function getOrdinalPaymentName(index: number): string {
 }
 
 export function AdminDashboardd() {
-  // --- States ---
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
 
@@ -117,17 +115,14 @@ export function AdminDashboardd() {
     null,
   );
 
-  // --- Pricing Sub-Tab State ---
   const [pricingSubTab, setPricingSubTab] = useState<"full" | "progressive">(
     "full",
   );
 
-  // --- Payment Modal State ---
   const [selectedClientForPayment, setSelectedClientForPayment] =
     useState<MarketerClient | null>(null);
   const [clientPayments, setClientPayments] = useState<PaymentRecord[]>([]);
 
-  // Add Payment Form States
   const [newPaymentDate, setNewPaymentDate] = useState<string>("");
   const [newPaymentAmount, setNewPaymentAmount] = useState<string>("");
   const [hasReceipt, setHasReceipt] = useState<boolean>(true);
@@ -137,7 +132,6 @@ export function AdminDashboardd() {
   );
   const [isSavingPayment, setIsSavingPayment] = useState<boolean>(false);
 
-  // --- Clients Search, Filter & Sort States ---
   const [selectedMarketerFilter, setSelectedMarketerFilter] =
     useState<string>("all");
   const [clientSearch, setClientSearch] = useState<string>("");
@@ -149,7 +143,6 @@ export function AdminDashboardd() {
     "desc",
   );
 
-  // --- Marketers Search, Filter & Sort States ---
   const [marketerSearch, setMarketerSearch] = useState<string>("");
   const [marketerStatusFilter, setMarketerStatusFilter] =
     useState<string>("all");
@@ -162,11 +155,9 @@ export function AdminDashboardd() {
 
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Floor Form States
   const [newFloorName, setNewFloorName] = useState("");
   const [typicalFloorCount, setTypicalFloorCount] = useState<number | "">("");
 
-  // Unit Type Form States
   const [newUnitTitle, setNewUnitTitle] = useState("");
   const [newUnitArea, setNewUnitArea] = useState<number | "">("");
 
@@ -357,6 +348,7 @@ export function AdminDashboardd() {
     }
   };
 
+  // 🛠️ دالة جلب رابط الوصل المحسّنة للتحقق من جميع المسميات وسجل المدفوعات
   const getReceiptUrl = (
     client: MarketerClient & Record<string, any>,
   ): string | null => {
@@ -364,7 +356,15 @@ export function AdminDashboardd() {
       client.receipt_url ||
       client.receipt_image ||
       client.receipt_file ||
-      client.receipt;
+      client.receipt ||
+      client.receipt_path ||
+      client.receipt_doc ||
+      client.payment_receipt ||
+      client.receipt_file_url ||
+      client.receipt_image_url ||
+      client.receiptUrl ||
+      (Array.isArray(client.payment_history) &&
+        client.payment_history.find((p) => p?.receipt_url)?.receipt_url);
 
     if (!file || typeof file !== "string" || file.trim() === "") {
       return null;
@@ -549,9 +549,7 @@ export function AdminDashboardd() {
       "Thirtieth",
     ];
 
-    if (num <= ordinals.length) {
-      return `${ordinals[num - 1]} Floor`;
-    }
+    if (num <= ordinals.length) return `${ordinals[num - 1]} Floor`;
 
     const j = num % 10,
       k = num % 100;
@@ -1114,7 +1112,6 @@ export function AdminDashboardd() {
                 </form>
               </div>
 
-              {/* Selected Cell Panel */}
               {activeCellKey && (
                 <div className="bg-amber-50 p-4 rounded-xl border border-amber-300 shadow-sm space-y-3">
                   <p className="text-xs font-bold text-amber-900">
@@ -1188,7 +1185,6 @@ export function AdminDashboardd() {
               )}
             </div>
 
-            {/* Matrix Render Table */}
             <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-hidden">
               <div className="flex flex-col items-center justify-center mb-6">
                 <div className="bg-[#f2b827] text-black text-lg sm:text-xl font-extrabold uppercase px-8 py-2 rounded-md shadow-sm tracking-wide border border-amber-500">
@@ -1476,7 +1472,6 @@ export function AdminDashboardd() {
       {selectedClientForPayment && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden border border-gray-300 max-h-[90vh] flex flex-col">
-            {/* Modal Header */}
             <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold flex items-center gap-2">
@@ -1544,7 +1539,6 @@ export function AdminDashboardd() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left: Payments Schedule Table */}
                 <div className="lg:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
                   <h4 className="font-bold text-slate-800 text-sm mb-3 flex items-center justify-between">
                     <span>📊 Payment History Schedule</span>
@@ -1616,7 +1610,6 @@ export function AdminDashboardd() {
                   </div>
                 </div>
 
-                {/* Right: Add Payment Form */}
                 <div className="bg-slate-900 text-white p-5 rounded-xl border border-slate-700 shadow-md flex flex-col justify-between">
                   <div>
                     <h4 className="font-bold text-amber-400 text-sm mb-1">
@@ -1660,7 +1653,6 @@ export function AdminDashboardd() {
                         />
                       </div>
 
-                      {/* Select or Upload Receipt Option */}
                       <div>
                         <label className="block text-[11px] font-bold text-slate-300 mb-1">
                           3. Receipt Selection (وصل الاستلام)
@@ -1903,10 +1895,11 @@ export function AdminDashboardd() {
                   filteredAndSortedClients.map((client) => {
                     const receiptUrl = getReceiptUrl(client);
                     const cpoUrl = getCpoUrl(client);
-                    const currentStatus = (
-                      client.status || "Reserved"
-                    ).toLowerCase();
+                    const rawStatus = client.status || "Reserved";
+                    const currentStatus = rawStatus.toLowerCase();
                     const isClosed = currentStatus === "closed";
+                    const isRequestForQual =
+                      currentStatus === "request for qualification";
 
                     return (
                       <tr key={client.id} className="border-b hover:bg-gray-50">
@@ -1938,7 +1931,7 @@ export function AdminDashboardd() {
                           </span>
                         </td>
 
-                        {/* Status & Actions Column (Reverted buttons to original fully functional state) */}
+                        {/* Status & Actions Column - تظهر الأزرار فقط للطلبات التي تتطلب موافقة */}
                         <td className="p-3 border">
                           <div className="flex flex-col items-start gap-1.5">
                             <span
@@ -1955,33 +1948,35 @@ export function AdminDashboardd() {
                               {client.status || "Reserved"}
                             </span>
 
-                            {/* Approve & Reject Active Buttons */}
-                            <div className="flex items-center gap-1 mt-1">
-                              <button
-                                onClick={() =>
-                                  handleUpdateClientStatus(
-                                    client.id,
-                                    "Qualified",
-                                  )
-                                }
-                                title="Approve Client"
-                                className="px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleUpdateClientStatus(
-                                    client.id,
-                                    "Rejected",
-                                  )
-                                }
-                                title="Reject Client"
-                                className="px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition bg-red-600 hover:bg-red-700 text-white cursor-pointer"
-                              >
-                                Reject
-                              </button>
-                            </div>
+                            {/* ظهور أزرار القبول والرفض حصرياً عند وجود طلب من المسوق */}
+                            {isRequestForQual && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <button
+                                  onClick={() =>
+                                    handleUpdateClientStatus(
+                                      client.id,
+                                      "Qualified",
+                                    )
+                                  }
+                                  title="Approve Client"
+                                  className="px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleUpdateClientStatus(
+                                      client.id,
+                                      "Rejected",
+                                    )
+                                  }
+                                  title="Reject Client"
+                                  className="px-2.5 py-1 rounded font-bold text-[10px] shadow-sm transition bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
 
