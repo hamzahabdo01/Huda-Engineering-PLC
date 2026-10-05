@@ -44,11 +44,6 @@ export interface PaymentRecord {
   date: string;
   amount: number;
   receipt_url?: string | null;
-  receipt?: string | null;
-  receipt_file?: string | null;
-  receipt_image?: string | null;
-  receipt_file_url?: string | null;
-  [key: string]: any;
 }
 
 export interface MarketerClient {
@@ -353,11 +348,11 @@ export function AdminDashboardd() {
     }
   };
 
-  // 🛠️ دالة جلب رابط الوصل المحسّنة
+  // 🛠️ دالة جلب رابط الوصل المحسّنة للتحقق من جميع المسميات وسجل المدفوعات
   const getReceiptUrl = (
     client: MarketerClient & Record<string, any>,
   ): string | null => {
-    let file =
+    const file =
       client.receipt_url ||
       client.receipt_image ||
       client.receipt_file ||
@@ -368,53 +363,14 @@ export function AdminDashboardd() {
       client.receipt_file_url ||
       client.receipt_image_url ||
       client.receiptUrl ||
-      client.receiptFile ||
-      client.receipt_img ||
-      client.receiptImg ||
-      client.payment_proof ||
-      client.proof_of_payment ||
-      client.transfer_receipt ||
-      client.deposit_receipt ||
-      client.down_payment_receipt;
-
-    if (!file && client.payment_history) {
-      let historyArr = client.payment_history;
-
-      if (typeof historyArr === "string") {
-        try {
-          historyArr = JSON.parse(historyArr);
-        } catch (e) {
-          historyArr = [];
-        }
-      }
-
-      if (Array.isArray(historyArr)) {
-        const paymentWithReceipt = historyArr.find(
-          (p: any) =>
-            p &&
-            (p.receipt_url ||
-              p.receipt ||
-              p.receipt_file ||
-              p.receipt_image ||
-              p.receipt_file_url),
-        );
-        if (paymentWithReceipt) {
-          file =
-            paymentWithReceipt.receipt_url ||
-            paymentWithReceipt.receipt ||
-            paymentWithReceipt.receipt_file ||
-            paymentWithReceipt.receipt_image ||
-            paymentWithReceipt.receipt_file_url;
-        }
-      }
-    }
+      (Array.isArray(client.payment_history) &&
+        client.payment_history.find((p) => p?.receipt_url)?.receipt_url);
 
     if (!file || typeof file !== "string" || file.trim() === "") {
       return null;
     }
 
     const cleanFile = file.trim();
-
     if (
       cleanFile.startsWith("http://") ||
       cleanFile.startsWith("https://") ||
@@ -427,25 +383,26 @@ export function AdminDashboardd() {
     return data?.publicUrl || null;
   };
 
-  // 🛠️ دالة جلب رابط الـ CPO
   const getCpoUrl = (
     client: MarketerClient & Record<string, any>,
   ): string | null => {
     const file =
-      client.cpo_file_url ||
-      client.cpo_url ||
-      client.cpo_file ||
       client.cpo_image ||
       client.cpoImage ||
       client.cpo_image_url ||
-      client.cpoImageUrl;
+      client.cpoImageUrl ||
+      client.cpo_file_url ||
+      client.cpo_url ||
+      client.cpo_file ||
+      client.cpo_path ||
+      client.cpo ||
+      client.cpo_document;
 
     if (!file || typeof file !== "string" || file.trim() === "") {
       return null;
     }
 
     const cleanFile = file.trim();
-
     if (
       cleanFile.startsWith("http://") ||
       cleanFile.startsWith("https://") ||
