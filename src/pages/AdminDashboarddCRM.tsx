@@ -492,7 +492,7 @@ export function AdminDashboardd() {
 
     let finalReceiptUrl: string | null = null;
 
-    // 1. Upload new file if selected by Admin
+    // 1. رفع صورة الإيصال إن وجدت
     if (newReceiptFile) {
       const fileExt = newReceiptFile.name.split(".").pop();
       const filePath = `receipts/${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -509,7 +509,7 @@ export function AdminDashboardd() {
         finalReceiptUrl = publicUrlData.publicUrl;
       }
     }
-    // 2. Fallback to existing client receipt from DB if no new file is selected
+    // 2. استخدام إيصال قديم إن لم يتم اختيار إيصال جديد
     else {
       const existingReceipts = getAllReceiptFiles(selectedClientForPayment);
       if (existingReceipts.length > 0) {
@@ -520,18 +520,33 @@ export function AdminDashboardd() {
     const nextPaymentNumber = clientPayments.length + 1;
     const paymentName = getOrdinalPaymentName(nextPaymentNumber);
 
-    const newEntry: PaymentRecord = {
-      id: `pay_${Date.now()}`,
-      payment_name: paymentName,
-      date: newPaymentDate,
-      amount: Number(newPaymentAmount),
-      receipt_url: finalReceiptUrl,
-    };
+    // 3. الحفظ المباشر في جدول payments
+    const { data: newPayment, error: dbError } = await supabase
+      .from("payments")
+      .insert([
+        {
+          lead_id: selectedClientForPayment.id,
+          payment_name: paymentName,
+          date: newPaymentDate,
+          amount: Number(newPaymentAmount),
+          receipt_url: finalReceiptUrl,
+        },
+      ])
+      .select()
+      .single();
 
-    // Add the payment record to state / database
-    setClientPayments((prev) => [...prev, newEntry]);
+    if (dbError) {
+      console.error("Error saving payment:", dbError);
+      alert("حدث خطأ أثناء حفظ الدفعة في قاعدة البيانات!");
+      return;
+    }
 
-    // Reset form state
+    // 4. تحديث الشاشة بالدفعة المحفوظة
+    if (newPayment) {
+      setClientPayments((prev) => [...prev, newPayment]);
+    }
+
+    // إعادة ضبط المدخلات
     setNewReceiptFile(null);
     setNewPaymentAmount("");
   };
