@@ -455,6 +455,29 @@ export function AdminDashboardd() {
     }
   };
 
+  const handleUpdateReceiptStatus = async (
+    clientId: string,
+    newReceiptStatus: "approved" | "rejected" | "pending",
+  ) => {
+    // تحديث حقل receipt_status في جدول leads
+    const { error } = await supabase
+      .from("leads")
+      .update({ receipt_status: newReceiptStatus })
+      .eq("id", clientId);
+
+    if (error) {
+      alert(`حدث خطأ أثناء تحديث حالة الإيصال: ${error.message}`);
+    } else {
+      // تحديث الحالة في الـ State مباشرة
+      setMarketerClients((prev) =>
+        prev.map((c) =>
+          c.id === clientId ? { ...c, receipt_status: newReceiptStatus } : c,
+        ),
+      );
+      alert(`✅ تم تغيير حالة الإيصال إلى ${newReceiptStatus}`);
+    }
+  };
+
   const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -1997,10 +2020,11 @@ export function AdminDashboardd() {
                           </div>
                         </td>
 
-                        {/* View Receipt File Column */}
+                        {/* عمود Receipt File مع أزرار القبول والرفض */}
                         <td className="p-3 border text-center">
                           {receiptFiles.length > 0 ? (
-                            <div className="flex flex-col items-center gap-1">
+                            <div className="flex flex-col items-center gap-2">
+                              {/* روابط الإيصالات */}
                               {receiptFiles.map((rf, idx) => (
                                 <a
                                   key={idx}
@@ -2012,10 +2036,51 @@ export function AdminDashboardd() {
                                   📄 {rf.label}
                                 </a>
                               ))}
+
+                              {/* عرض الحالة الحالية للإيصال */}
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                                  client.receipt_status === "approved"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : client.receipt_status === "rejected"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-amber-100 text-amber-800"
+                                }`}
+                              >
+                                {client.receipt_status || "Pending"}
+                              </span>
+
+                              {/* أزرار قبول ورفض الإيصال */}
+                              <div className="flex items-center gap-1 mt-1">
+                                <button
+                                  onClick={() =>
+                                    handleUpdateReceiptStatus(
+                                      client.id,
+                                      "approved",
+                                    )
+                                  }
+                                  title="قبول الإيصال"
+                                  className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] transition"
+                                >
+                                  قبول
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleUpdateReceiptStatus(
+                                      client.id,
+                                      "rejected",
+                                    )
+                                  }
+                                  title="رفض الإيصال"
+                                  className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-[10px] transition"
+                                >
+                                  رفض
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <span className="text-gray-400 italic text-[11px]">
-                              —
+                              لا يوجد إيصال
                             </span>
                           )}
                         </td>
