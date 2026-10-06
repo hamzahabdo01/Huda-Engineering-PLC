@@ -228,7 +228,25 @@ export function AdminDashboardd() {
 
   useEffect(() => {
     if (selectedClientForPayment) {
-      setClientPayments(selectedClientForPayment.payment_history || []);
+      // 3. جلب الدفعات عند فتح نافذة العميل (Fetch Payments)
+      const fetchPayments = async () => {
+        const { data, error } = await supabase
+          .from("payments")
+          .select("*")
+          .eq("lead_id", selectedClientForPayment.id)
+          .order("created_at", { ascending: true });
+
+        if (!error && data) {
+          setClientPayments(data);
+        } else {
+          // استخدام payment_history كخيار بديل في حال تعذر الجلب أو عدم وجود بيانات
+          setClientPayments(selectedClientForPayment.payment_history || []);
+        }
+      };
+
+      fetchPayments();
+
+      // إعادة ضبط الحقول عند فتح النافذة
       setNewPaymentDate(new Date().toISOString().split("T")[0]);
       setNewPaymentAmount("");
       setHasReceipt(true);
