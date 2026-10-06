@@ -2122,33 +2122,36 @@ export function AdminDashboardd() {
                                 {client.receipt_status || "Pending"}
                               </span>
 
-                              {/* أزرار قبول ورفض الإيصال */}
-                              <div className="flex items-center gap-1 mt-1">
-                                <button
-                                  onClick={() =>
-                                    handleUpdateReceiptStatus(
-                                      client.id,
-                                      "approved",
-                                    )
-                                  }
-                                  title="Approve the receipt"
-                                  className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] transition"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleUpdateReceiptStatus(
-                                      client.id,
-                                      "rejected",
-                                    )
-                                  }
-                                  title="Reject the receipt"
-                                  className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-[10px] transition"
-                                >
-                                  Reject
-                                </button>
-                              </div>
+                              {/* أزرار قبول ورفض الإيصال (تظهر فقط إذا كانت الحالة معلقة Pending أو لم تتحدد بعد) */}
+                              {(!client.receipt_status ||
+                                client.receipt_status === "pending") && (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <button
+                                    onClick={() =>
+                                      handleUpdateReceiptStatus(
+                                        client.id,
+                                        "approved",
+                                      )
+                                    }
+                                    title="Approve the receipt"
+                                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] transition"
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleUpdateReceiptStatus(
+                                        client.id,
+                                        "rejected",
+                                      )
+                                    }
+                                    title="Reject the receipt"
+                                    className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-[10px] transition"
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <span className="text-gray-400 italic text-[11px]">
