@@ -2059,10 +2059,10 @@ export function AdminDashboardd() {
                                       "approved",
                                     )
                                   }
-                                  title="قبول الإيصال"
+                                  title="Approve the receipt"
                                   className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] transition"
                                 >
-                                  قبول
+                                  Approve
                                 </button>
                                 <button
                                   onClick={() =>
@@ -2071,16 +2071,16 @@ export function AdminDashboardd() {
                                       "rejected",
                                     )
                                   }
-                                  title="رفض الإيصال"
+                                  title="Reject the receipt"
                                   className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-[10px] transition"
                                 >
-                                  رفض
+                                  Reject
                                 </button>
                               </div>
                             </div>
                           ) : (
                             <span className="text-gray-400 italic text-[11px]">
-                              لا يوجد إيصال
+                              There is no receipt
                             </span>
                           )}
                         </td>
