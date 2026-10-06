@@ -1489,281 +1489,320 @@ export function AdminDashboardd() {
       )}
 
       {/* MODAL: Progressive Payment Schedule & Admin Entry */}
-      {selectedClientForPayment && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden border border-gray-300 max-h-[90vh] flex flex-col">
-            <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold flex items-center gap-2">
-                  📋 Payment Manager -{" "}
-                  {selectedClientForPayment.name ||
-                    selectedClientForPayment.client_name ||
-                    "Client"}
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Unit:{" "}
-                  <span className="text-amber-300 font-semibold">
-                    {selectedClientForPayment.apartment_id ||
-                      selectedClientForPayment.apartmentId ||
-                      "N/A"}
-                  </span>{" "}
-                  | Project:{" "}
-                  <span className="text-blue-300 font-semibold">
-                    {getProjectName(selectedClientForPayment)}
-                  </span>
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedClientForPayment(null)}
-                className="text-slate-400 hover:text-white text-xl font-bold bg-slate-800 hover:bg-slate-700 w-8 h-8 rounded-full transition flex items-center justify-center"
-              >
-                ✕
-              </button>
-            </div>
+      {selectedClientForPayment &&
+        (() => {
+          // حساب المبالغ والمتبقي ديناميكياً
+          const totalPaymentVal =
+            Number(selectedClientForPayment.total_payment) || 0;
+          const downPaymentVal =
+            Number(selectedClientForPayment.down_payment) || 0;
+          const totalSavedPayments = clientPayments.reduce(
+            (sum, pay) => sum + (Number(pay.amount) || 0),
+            0,
+          );
+          const currentEnteredAmount = Number(newPaymentAmount) || 0;
+          const leftPayment =
+            totalPaymentVal -
+            downPaymentVal -
+            totalSavedPayments -
+            currentEnteredAmount;
 
-            <div className="p-6 overflow-y-auto space-y-6 flex-1">
-              <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white p-4 rounded-xl shadow-md border border-purple-500/30 flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 block">
-                    📌 Selected Installment Plan
-                  </span>
-                  <p className="text-base font-extrabold text-amber-300 mt-0.5">
-                    {selectedClientForPayment.installment_plan ||
-                      "Standard Progressive Payment Plan"}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-4 text-xs font-semibold bg-white/10 px-4 py-2 rounded-lg border border-white/10">
+          return (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden border border-gray-300 max-h-[90vh] flex flex-col">
+                <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
                   <div>
-                    <span className="text-slate-300 text-[10px] block">
-                      Total Price
-                    </span>
-                    <span className="text-emerald-400 font-bold">
-                      {selectedClientForPayment.total_payment
-                        ? `${Number(selectedClientForPayment.total_payment).toLocaleString()} ETB`
-                        : "N/A"}
-                    </span>
-                  </div>
-                  <div className="w-px h-6 bg-white/20"></div>
-                  <div>
-                    <span className="text-slate-300 text-[10px] block">
-                      Down Payment
-                    </span>
-                    <span className="text-blue-300 font-bold">
-                      {selectedClientForPayment.down_payment
-                        ? `${Number(selectedClientForPayment.down_payment).toLocaleString()} ETB`
-                        : "N/A"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <h4 className="font-bold text-slate-800 text-sm mb-3 flex items-center justify-between">
-                    <span>📊 Payment History Schedule</span>
-                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-black">
-                      {clientPayments.length} Payments Saved
-                    </span>
-                  </h4>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left border border-slate-200 bg-white">
-                      <thead className="bg-slate-800 text-white uppercase font-bold text-[11px]">
-                        <tr>
-                          <th className="p-2.5 border">Payment #</th>
-                          <th className="p-2.5 border">Date</th>
-                          <th className="p-2.5 border">Amount (ETB)</th>
-                          <th className="p-2.5 border text-center">
-                            Receipt File
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {clientPayments.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="p-6 text-center text-slate-400 italic"
-                            >
-                              No installment payments entered yet. Use the form
-                              on the right to add payments.
-                            </td>
-                          </tr>
-                        ) : (
-                          clientPayments.map((pay, idx) => (
-                            <tr
-                              key={pay.id || idx}
-                              className="border-b hover:bg-slate-100"
-                            >
-                              <td className="p-2.5 border font-extrabold text-purple-900">
-                                {pay.payment_name ||
-                                  getOrdinalPaymentName(idx + 1)}
-                              </td>
-                              <td className="p-2.5 border font-medium text-slate-700">
-                                {pay.date}
-                              </td>
-                              <td className="p-2.5 border font-bold text-emerald-700">
-                                {Number(pay.amount).toLocaleString()} ETB
-                              </td>
-                              <td className="p-2.5 border text-center">
-                                {pay.receipt_url ? (
-                                  <a
-                                    href={pay.receipt_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[10px] inline-flex items-center gap-1 transition"
-                                  >
-                                    📄 View Receipt
-                                  </a>
-                                ) : (
-                                  <span className="text-slate-400 italic text-[10px]">
-                                    No Receipt
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 text-white p-5 rounded-xl border border-slate-700 shadow-md flex flex-col justify-between">
-                  <div>
-                    <h4 className="font-bold text-amber-400 text-sm mb-1">
-                      ➕ Add Payment Entry
-                    </h4>
-                    <p className="text-[11px] text-slate-400 mb-4">
-                      Next entry will save as:{" "}
-                      <span className="text-emerald-300 font-extrabold underline">
-                        {getOrdinalPaymentName(clientPayments.length + 1)}
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      📋 Payment Manager -{" "}
+                      {selectedClientForPayment.name ||
+                        selectedClientForPayment.client_name ||
+                        "Client"}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Unit:{" "}
+                      <span className="text-amber-300 font-semibold">
+                        {selectedClientForPayment.apartment_id ||
+                          selectedClientForPayment.apartmentId ||
+                          "N/A"}
+                      </span>{" "}
+                      | Project:{" "}
+                      <span className="text-blue-300 font-semibold">
+                        {getProjectName(selectedClientForPayment)}
                       </span>
                     </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedClientForPayment(null)}
+                    className="text-slate-400 hover:text-white text-xl font-bold bg-slate-800 hover:bg-slate-700 w-8 h-8 rounded-full transition flex items-center justify-center"
+                  >
+                    ✕
+                  </button>
+                </div>
 
-                    <form
-                      onSubmit={handleAddPaymentSubmit}
-                      className="space-y-4"
-                    >
+                <div className="p-6 overflow-y-auto space-y-6 flex-1">
+                  <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white p-4 rounded-xl shadow-md border border-purple-500/30 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 block">
+                        📌 Selected Installment Plan
+                      </span>
+                      <p className="text-base font-extrabold text-amber-300 mt-0.5">
+                        {selectedClientForPayment.installment_plan ||
+                          "Standard Progressive Payment Plan"}
+                      </p>
+                    </div>
+
+                    {/* الشريط العلوي للمبالغ: Total Price | Down Payment | Left Payment */}
+                    <div className="flex items-center gap-4 text-xs font-semibold bg-white/10 px-4 py-2 rounded-lg border border-white/10 flex-wrap">
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                          1. Date (Calendar) *
-                        </label>
-                        <input
-                          type="date"
-                          value={newPaymentDate}
-                          onChange={(e) => setNewPaymentDate(e.target.value)}
-                          className="w-full p-2 bg-slate-800 border border-slate-600 rounded-lg text-xs text-white outline-none focus:ring-2 focus:ring-amber-500"
-                          required
-                        />
+                        <span className="text-slate-300 text-[10px] block">
+                          Total Price
+                        </span>
+                        <span className="text-emerald-400 font-bold">
+                          {totalPaymentVal
+                            ? `${totalPaymentVal.toLocaleString()} ETB`
+                            : "N/A"}
+                        </span>
                       </div>
-
+                      <div className="w-px h-6 bg-white/20"></div>
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                          2. Amount (ETB) *
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="e.g. 500000"
-                          value={newPaymentAmount}
-                          onChange={(e) => setNewPaymentAmount(e.target.value)}
-                          className="w-full p-2 bg-slate-800 border border-slate-600 rounded-lg text-xs text-white outline-none focus:ring-2 focus:ring-amber-500 font-bold text-emerald-400"
-                          required
-                        />
+                        <span className="text-slate-300 text-[10px] block">
+                          Down Payment
+                        </span>
+                        <span className="text-blue-300 font-bold">
+                          {downPaymentVal
+                            ? `${downPaymentVal.toLocaleString()} ETB`
+                            : "N/A"}
+                        </span>
                       </div>
-
+                      <div className="w-px h-6 bg-white/20"></div>
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                          3. Receipt File (Upload New or Use Existing)
-                        </label>
+                        <span className="text-slate-300 text-[10px] block">
+                          Left Payment (Remaining)
+                        </span>
+                        <span
+                          className={`font-bold ${
+                            leftPayment <= 0
+                              ? "text-emerald-400"
+                              : "text-rose-400"
+                          }`}
+                        >
+                          {totalPaymentVal
+                            ? `${leftPayment.toLocaleString()} ETB`
+                            : "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-                        {/* File Upload Input */}
-                        <div className="mb-3">
-                          <input
-                            type="file"
-                            accept="image/*,.pdf"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                setNewReceiptFile(file);
-                              }
-                            }}
-                            className="block w-full text-xs text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-slate-800 border border-slate-700 rounded-lg"
-                          />
-                        </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                      <h4 className="font-bold text-slate-800 text-sm mb-3 flex items-center justify-between">
+                        <span>📊 Payment History Schedule</span>
+                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-black">
+                          {clientPayments.length} Payments Saved
+                        </span>
+                      </h4>
 
-                        {/* Display Existing Client Receipts from Database */}
-                        {(() => {
-                          const existingReceipts = getAllReceiptFiles(
-                            selectedClientForPayment,
-                          );
-
-                          if (existingReceipts.length > 0) {
-                            return (
-                              <div className="p-3 bg-slate-800 border border-slate-700 rounded-lg space-y-2">
-                                <p className="text-[11px] text-emerald-400 font-bold">
-                                  📄 Receipts Available in Database:
-                                </p>
-                                <div className="flex flex-col gap-1.5">
-                                  {existingReceipts.map((rf, idx) => (
-                                    <div
-                                      key={idx}
-                                      className="flex items-center justify-between bg-slate-900 p-2 rounded border border-slate-700 text-xs"
-                                    >
-                                      <span className="text-slate-300 font-medium truncate max-w-[180px]">
-                                        {rf.label}
-                                      </span>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left border border-slate-200 bg-white">
+                          <thead className="bg-slate-800 text-white uppercase font-bold text-[11px]">
+                            <tr>
+                              <th className="p-2.5 border">Payment #</th>
+                              <th className="p-2.5 border">Date</th>
+                              <th className="p-2.5 border">Amount (ETB)</th>
+                              <th className="p-2.5 border text-center">
+                                Receipt File
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {clientPayments.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={4}
+                                  className="p-6 text-center text-slate-400 italic"
+                                >
+                                  No installment payments entered yet. Use the
+                                  form on the right to add payments.
+                                </td>
+                              </tr>
+                            ) : (
+                              clientPayments.map((pay, idx) => (
+                                <tr
+                                  key={pay.id || idx}
+                                  className="border-b hover:bg-slate-100"
+                                >
+                                  <td className="p-2.5 border font-extrabold text-purple-900">
+                                    {pay.payment_name ||
+                                      getOrdinalPaymentName(idx + 1)}
+                                  </td>
+                                  <td className="p-2.5 border font-medium text-slate-700">
+                                    {pay.date}
+                                  </td>
+                                  <td className="p-2.5 border font-bold text-emerald-700">
+                                    {Number(pay.amount).toLocaleString()} ETB
+                                  </td>
+                                  <td className="p-2.5 border text-center">
+                                    {pay.receipt_url ? (
                                       <a
-                                        href={rf.url}
+                                        href={pay.receipt_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded transition"
+                                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[10px] inline-flex items-center gap-1 transition"
                                       >
-                                        View Receipt
+                                        📄 View Receipt
                                       </a>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          return (
-                            <div className="p-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 text-xs italic">
-                              ⚠️ No existing receipt files found in the database
-                              for this client.
-                            </div>
-                          );
-                        })()}
+                                    ) : (
+                                      <span className="text-slate-400 italic text-[10px]">
+                                        No Receipt
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
                       </div>
+                    </div>
 
-                      <button
-                        type="submit"
-                        disabled={isSavingPayment}
-                        className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-lg text-xs transition shadow-md flex items-center justify-center gap-2"
-                      >
-                        {isSavingPayment
-                          ? "⏳ Saving..."
-                          : `Save as ${getOrdinalPaymentName(clientPayments.length + 1)}`}
-                      </button>
-                    </form>
+                    <div className="bg-slate-900 text-white p-5 rounded-xl border border-slate-700 shadow-md flex flex-col justify-between">
+                      <div>
+                        <h4 className="font-bold text-amber-400 text-sm mb-1">
+                          ➕ Add Payment Entry
+                        </h4>
+                        <p className="text-[11px] text-slate-400 mb-4">
+                          Next entry will save as:{" "}
+                          <span className="text-emerald-300 font-extrabold underline">
+                            {getOrdinalPaymentName(clientPayments.length + 1)}
+                          </span>
+                        </p>
+
+                        <form
+                          onSubmit={handleAddPaymentSubmit}
+                          className="space-y-4"
+                        >
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                              1. Date (Calendar) *
+                            </label>
+                            <input
+                              type="date"
+                              value={newPaymentDate}
+                              onChange={(e) =>
+                                setNewPaymentDate(e.target.value)
+                              }
+                              className="w-full p-2 bg-slate-800 border border-slate-600 rounded-lg text-xs text-white outline-none focus:ring-2 focus:ring-amber-500"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                              2. Amount (ETB) *
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="e.g. 500000"
+                              value={newPaymentAmount}
+                              onChange={(e) =>
+                                setNewPaymentAmount(e.target.value)
+                              }
+                              className="w-full p-2 bg-slate-800 border border-slate-600 rounded-lg text-xs text-white outline-none focus:ring-2 focus:ring-amber-500 font-bold text-emerald-400"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                              3. Receipt File (Upload New or Use Existing)
+                            </label>
+
+                            <div className="mb-3">
+                              <input
+                                type="file"
+                                accept="image/*,.pdf"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    setNewReceiptFile(file);
+                                  }
+                                }}
+                                className="block w-full text-xs text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-slate-800 border border-slate-700 rounded-lg"
+                              />
+                            </div>
+
+                            {(() => {
+                              const existingReceipts = getAllReceiptFiles(
+                                selectedClientForPayment,
+                              );
+
+                              if (existingReceipts.length > 0) {
+                                return (
+                                  <div className="p-3 bg-slate-800 border border-slate-700 rounded-lg space-y-2">
+                                    <p className="text-[11px] text-emerald-400 font-bold">
+                                      📄 Receipts Available in Database:
+                                    </p>
+                                    <div className="flex flex-col gap-1.5">
+                                      {existingReceipts.map((rf, idx) => (
+                                        <div
+                                          key={idx}
+                                          className="flex items-center justify-between bg-slate-900 p-2 rounded border border-slate-700 text-xs"
+                                        >
+                                          <span className="text-slate-300 font-medium truncate max-w-[180px]">
+                                            {rf.label}
+                                          </span>
+                                          <a
+                                            href={rf.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded transition"
+                                          >
+                                            View Receipt
+                                          </a>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div className="p-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 text-xs italic">
+                                  ⚠️ No existing receipt files found in the
+                                  database for this client.
+                                </div>
+                              );
+                            })()}
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={isSavingPayment}
+                            className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-lg text-xs transition shadow-md flex items-center justify-center gap-2"
+                          >
+                            {isSavingPayment
+                              ? "⏳ Saving..."
+                              : `Save as ${getOrdinalPaymentName(clientPayments.length + 1)}`}
+                          </button>
+                        </form>
+                      </div>
+                    </div>
                   </div>
+                </div>
+
+                <div className="bg-slate-100 p-4 border-t border-slate-200 flex justify-end">
+                  <button
+                    onClick={() => setSelectedClientForPayment(null)}
+                    className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-lg transition"
+                  >
+                    Close Manager
+                  </button>
                 </div>
               </div>
             </div>
-
-            <div className="bg-slate-100 p-4 border-t border-slate-200 flex justify-end">
-              <button
-                onClick={() => setSelectedClientForPayment(null)}
-                className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-lg transition"
-              >
-                Close Manager
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          );
+        })()}
 
       {/* TAB 3: MARKETERS & CLIENTS */}
       {activeTab === "clients" && (
