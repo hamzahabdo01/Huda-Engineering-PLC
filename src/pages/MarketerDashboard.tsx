@@ -1080,7 +1080,7 @@ export function MarketerDashboard() {
       if (checkError) {
         console.error("Phone Check Error:", checkError);
       } else if (existingLeads && existingLeads.length > 0) {
-        alert("⚠️ هذا الرقم موجود مسبقاً!");
+        alert("⚠️ This phone number is already in use!");
         return;
       }
     } catch (err: any) {
