@@ -484,7 +484,7 @@ export function AdminDashboardd() {
       .eq("id", clientId);
 
     if (error) {
-      alert(`حدث خطأ أثناء تحديث حالة الإيصال: ${error.message}`);
+      alert(`Error updating receipt status: ${error.message}`);
     } else {
       // تحديث الحالة في الـ State مباشرة
       setMarketerClients((prev) =>
@@ -492,7 +492,7 @@ export function AdminDashboardd() {
           c.id === clientId ? { ...c, receipt_status: newReceiptStatus } : c,
         ),
       );
-      alert(`✅ تم تغيير حالة الإيصال إلى ${newReceiptStatus}`);
+      alert(`✅ Receipt status updated to ${newReceiptStatus}`);
     }
   };
 
