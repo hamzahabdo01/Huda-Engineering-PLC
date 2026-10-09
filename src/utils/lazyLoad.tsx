@@ -1,4 +1,5 @@
 import { lazy, ComponentType, Suspense, ReactNode } from 'react';
+/* eslint-disable react-refresh/only-export-components */
 
 // Loading component for lazy-loaded components
 const LoadingFallback = () => (

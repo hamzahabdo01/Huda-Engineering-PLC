@@ -694,7 +694,8 @@ export function MarketerDashboard() {
     setAuthLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}${window.location.pathname}`;
+      // استخدام الرابط الصريح لدومينك الجديد
+      const redirectUrl = `${window.location.origin}/marketer-dashboard`;
 
       const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
         redirectTo: redirectUrl,
