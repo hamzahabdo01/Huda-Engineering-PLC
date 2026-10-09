@@ -96,8 +96,8 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            <Route path="/admin-dashboarddCRMm" element={<AdminDashboarddCRM />} />
-            <Route path="/marketer-dashboardd" element={<MarketerDashboard />} />
+            <Route path="/admin-dashboarddCRM" element={<AdminDashboarddCRM />} />
+            <Route path="/marketer-dashboard" element={<MarketerDashboard />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/announcements/:id" element={<AnnouncementDetail />} />
