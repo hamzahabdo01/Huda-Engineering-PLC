@@ -82,8 +82,10 @@ export interface Lead {
   receipt_url?: string;
   receipts?: ReceiptRecord[];
   created_at?: string;
-  site_visit?: boolean; // أُضيف لدعم زيارة الموقع
-  office_visit?: boolean; // أُضيف لدعم زيارة المكتب
+  site_visit?: boolean;
+  office_visit?: boolean;
+  site_visit_date?: string; // أضيف لحفظ تاريخ زيارة الموقع
+  office_visit_date?: string; // أضيف لحفظ تاريخ زيارة المكتب
 }
 
 export interface MarketerProfile {
@@ -304,8 +306,10 @@ export function MarketerDashboard() {
   const [actionStatus, setActionStatus] = useState<
     "New" | "Request for Qualification" | "Qualified" | "Negotiation" | "Closed"
   >("New");
-  const [siteVisit, setSiteVisit] = useState<boolean>(false); // 👈 إضافة الحالة
-  const [officeVisit, setOfficeVisit] = useState<boolean>(false); // 👈 إضافة الحالة
+  const [siteVisit, setSiteVisit] = useState<boolean>(false);
+  const [officeVisit, setOfficeVisit] = useState<boolean>(false);
+  const [siteVisitDate, setSiteVisitDate] = useState<string>(""); // 👈 حالة تاريخ زيارة الموقع
+  const [officeVisitDate, setOfficeVisitDate] = useState<string>(""); // 👈 حالة تاريخ زيارة المكتب
 
   // Negotiation & Closed Extra Fields State
   const [paymentType, setPaymentType] = useState<"full" | "progressive">(
@@ -856,8 +860,10 @@ export function MarketerDashboard() {
     setClientSource("Facebook boost");
     setCustomSource("");
     setActionStatus("New");
-    setSiteVisit(false); // 👈 إضافة التفريغ
-    setOfficeVisit(false); // 👈 إضافة التفريغ
+    setSiteVisit(false);
+    setOfficeVisit(false);
+    setSiteVisitDate(""); // 👈 إضافة التفريغ للتاريخ
+    setOfficeVisitDate(""); // 👈 إضافة التفريغ للتاريخ
     setSelectedUnits([]);
     setPaymentType("progressive");
     setTotalPayment("");
@@ -917,8 +923,10 @@ export function MarketerDashboard() {
     }
 
     setActionStatus(normalizeStatus(lead.status));
-    setSiteVisit(lead.site_visit || false); // 👈 جلب قيمة زيارة الموقع
-    setOfficeVisit(lead.office_visit || false); // 👈 جلب قيمة زيارة المكتب
+    setSiteVisit(lead.site_visit || false);
+    setOfficeVisit(lead.office_visit || false);
+    setSiteVisitDate(lead.site_visit_date || ""); // 👈 جلب تاريخ زيارة الموقع
+    setOfficeVisitDate(lead.office_visit_date || ""); // 👈 جلب تاريخ زيارة المكتب
     setPaymentType(lead.payment_type || "progressive");
     setTotalPayment(lead.total_payment ? lead.total_payment.toString() : "");
     setDownPayment(lead.down_payment ? lead.down_payment.toString() : "");
@@ -1167,8 +1175,11 @@ export function MarketerDashboard() {
       marketer_id: currentMarketer?.id,
       marketer_name: currentMarketer?.name,
       status: targetStatus,
-      site_visit: siteVisit, // 👈 إرسال الزيارات
-      office_visit: officeVisit, // 👈 إرسال الزيارات
+      site_visit: siteVisit,
+      office_visit: officeVisit,
+      site_visit_date: siteVisit && siteVisitDate ? siteVisitDate : null, // 👈 إرسال تاريخ الموقع
+      office_visit_date:
+        officeVisit && officeVisitDate ? officeVisitDate : null, // 👈 إرسال تاريخ المكتب
       cpo: uploadedCpoUrl || null,
       receipt_url: uploadedReceiptUrl || null,
       payment_type:
@@ -2125,26 +2136,55 @@ export function MarketerDashboard() {
                     <option value="Closed">Closed (Completed Deal)</option>
                   </select>
 
-                  {/* مربعات اختيار الزيارات - أُضيفت هنا */}
-                  <div className="flex gap-4 mt-2.5 px-1">
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition">
-                      <input
-                        type="checkbox"
-                        checked={siteVisit}
-                        onChange={(e) => setSiteVisit(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
-                      />
-                      📍 Site Visit
-                    </label>
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition">
-                      <input
-                        type="checkbox"
-                        checked={officeVisit}
-                        onChange={(e) => setOfficeVisit(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
-                      />
-                      🏢 Office Visit
-                    </label>
+                  {/* مربعات اختيار الزيارات مع التواريخ */}
+                  <div className="flex flex-col gap-2 mt-2.5 px-1">
+                    {/* زيارة الموقع */}
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition">
+                        <input
+                          type="checkbox"
+                          checked={siteVisit}
+                          onChange={(e) => {
+                            setSiteVisit(e.target.checked);
+                            if (!e.target.checked) setSiteVisitDate("");
+                          }}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
+                        />
+                        📍 Site Visit
+                      </label>
+                      {siteVisit && (
+                        <input
+                          type="date"
+                          value={siteVisitDate}
+                          onChange={(e) => setSiteVisitDate(e.target.value)}
+                          className="p-1 text-[10px] border border-gray-300 rounded outline-none focus:border-teal-600 bg-white cursor-pointer"
+                        />
+                      )}
+                    </div>
+
+                    {/* زيارة المكتب */}
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition">
+                        <input
+                          type="checkbox"
+                          checked={officeVisit}
+                          onChange={(e) => {
+                            setOfficeVisit(e.target.checked);
+                            if (!e.target.checked) setOfficeVisitDate("");
+                          }}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
+                        />
+                        🏢 Office Visit
+                      </label>
+                      {officeVisit && (
+                        <input
+                          type="date"
+                          value={officeVisitDate}
+                          onChange={(e) => setOfficeVisitDate(e.target.value)}
+                          className="p-1 text-[10px] border border-gray-300 rounded outline-none focus:border-teal-600 bg-white cursor-pointer"
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -2421,7 +2461,7 @@ export function MarketerDashboard() {
                   </div>
                 )}
 
-                {/* 🔒 Closed Details المحدث بنفس المدخلات ورقع الإيصالات والتقويم */}
+                {/* 🔒 Closed Details */}
                 {actionStatus === "Closed" && (
                   <div className="bg-emerald-50/70 p-3 border border-emerald-300 rounded space-y-2.5">
                     <h3 className="font-bold text-emerald-900 text-[11px] border-b border-emerald-200 pb-1 flex items-center gap-1.5">
@@ -2500,7 +2540,7 @@ export function MarketerDashboard() {
                       />
                     </div>
 
-                    {/* خطة التقسيط بالرزنامة (Calendar Date Picker) */}
+                    {/* خطة التقسيط بالرزنامة */}
                     {paymentType === "progressive" && (
                       <div>
                         <label className="block text-[10px] font-bold text-gray-700 mb-0.5 flex items-center gap-1">
@@ -2710,17 +2750,23 @@ export function MarketerDashboard() {
                           </p>
                         )}
 
-                        {/* إظهار علامات الزيارات في البطاقة */}
+                        {/* إظهار علامات الزيارات والتواريخ في البطاقة */}
                         {(lead.site_visit || lead.office_visit) && (
-                          <div className="flex gap-1.5 mt-0.5">
+                          <div className="flex gap-1.5 mt-0.5 flex-wrap">
                             {lead.site_visit && (
                               <span className="text-[9px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded font-bold">
-                                📍 Site Visit
+                                📍 Site Visit{" "}
+                                {lead.site_visit_date
+                                  ? `(${lead.site_visit_date})`
+                                  : ""}
                               </span>
                             )}
                             {lead.office_visit && (
                               <span className="text-[9px] bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded font-bold">
-                                🏢 Office Visit
+                                🏢 Office Visit{" "}
+                                {lead.office_visit_date
+                                  ? `(${lead.office_visit_date})`
+                                  : ""}
                               </span>
                             )}
                           </div>
