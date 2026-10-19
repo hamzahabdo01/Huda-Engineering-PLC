@@ -84,8 +84,8 @@ export interface Lead {
   created_at?: string;
   site_visit?: boolean;
   office_visit?: boolean;
-  site_visit_date?: string; // أضيف لحفظ تاريخ زيارة الموقع
-  office_visit_date?: string; // أضيف لحفظ تاريخ زيارة المكتب
+  site_visit_date?: string | null; // 👈 عُدّلت لتقبل null
+  office_visit_date?: string | null; // 👈 عُدّلت لتقبل null
 }
 
 export interface MarketerProfile {
@@ -308,8 +308,8 @@ export function MarketerDashboard() {
   >("New");
   const [siteVisit, setSiteVisit] = useState<boolean>(false);
   const [officeVisit, setOfficeVisit] = useState<boolean>(false);
-  const [siteVisitDate, setSiteVisitDate] = useState<string>(""); // 👈 حالة تاريخ زيارة الموقع
-  const [officeVisitDate, setOfficeVisitDate] = useState<string>(""); // 👈 حالة تاريخ زيارة المكتب
+  const [siteVisitDate, setSiteVisitDate] = useState<string | null>(null); // 👈 تقبل null
+  const [officeVisitDate, setOfficeVisitDate] = useState<string | null>(null); // 👈 تقبل null
 
   // Negotiation & Closed Extra Fields State
   const [paymentType, setPaymentType] = useState<"full" | "progressive">(
@@ -354,6 +354,19 @@ export function MarketerDashboard() {
   // حالة قفل وتثبيت رقم الهاتف في التفاوض وما بعده
   const isPhoneDisabled =
     actionStatus === "Negotiation" || actionStatus === "Closed";
+
+  // 👇 دالة مساعدة لتوليد التاريخ والوقت تلقائياً
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    return now.toLocaleString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
 
   const formatFloorName = (name: string) => {
     const clean = (name || "").trim();
@@ -862,8 +875,8 @@ export function MarketerDashboard() {
     setActionStatus("New");
     setSiteVisit(false);
     setOfficeVisit(false);
-    setSiteVisitDate(""); // 👈 إضافة التفريغ للتاريخ
-    setOfficeVisitDate(""); // 👈 إضافة التفريغ للتاريخ
+    setSiteVisitDate(null); // 👈 مسح التاريخ
+    setOfficeVisitDate(null); // 👈 مسح التاريخ
     setSelectedUnits([]);
     setPaymentType("progressive");
     setTotalPayment("");
@@ -925,8 +938,8 @@ export function MarketerDashboard() {
     setActionStatus(normalizeStatus(lead.status));
     setSiteVisit(lead.site_visit || false);
     setOfficeVisit(lead.office_visit || false);
-    setSiteVisitDate(lead.site_visit_date || ""); // 👈 جلب تاريخ زيارة الموقع
-    setOfficeVisitDate(lead.office_visit_date || ""); // 👈 جلب تاريخ زيارة المكتب
+    setSiteVisitDate(lead.site_visit_date || null); // 👈 جلب التاريخ
+    setOfficeVisitDate(lead.office_visit_date || null); // 👈 جلب التاريخ
     setPaymentType(lead.payment_type || "progressive");
     setTotalPayment(lead.total_payment ? lead.total_payment.toString() : "");
     setDownPayment(lead.down_payment ? lead.down_payment.toString() : "");
@@ -1177,9 +1190,8 @@ export function MarketerDashboard() {
       status: targetStatus,
       site_visit: siteVisit,
       office_visit: officeVisit,
-      site_visit_date: siteVisit && siteVisitDate ? siteVisitDate : null, // 👈 إرسال تاريخ الموقع
-      office_visit_date:
-        officeVisit && officeVisitDate ? officeVisitDate : null, // 👈 إرسال تاريخ المكتب
+      site_visit_date: siteVisit ? siteVisitDate : null,
+      office_visit_date: officeVisit ? officeVisitDate : null,
       cpo: uploadedCpoUrl || null,
       receipt_url: uploadedReceiptUrl || null,
       payment_type:
@@ -2136,53 +2148,57 @@ export function MarketerDashboard() {
                     <option value="Closed">Closed (Completed Deal)</option>
                   </select>
 
-                  {/* مربعات اختيار الزيارات مع التواريخ */}
+                  {/* مربعات اختيار الزيارات مع تاريخ أوتوماتيكي */}
                   <div className="flex flex-col gap-2 mt-2.5 px-1">
                     {/* زيارة الموقع */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 p-1.5 rounded">
                       <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition">
                         <input
                           type="checkbox"
                           checked={siteVisit}
                           onChange={(e) => {
-                            setSiteVisit(e.target.checked);
-                            if (!e.target.checked) setSiteVisitDate("");
+                            const isChecked = e.target.checked;
+                            setSiteVisit(isChecked);
+                            if (isChecked) {
+                              setSiteVisitDate(getCurrentDateTime()); // توليد الوقت التلقائي
+                            } else {
+                              setSiteVisitDate(null); // مسح الوقت عند إزالة التحديد
+                            }
                           }}
                           className="w-3.5 h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
                         />
                         📍 Site Visit
                       </label>
-                      {siteVisit && (
-                        <input
-                          type="date"
-                          value={siteVisitDate}
-                          onChange={(e) => setSiteVisitDate(e.target.value)}
-                          className="p-1 text-[10px] border border-gray-300 rounded outline-none focus:border-teal-600 bg-white cursor-pointer"
-                        />
+                      {siteVisit && siteVisitDate && (
+                        <span className="text-[10px] text-gray-500 font-medium">
+                          {siteVisitDate}
+                        </span>
                       )}
                     </div>
 
                     {/* زيارة المكتب */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 p-1.5 rounded">
                       <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition">
                         <input
                           type="checkbox"
                           checked={officeVisit}
                           onChange={(e) => {
-                            setOfficeVisit(e.target.checked);
-                            if (!e.target.checked) setOfficeVisitDate("");
+                            const isChecked = e.target.checked;
+                            setOfficeVisit(isChecked);
+                            if (isChecked) {
+                              setOfficeVisitDate(getCurrentDateTime()); // توليد الوقت التلقائي
+                            } else {
+                              setOfficeVisitDate(null); // مسح الوقت عند إزالة التحديد
+                            }
                           }}
                           className="w-3.5 h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
                         />
                         🏢 Office Visit
                       </label>
-                      {officeVisit && (
-                        <input
-                          type="date"
-                          value={officeVisitDate}
-                          onChange={(e) => setOfficeVisitDate(e.target.value)}
-                          className="p-1 text-[10px] border border-gray-300 rounded outline-none focus:border-teal-600 bg-white cursor-pointer"
-                        />
+                      {officeVisit && officeVisitDate && (
+                        <span className="text-[10px] text-gray-500 font-medium">
+                          {officeVisitDate}
+                        </span>
                       )}
                     </div>
                   </div>
