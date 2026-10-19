@@ -79,9 +79,11 @@ export interface Lead {
   installment_plan?: string;
   memo?: string;
   cpo?: string;
-  receipt_url?: string; // 👈 أضف هذا السطر هنا
+  receipt_url?: string;
   receipts?: ReceiptRecord[];
   created_at?: string;
+  site_visit?: boolean; // أُضيف لدعم زيارة الموقع
+  office_visit?: boolean; // أُضيف لدعم زيارة المكتب
 }
 
 export interface MarketerProfile {
@@ -298,10 +300,12 @@ export function MarketerDashboard() {
   // Dynamic Selection States
   const [selectedUnits, setSelectedUnits] = useState<SelectedUnit[]>([]);
 
-  // Action / Status Dropdown State
+  // Action / Status Dropdown State & Visits
   const [actionStatus, setActionStatus] = useState<
     "New" | "Request for Qualification" | "Qualified" | "Negotiation" | "Closed"
   >("New");
+  const [siteVisit, setSiteVisit] = useState<boolean>(false); // 👈 إضافة الحالة
+  const [officeVisit, setOfficeVisit] = useState<boolean>(false); // 👈 إضافة الحالة
 
   // Negotiation & Closed Extra Fields State
   const [paymentType, setPaymentType] = useState<"full" | "progressive">(
@@ -319,7 +323,7 @@ export function MarketerDashboard() {
 
   // Receipt Upload State (For Closed Details)
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [receiptUrl, setReceiptUrl] = useState<string>(""); // 🟢 إضافة حالة لحفظ رابط الإيصال
+  const [receiptUrl, setReceiptUrl] = useState<string>("");
   const [uploadingReceipt, setUploadingReceipt] = useState<boolean>(false);
 
   // Leads State & Country Code State
@@ -511,7 +515,6 @@ export function MarketerDashboard() {
           .order("created_at", { ascending: false });
 
         if (!error && leadsData) {
-          // جلب الإيصالات التابعة للعملاء إذا كان جدول receipts موجوداً
           const leadIds = leadsData.map((l) => l.id);
           const receiptsMap: Record<string, ReceiptRecord[]> = {};
 
@@ -694,7 +697,6 @@ export function MarketerDashboard() {
     setAuthLoading(true);
 
     try {
-      // استخدام الرابط الصريح لدومينك الجديد
       const redirectUrl = `${window.location.origin}/marketer-dashboard`;
 
       const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
@@ -854,6 +856,8 @@ export function MarketerDashboard() {
     setClientSource("Facebook boost");
     setCustomSource("");
     setActionStatus("New");
+    setSiteVisit(false); // 👈 إضافة التفريغ
+    setOfficeVisit(false); // 👈 إضافة التفريغ
     setSelectedUnits([]);
     setPaymentType("progressive");
     setTotalPayment("");
@@ -863,7 +867,7 @@ export function MarketerDashboard() {
     setCpoFile(null);
     setCpoUrl("");
     setReceiptFile(null);
-    setReceiptUrl(""); // 🟢 إعادة تعيين رابط الإيصال
+    setReceiptUrl("");
   };
 
   const handleEditLead = (lead: Lead) => {
@@ -913,6 +917,8 @@ export function MarketerDashboard() {
     }
 
     setActionStatus(normalizeStatus(lead.status));
+    setSiteVisit(lead.site_visit || false); // 👈 جلب قيمة زيارة الموقع
+    setOfficeVisit(lead.office_visit || false); // 👈 جلب قيمة زيارة المكتب
     setPaymentType(lead.payment_type || "progressive");
     setTotalPayment(lead.total_payment ? lead.total_payment.toString() : "");
     setDownPayment(lead.down_payment ? lead.down_payment.toString() : "");
@@ -920,7 +926,7 @@ export function MarketerDashboard() {
     setMemo(lead.memo || "");
     setCpoUrl(lead.cpo || "");
     setCpoFile(null);
-    setReceiptUrl(lead.receipt_url || ""); // 🟢 جلب رابط الإيصال الموجود مسبقاً
+    setReceiptUrl(lead.receipt_url || "");
     setReceiptFile(null);
 
     if (lead.unit_key) {
@@ -1065,8 +1071,6 @@ export function MarketerDashboard() {
 
     const { fullPhone } = formatCleanPhone(countryCode, cleanPhone);
 
-    
-
     const targetStatus = normalizeStatus(actionStatus);
 
     if (targetStatus !== "New" && selectedUnits.length === 0) {
@@ -1118,9 +1122,8 @@ export function MarketerDashboard() {
       }
     }
 
-    // 🧾 📤 رفع صورة/ملف الإيصال Receipt إن وجدت (في حالة Closed)
-    // 🧾 📤 رفع صورة/ملف الإيصال إلى مجلد receipts داخل bucket (cpo-files)
-    let uploadedReceiptUrl = receiptUrl; // 🟢 الاحتفاظ بالرابط القديم في حال عدم اختيار ملف جديد
+    // 🧾 📤 رفع صورة/ملف الإيصال
+    let uploadedReceiptUrl = receiptUrl;
     if (targetStatus === "Closed" && receiptFile) {
       setUploadingReceipt(true);
       try {
@@ -1128,7 +1131,6 @@ export function MarketerDashboard() {
         const fileName = `receipt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
         const filePath = `receipts/${fileName}`;
 
-        // 🟢 الرفع إلى cpo-files داخل مجلد receipts
         const { error: uploadError } = await supabase.storage
           .from("cpo-files")
           .upload(filePath, receiptFile);
@@ -1140,7 +1142,6 @@ export function MarketerDashboard() {
           const { data: publicUrlData } = supabase.storage
             .from("cpo-files")
             .getPublicUrl(filePath);
-          // 🟢 استخراج الرابط المباشر
           uploadedReceiptUrl = publicUrlData.publicUrl;
         }
       } catch (err: any) {
@@ -1166,8 +1167,10 @@ export function MarketerDashboard() {
       marketer_id: currentMarketer?.id,
       marketer_name: currentMarketer?.name,
       status: targetStatus,
+      site_visit: siteVisit, // 👈 إرسال الزيارات
+      office_visit: officeVisit, // 👈 إرسال الزيارات
       cpo: uploadedCpoUrl || null,
-      receipt_url: uploadedReceiptUrl || null, // 👈 حفظ الرابط مباشرة كرابط URL
+      receipt_url: uploadedReceiptUrl || null,
       payment_type:
         targetStatus === "Negotiation" || targetStatus === "Closed"
           ? paymentType
@@ -1239,7 +1242,6 @@ export function MarketerDashboard() {
         }
       }
 
-      // 📜 حفظ الإيصال الجديد في جدول الإيصالات بحالة pending بانتظار موافقة الأدمن
       if (uploadedReceiptUrl && savedLeadId) {
         const receiptPayload = {
           lead_id: savedLeadId,
@@ -2122,6 +2124,28 @@ export function MarketerDashboard() {
                     </option>
                     <option value="Closed">Closed (Completed Deal)</option>
                   </select>
+
+                  {/* مربعات اختيار الزيارات - أُضيفت هنا */}
+                  <div className="flex gap-4 mt-2.5 px-1">
+                    <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition">
+                      <input
+                        type="checkbox"
+                        checked={siteVisit}
+                        onChange={(e) => setSiteVisit(e.target.checked)}
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
+                      />
+                      📍 Site Visit
+                    </label>
+                    <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition">
+                      <input
+                        type="checkbox"
+                        checked={officeVisit}
+                        onChange={(e) => setOfficeVisit(e.target.checked)}
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
+                      />
+                      🏢 Office Visit
+                    </label>
+                  </div>
                 </div>
 
                 {actionStatus !== "New" && (
@@ -2684,6 +2708,22 @@ export function MarketerDashboard() {
                           <p className="text-[10px] text-amber-800 font-semibold">
                             Units: {lead.apartment_id}
                           </p>
+                        )}
+
+                        {/* إظهار علامات الزيارات في البطاقة */}
+                        {(lead.site_visit || lead.office_visit) && (
+                          <div className="flex gap-1.5 mt-0.5">
+                            {lead.site_visit && (
+                              <span className="text-[9px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded font-bold">
+                                📍 Site Visit
+                              </span>
+                            )}
+                            {lead.office_visit && (
+                              <span className="text-[9px] bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded font-bold">
+                                🏢 Office Visit
+                              </span>
+                            )}
+                          </div>
                         )}
 
                         {lead.cpo && (
