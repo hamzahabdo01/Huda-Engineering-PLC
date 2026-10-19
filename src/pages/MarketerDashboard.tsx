@@ -1065,28 +1065,7 @@ export function MarketerDashboard() {
 
     const { fullPhone } = formatCleanPhone(countryCode, cleanPhone);
 
-    // 🔍 1. التحقق من تميز وفرادة رقم الهاتف من قاعدة البيانات
-    try {
-      let checkPhoneQuery = supabase
-        .from("leads")
-        .select("id")
-        .eq("phone", fullPhone);
-
-      if (editingLeadId) {
-        checkPhoneQuery = checkPhoneQuery.neq("id", editingLeadId);
-      }
-
-      const { data: existingLeads, error: checkError } = await checkPhoneQuery;
-
-      if (checkError) {
-        console.error("Phone Check Error:", checkError);
-      } else if (existingLeads && existingLeads.length > 0) {
-        alert("⚠️ This phone number is already in use!");
-        return;
-      }
-    } catch (err: any) {
-      console.error("Phone verification failed:", err);
-    }
+    
 
     const targetStatus = normalizeStatus(actionStatus);
 
