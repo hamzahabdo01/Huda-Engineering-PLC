@@ -81,6 +81,11 @@ export interface MarketerClient {
   receipt_file?: string | null;
   receipt_status?: string | null;
   payment_history?: PaymentRecord[] | null;
+  unit_key?: string; // 👈 مفتاح الوحدة المطلوب لتحديث المصفوفة
+  site_visit?: boolean;
+  office_visit?: boolean;
+  site_visit_date?: string;
+  office_visit_date?: string;
 }
 
 export interface MarketerAccount {
@@ -228,7 +233,6 @@ export function AdminDashboardd() {
 
   useEffect(() => {
     if (selectedClientForPayment) {
-      // 3. جلب الدفعات عند فتح نافذة العميل (Fetch Payments)
       const fetchPayments = async () => {
         const { data, error } = await supabase
           .from("payments")
@@ -239,14 +243,12 @@ export function AdminDashboardd() {
         if (!error && data) {
           setClientPayments(data);
         } else {
-          // استخدام payment_history كخيار بديل في حال تعذر الجلب أو عدم وجود بيانات
           setClientPayments(selectedClientForPayment.payment_history || []);
         }
       };
 
       fetchPayments();
 
-      // إعادة ضبط الحقول عند فتح النافذة
       setNewPaymentDate(new Date().toISOString().split("T")[0]);
       setNewPaymentAmount("");
       setHasReceipt(true);
@@ -347,10 +349,13 @@ export function AdminDashboardd() {
     }
   };
 
+  // 👇 الدالة المحدثة لتحديث حالة العميل والمصفوفة تلقائياً
   const handleUpdateClientStatus = async (
     clientId: string,
     newStatus: string,
   ) => {
+    const client = marketerClients.find((c) => c.id === clientId);
+
     const { error } = await supabase
       .from("leads")
       .update({ status: newStatus })
@@ -359,6 +364,43 @@ export function AdminDashboardd() {
     if (error) {
       alert(`Error updating status: ${error.message}`);
     } else {
+      // 1. تحديث المصفوفة إلى Yellow (Reserved) إذا تم قبول العميل (Qualified)
+      // 2. تحديث المصفوفة إلى Available إذا تم رفض العميل (Rejected)
+      if (
+        (newStatus === "Qualified" || newStatus === "Rejected") &&
+        client?.unit_key &&
+        client?.project_id
+      ) {
+        const targetMatrixStatus =
+          newStatus === "Qualified" ? "reserved" : "available";
+        const keys = client.unit_key.split(" | ");
+
+        for (const k of keys) {
+          // الماركتر يرسل الـ unit key بصيغة floorName___unitTypeId
+          const parts = k.split("___");
+          if (parts.length === 2) {
+            const floorName = parts[0];
+            const unitTypeId = parts[1];
+
+            await supabase.from("srm_matrix_cells").upsert(
+              {
+                project_id: client.project_id,
+                floor_name: floorName,
+                unit_type_id: unitTypeId,
+                status: targetMatrixStatus,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "project_id,floor_name,unit_type_id" },
+            );
+          }
+        }
+
+        // تحديث وعرض المصفوفة فوراً إذا كان المشروع المفتوح هو نفسه مشروع العميل
+        if (client.project_id === selectedProjectId) {
+          fetchMatrixData(selectedProjectId);
+        }
+      }
+
       setMarketerClients((prev) =>
         prev.map((c) => (c.id === clientId ? { ...c, status: newStatus } : c)),
       );
@@ -384,7 +426,6 @@ export function AdminDashboardd() {
   ): { label: string; url: string }[] => {
     const receipts: { label: string; url: string }[] = [];
 
-    // Prioritize receipt_file and direct fields
     const directFile =
       client.receipt_file ||
       client.receipt_url ||
@@ -408,7 +449,6 @@ export function AdminDashboardd() {
       });
     }
 
-    // Check payment history records
     if (Array.isArray(client.payment_history)) {
       client.payment_history.forEach((pay, idx) => {
         if (
@@ -477,7 +517,6 @@ export function AdminDashboardd() {
     clientId: string,
     newReceiptStatus: "approved" | "rejected" | "pending",
   ) => {
-    // تحديث حقل receipt_status في جدول leads
     const { error } = await supabase
       .from("leads")
       .update({ receipt_status: newReceiptStatus })
@@ -486,7 +525,6 @@ export function AdminDashboardd() {
     if (error) {
       alert(`Error updating receipt status: ${error.message}`);
     } else {
-      // تحديث الحالة في الـ State مباشرة
       setMarketerClients((prev) =>
         prev.map((c) =>
           c.id === clientId ? { ...c, receipt_status: newReceiptStatus } : c,
@@ -510,7 +548,6 @@ export function AdminDashboardd() {
 
     let finalReceiptUrl: string | null = null;
 
-    // 1. رفع صورة الإيصال إن وجدت
     if (newReceiptFile) {
       const fileExt = newReceiptFile.name.split(".").pop();
       const filePath = `receipts/${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -526,9 +563,7 @@ export function AdminDashboardd() {
 
         finalReceiptUrl = publicUrlData.publicUrl;
       }
-    }
-    // 2. استخدام إيصال قديم إن لم يتم اختيار إيصال جديد
-    else {
+    } else {
       const existingReceipts = getAllReceiptFiles(selectedClientForPayment);
       if (existingReceipts.length > 0) {
         finalReceiptUrl = existingReceipts[0].url;
@@ -538,7 +573,6 @@ export function AdminDashboardd() {
     const nextPaymentNumber = clientPayments.length + 1;
     const paymentName = getOrdinalPaymentName(nextPaymentNumber);
 
-    // 3. الحفظ المباشر في جدول payments
     const { data: newPayment, error: dbError } = await supabase
       .from("payments")
       .insert([
@@ -559,12 +593,10 @@ export function AdminDashboardd() {
       return;
     }
 
-    // 4. تحديث الشاشة بالدفعة المحفوظة
     if (newPayment) {
       setClientPayments((prev) => [...prev, newPayment]);
     }
 
-    // إعادة ضبط المدخلات
     setNewReceiptFile(null);
     setNewPaymentAmount("");
   };
@@ -1524,7 +1556,6 @@ export function AdminDashboardd() {
       {/* MODAL: Progressive Payment Schedule & Admin Entry */}
       {selectedClientForPayment &&
         (() => {
-          // حساب المبالغ والمتبقي ديناميكياً
           const totalPaymentVal =
             Number(selectedClientForPayment.total_payment) || 0;
           const downPaymentVal =
@@ -1584,7 +1615,6 @@ export function AdminDashboardd() {
                       </p>
                     </div>
 
-                    {/* الشريط العلوي للمبالغ: Total Price | Down Payment | Left Payment */}
                     <div className="flex items-center gap-4 text-xs font-semibold bg-white/10 px-4 py-2 rounded-lg border border-white/10 flex-wrap">
                       <div>
                         <span className="text-slate-300 text-[10px] block">
@@ -1965,7 +1995,7 @@ export function AdminDashboardd() {
                   </th>
                   <th className="p-3 border">Phone</th>
                   <th className="p-3 border">Project Name</th>
-                  <th className="p-3 border">Unit / Details</th>
+                  <th className="p-3 border min-w-[150px]">Unit / Details</th>
                   <th className="p-3 border">Source</th>
                   <th className="p-3 border">Status & Actions</th>
                   <th className="p-3 border text-center">Receipt File</th>
@@ -2035,9 +2065,34 @@ export function AdminDashboardd() {
                         <td className="p-3 border font-semibold text-gray-800">
                           {getProjectName(client)}
                         </td>
+
+                        {/* عمود Unit / Details + الزيارات */}
                         <td className="p-3 border font-medium text-amber-900">
-                          {client.apartment_id || client.apartmentId || "-"}
+                          <div>
+                            {client.apartment_id || client.apartmentId || "-"}
+                          </div>
+                          {(client.site_visit || client.office_visit) && (
+                            <div className="flex flex-col gap-1.5 mt-2">
+                              {client.site_visit && (
+                                <span className="w-fit text-[9px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded font-bold whitespace-nowrap">
+                                  📍 Site Visit{" "}
+                                  {client.site_visit_date
+                                    ? `(${client.site_visit_date})`
+                                    : ""}
+                                </span>
+                              )}
+                              {client.office_visit && (
+                                <span className="w-fit text-[9px] bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded font-bold whitespace-nowrap">
+                                  🏢 Office Visit{" "}
+                                  {client.office_visit_date
+                                    ? `(${client.office_visit_date})`
+                                    : ""}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </td>
+
                         <td className="p-3 border">
                           <span className="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded text-[10px]">
                             {client.source || client.lead_source || "Direct"}
@@ -2096,7 +2151,6 @@ export function AdminDashboardd() {
                         <td className="p-3 border text-center">
                           {receiptFiles.length > 0 ? (
                             <div className="flex flex-col items-center gap-2">
-                              {/* روابط الإيصالات */}
                               {receiptFiles.map((rf, idx) => (
                                 <a
                                   key={idx}
@@ -2109,7 +2163,6 @@ export function AdminDashboardd() {
                                 </a>
                               ))}
 
-                              {/* عرض الحالة الحالية للإيصال */}
                               <span
                                 className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
                                   client.receipt_status === "approved"
@@ -2122,7 +2175,6 @@ export function AdminDashboardd() {
                                 {client.receipt_status || "Pending"}
                               </span>
 
-                              {/* أزرار قبول ورفض الإيصال (تظهر فقط إذا كانت الحالة معلقة Pending أو لم تتحدد بعد) */}
                               {(!client.receipt_status ||
                                 client.receipt_status === "pending") && (
                                 <div className="flex items-center gap-1 mt-1">
