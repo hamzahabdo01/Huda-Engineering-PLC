@@ -86,6 +86,13 @@ export interface MarketerClient {
   office_visit?: boolean;
   site_visit_date?: string;
   office_visit_date?: string;
+  receipts?: {
+    id: string;
+    lead_id: string;
+    receipt_url: string;
+    upload_date: string;
+    status: string;
+  }[];
 }
 
 export interface MarketerAccount {
@@ -315,8 +322,10 @@ export function AdminDashboardd() {
       .select("*, projects(name, title)")
       .order("created_at", { ascending: false });
 
+    let leadsList: any[] = [];
+
     if (!error && data) {
-      const formattedData = data.map((item: any) => ({
+      leadsList = data.map((item: any) => ({
         ...item,
         project_name:
           item.project_name ||
@@ -324,14 +333,41 @@ export function AdminDashboardd() {
           item.projects?.title ||
           null,
       }));
-      setMarketerClients(formattedData);
     } else if (error) {
       const { data: rawData } = await supabase
         .from("leads")
         .select("*")
         .order("created_at", { ascending: false });
-      if (rawData) setMarketerClients(rawData);
+      if (rawData) leadsList = rawData;
     }
+
+    // 👇 جلب جميع الإيصالات من جدول receipts وربطها بالعملاء 👇
+    const leadIds = leadsList.map((l) => l.id);
+    const receiptsMap: Record<string, any[]> = {};
+
+    if (leadIds.length > 0) {
+      const { data: receiptsData } = await supabase
+        .from("receipts")
+        .select("*")
+        .in("lead_id", leadIds)
+        .order("upload_date", { ascending: false });
+
+      if (receiptsData) {
+        receiptsData.forEach((rc: any) => {
+          if (!receiptsMap[rc.lead_id]) {
+            receiptsMap[rc.lead_id] = [];
+          }
+          receiptsMap[rc.lead_id].push(rc);
+        });
+      }
+    }
+
+    const clientsWithReceipts = leadsList.map((client) => ({
+      ...client,
+      receipts: receiptsMap[client.id] || [],
+    }));
+
+    setMarketerClients(clientsWithReceipts);
   };
 
   const fetchMarketerAccounts = async () => {
@@ -426,6 +462,29 @@ export function AdminDashboardd() {
   ): { label: string; url: string }[] => {
     const receipts: { label: string; url: string }[] = [];
 
+    // 1. قراءة جميع الإيصالات المسجلة في جدول receipts
+    if (Array.isArray(client.receipts) && client.receipts.length > 0) {
+      client.receipts.forEach((rc: any, idx: number) => {
+        if (
+          rc?.receipt_url &&
+          typeof rc.receipt_url === "string" &&
+          rc.receipt_url.trim() !== ""
+        ) {
+          const url = formatStorageUrl(rc.receipt_url);
+          if (!receipts.some((r) => r.url === url)) {
+            const dateStr = rc.upload_date
+              ? ` (${new Date(rc.upload_date).toLocaleDateString("en-US")})`
+              : "";
+            receipts.push({
+              label: `Receipt #${idx + 1}${dateStr}`,
+              url: url,
+            });
+          }
+        }
+      });
+    }
+
+    // 2. قراءة الحقل المباشر من جدول leads كخيار احتياطي إذا لم يكن مضافاً أعلاه
     const directFile =
       client.receipt_file ||
       client.receipt_url ||
@@ -443,12 +502,16 @@ export function AdminDashboardd() {
       typeof directFile === "string" &&
       directFile.trim() !== ""
     ) {
-      receipts.push({
-        label: "Receipt File",
-        url: formatStorageUrl(directFile),
-      });
+      const url = formatStorageUrl(directFile);
+      if (!receipts.some((r) => r.url === url)) {
+        receipts.push({
+          label: `Receipt File #${receipts.length + 1}`,
+          url: url,
+        });
+      }
     }
 
+    // 3. قراءة الإيصالات من سجل الدفعات (payment_history)
     if (Array.isArray(client.payment_history)) {
       client.payment_history.forEach((pay, idx) => {
         if (
@@ -522,12 +585,27 @@ export function AdminDashboardd() {
       .update({ receipt_status: newReceiptStatus })
       .eq("id", clientId);
 
+    // تحديث الحالة في جدول receipts أيضاً لتظهر عند المسوق
+    await supabase
+      .from("receipts")
+      .update({ status: newReceiptStatus })
+      .eq("lead_id", clientId);
+
     if (error) {
       alert(`Error updating receipt status: ${error.message}`);
     } else {
       setMarketerClients((prev) =>
         prev.map((c) =>
-          c.id === clientId ? { ...c, receipt_status: newReceiptStatus } : c,
+          c.id === clientId
+            ? {
+                ...c,
+                receipt_status: newReceiptStatus,
+                receipts: c.receipts?.map((r) => ({
+                  ...r,
+                  status: newReceiptStatus,
+                })),
+              }
+            : c,
         ),
       );
       alert(`✅ Receipt status updated to ${newReceiptStatus}`);
