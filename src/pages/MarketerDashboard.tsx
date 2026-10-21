@@ -130,6 +130,7 @@ const COUNTRY_CODES = [
   { code: "+39", label: "🇮🇹 Italy (+39)" },
   { code: "+86", label: "🇨🇳 China (+86)" },
   { code: "+91", label: "🇮🇳 India (+91)" },
+  { code: "+61", label: "🇦🇺 Australia (+61)" },
 ];
 
 function SearchableCountrySelect({
