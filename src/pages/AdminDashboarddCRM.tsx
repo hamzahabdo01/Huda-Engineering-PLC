@@ -1555,24 +1555,7 @@ export function AdminDashboardd() {
               </select>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <select
-                value={pricingStatusFilter}
-                onChange={(e) => setPricingStatusFilter(e.target.value)}
-                className="p-1.5 bg-white border border-gray-300 font-semibold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              >
-                <option value="all">All Statuses</option>
-                <option value="Request for Qualification">
-                  Request for Qualification
-                </option>
-                <option value="Qualified">Qualified</option>
-                <option value="New">New</option>
-                <option value="Negotiation">Negotiation</option>
-                <option value="Reserved">Reserved</option>
-                <option value="Closed">Closed</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-            </div>
+            
 
             {(pricingSearch ||
               pricingMarketerFilter !== "all" ||
