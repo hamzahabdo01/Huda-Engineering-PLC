@@ -81,7 +81,7 @@ export interface MarketerClient {
   receipt_file?: string | null;
   receipt_status?: string | null;
   payment_history?: PaymentRecord[] | null;
-  unit_key?: string; // 👈 مفتاح الوحدة المطلوب لتحديث المصفوفة
+  unit_key?: string;
   site_visit?: boolean;
   office_visit?: boolean;
   site_visit_date?: string;
@@ -130,6 +130,12 @@ export function AdminDashboardd() {
   const [pricingSubTab, setPricingSubTab] = useState<"full" | "progressive">(
     "full",
   );
+
+  // 👇 حالات الفلتر والبحث الخاصة بقسّم الـ Pricing
+  const [pricingSearch, setPricingSearch] = useState<string>("");
+  const [pricingMarketerFilter, setPricingMarketerFilter] =
+    useState<string>("all");
+  const [pricingStatusFilter, setPricingStatusFilter] = useState<string>("all");
 
   const [selectedClientForPayment, setSelectedClientForPayment] =
     useState<MarketerClient | null>(null);
@@ -341,7 +347,6 @@ export function AdminDashboardd() {
       if (rawData) leadsList = rawData;
     }
 
-    // 👇 جلب جميع الإيصالات من جدول receipts وربطها بالعملاء 👇
     const leadIds = leadsList.map((l) => l.id);
     const receiptsMap: Record<string, any[]> = {};
 
@@ -385,7 +390,6 @@ export function AdminDashboardd() {
     }
   };
 
-  // 👇 الدالة المحدثة لتحديث حالة العميل والمصفوفة تلقائياً
   const handleUpdateClientStatus = async (
     clientId: string,
     newStatus: string,
@@ -400,8 +404,6 @@ export function AdminDashboardd() {
     if (error) {
       alert(`Error updating status: ${error.message}`);
     } else {
-      // 1. تحديث المصفوفة إلى Yellow (Reserved) إذا تم قبول العميل (Qualified)
-      // 2. تحديث المصفوفة إلى Available إذا تم رفض العميل (Rejected)
       if (
         (newStatus === "Qualified" || newStatus === "Rejected") &&
         client?.unit_key &&
@@ -412,7 +414,6 @@ export function AdminDashboardd() {
         const keys = client.unit_key.split(" | ");
 
         for (const k of keys) {
-          // الماركتر يرسل الـ unit key بصيغة floorName___unitTypeId
           const parts = k.split("___");
           if (parts.length === 2) {
             const floorName = parts[0];
@@ -431,7 +432,6 @@ export function AdminDashboardd() {
           }
         }
 
-        // تحديث وعرض المصفوفة فوراً إذا كان المشروع المفتوح هو نفسه مشروع العميل
         if (client.project_id === selectedProjectId) {
           fetchMatrixData(selectedProjectId);
         }
@@ -462,7 +462,6 @@ export function AdminDashboardd() {
   ): { label: string; url: string }[] => {
     const receipts: { label: string; url: string }[] = [];
 
-    // 1. قراءة جميع الإيصالات المسجلة في جدول receipts
     if (Array.isArray(client.receipts) && client.receipts.length > 0) {
       client.receipts.forEach((rc: any, idx: number) => {
         if (
@@ -484,7 +483,6 @@ export function AdminDashboardd() {
       });
     }
 
-    // 2. قراءة الحقل المباشر من جدول leads كخيار احتياطي إذا لم يكن مضافاً أعلاه
     const directFile =
       client.receipt_file ||
       client.receipt_url ||
@@ -511,7 +509,6 @@ export function AdminDashboardd() {
       }
     }
 
-    // 3. قراءة الإيصالات من سجل الدفعات (payment_history)
     if (Array.isArray(client.payment_history)) {
       client.payment_history.forEach((pay, idx) => {
         if (
@@ -585,7 +582,6 @@ export function AdminDashboardd() {
       .update({ receipt_status: newReceiptStatus })
       .eq("id", clientId);
 
-    // تحديث الحالة في جدول receipts أيضاً لتظهر عند المسوق
     await supabase
       .from("receipts")
       .update({ status: newReceiptStatus })
@@ -609,15 +605,6 @@ export function AdminDashboardd() {
         ),
       );
       alert(`✅ Receipt status updated to ${newReceiptStatus}`);
-    }
-  };
-
-  const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setNewReceiptFile(file);
-      const previewUrl = URL.createObjectURL(file);
-      setNewReceiptPreview(previewUrl);
     }
   };
 
@@ -881,6 +868,7 @@ export function AdminDashboardd() {
     ]),
   );
 
+  // 👇 دالة فلترة قائمة الـ Pricing مع دعم الفلتر الجديد (البحث، الماركتر، الحالة)
   const pricingFilteredClients = useMemo(() => {
     return marketerClients.filter((client) => {
       const paymentTypeStr = (
@@ -889,10 +877,56 @@ export function AdminDashboardd() {
       ).toLowerCase();
 
       const isFull = paymentTypeStr.includes("full");
-      if (pricingSubTab === "full") return isFull;
-      return !isFull;
+      if (pricingSubTab === "full" && !isFull) return false;
+      if (pricingSubTab === "progressive" && isFull) return false;
+
+      if (pricingMarketerFilter !== "all") {
+        const mName = client.marketer_name || client.marketerName || "";
+        if (mName !== pricingMarketerFilter) return false;
+      }
+
+      if (pricingStatusFilter !== "all") {
+        const status = client.status || "Reserved";
+        if (status.toLowerCase() !== pricingStatusFilter.toLowerCase())
+          return false;
+      }
+
+      if (pricingSearch.trim() !== "") {
+        const query = pricingSearch.toLowerCase();
+        const mName = (
+          client.marketer_name ||
+          client.marketerName ||
+          ""
+        ).toLowerCase();
+        const cName = (client.name || client.client_name || "").toLowerCase();
+        const phone = (client.phone || "").toLowerCase();
+        const projName = getProjectName(client).toLowerCase();
+        const unit = (
+          client.apartment_id ||
+          client.apartmentId ||
+          ""
+        ).toLowerCase();
+
+        const matches =
+          mName.includes(query) ||
+          cName.includes(query) ||
+          phone.includes(query) ||
+          projName.includes(query) ||
+          unit.includes(query);
+
+        if (!matches) return false;
+      }
+
+      return true;
     });
-  }, [marketerClients, pricingSubTab]);
+  }, [
+    marketerClients,
+    pricingSubTab,
+    pricingMarketerFilter,
+    pricingStatusFilter,
+    pricingSearch,
+    getProjectName,
+  ]);
 
   const handleClientSortToggle = (field: typeof clientSortField) => {
     if (clientSortField === field) {
@@ -1478,6 +1512,84 @@ export function AdminDashboardd() {
             </button>
           </div>
 
+          {/* 👇 شريط البحث والفلترة لقسم الـ Pricing (مطابق لطلبك في الصورة) */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-gray-50 p-3 rounded-xl border border-gray-300 mb-6">
+            <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500">
+              <span className="text-gray-400 text-xs">🔍</span>
+              <input
+                type="text"
+                placeholder="Search client, phone, project..."
+                value={pricingSearch}
+                onChange={(e) => setPricingSearch(e.target.value)}
+                className="bg-transparent text-xs outline-none w-40 sm:w-48 text-gray-800"
+              />
+              {pricingSearch && (
+                <button
+                  onClick={() => setPricingSearch("")}
+                  className="text-xs text-gray-400 hover:text-gray-600 font-bold"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <select
+                value={pricingMarketerFilter}
+                onChange={(e) => setPricingMarketerFilter(e.target.value)}
+                className="p-1.5 bg-white border border-gray-300 font-bold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="all">
+                  -- All Marketers ({marketerClients.length}) --
+                </option>
+                {marketerOptions.map((name) => {
+                  const count = marketerClients.filter(
+                    (c) => (c.marketer_name || c.marketerName) === name,
+                  ).length;
+                  return (
+                    <option key={name} value={name}>
+                      👤 {name} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <select
+                value={pricingStatusFilter}
+                onChange={(e) => setPricingStatusFilter(e.target.value)}
+                className="p-1.5 bg-white border border-gray-300 font-semibold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="all">All Statuses</option>
+                <option value="Request for Qualification">
+                  Request for Qualification
+                </option>
+                <option value="Qualified">Qualified</option>
+                <option value="New">New</option>
+                <option value="Negotiation">Negotiation</option>
+                <option value="Reserved">Reserved</option>
+                <option value="Closed">Closed</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+
+            {(pricingSearch ||
+              pricingMarketerFilter !== "all" ||
+              pricingStatusFilter !== "all") && (
+              <button
+                onClick={() => {
+                  setPricingSearch("");
+                  setPricingMarketerFilter("all");
+                  setPricingStatusFilter("all");
+                }}
+                className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 font-bold text-xs rounded-lg transition"
+              >
+                Reset Filters
+              </button>
+            )}
+          </div>
+
           <div className="flex items-center gap-2 mb-6 bg-slate-100 p-1 rounded-lg w-fit border border-slate-300">
             <button
               onClick={() => setPricingSubTab("full")}
@@ -1524,11 +1636,7 @@ export function AdminDashboardd() {
                       colSpan={10}
                       className="p-6 text-center text-gray-500 font-semibold"
                     >
-                      No records found for{" "}
-                      {pricingSubTab === "full"
-                        ? "Full Payment"
-                        : "Progressive Payment"}
-                      .
+                      No records found matching current filter/search criteria.
                     </td>
                   </tr>
                 ) : (
@@ -2144,7 +2252,6 @@ export function AdminDashboardd() {
                           {getProjectName(client)}
                         </td>
 
-                        {/* عمود Unit / Details + الزيارات */}
                         <td className="p-3 border font-medium text-amber-900">
                           <div>
                             {client.apartment_id || client.apartmentId || "-"}
@@ -2177,7 +2284,6 @@ export function AdminDashboardd() {
                           </span>
                         </td>
 
-                        {/* Status & Actions Column */}
                         <td className="p-3 border">
                           <div className="flex flex-col items-start gap-1.5">
                             <span
@@ -2225,7 +2331,6 @@ export function AdminDashboardd() {
                           </div>
                         </td>
 
-                        {/* عمود Receipt File مع أزرار القبول والرفض */}
                         <td className="p-3 border text-center">
                           {receiptFiles.length > 0 ? (
                             <div className="flex flex-col items-center gap-2">
@@ -2290,7 +2395,6 @@ export function AdminDashboardd() {
                           )}
                         </td>
 
-                        {/* View CPO Column */}
                         <td className="p-3 border text-center">
                           {cpoUrl ? (
                             <a
