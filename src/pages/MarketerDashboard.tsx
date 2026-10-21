@@ -84,8 +84,8 @@ export interface Lead {
   created_at?: string;
   site_visit?: boolean;
   office_visit?: boolean;
-  site_visit_date?: string | null; // 👈 عُدّلت لتقبل null
-  office_visit_date?: string | null; // 👈 عُدّلت لتقبل null
+  site_visit_date?: string | null;
+  office_visit_date?: string | null;
 }
 
 export interface MarketerProfile {
@@ -158,7 +158,7 @@ function SearchableCountrySelect({
   );
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
@@ -167,7 +167,11 @@ function SearchableCountrySelect({
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
   return (
@@ -176,7 +180,7 @@ function SearchableCountrySelect({
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`p-2.5 border rounded-lg text-xs font-semibold outline-none flex items-center justify-between min-w-[100px] sm:min-w-[120px] max-w-[130px] transition-all ${
+        className={`h-full px-2.5 py-2.5 border rounded-lg text-xs font-semibold outline-none flex items-center justify-between min-w-[105px] sm:min-w-[120px] max-w-[135px] transition-all touch-manipulation ${
           disabled
             ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
             : isDark
@@ -194,7 +198,7 @@ function SearchableCountrySelect({
 
       {isOpen && !disabled && (
         <div
-          className={`absolute z-50 mt-1 w-64 max-w-[85vw] border rounded-lg shadow-2xl p-2 max-h-56 overflow-y-auto left-0 ${
+          className={`absolute z-50 mt-1 w-64 max-w-[85vw] border rounded-xl shadow-2xl p-2 max-h-60 overflow-y-auto left-0 overscroll-contain ${
             isDark
               ? "bg-slate-900 border-slate-800 text-white"
               : "bg-white border-gray-200 text-gray-800"
@@ -205,14 +209,13 @@ function SearchableCountrySelect({
             placeholder="🔍 Search country or code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`w-full p-2 border rounded text-xs mb-2 outline-none ${
+            className={`w-full p-2 border rounded-lg text-base sm:text-xs mb-2 outline-none ${
               isDark
                 ? "bg-slate-950 border-slate-800 text-white placeholder-slate-500 focus:border-teal-500"
                 : "bg-gray-50 border-gray-300 text-gray-800 focus:ring-1 focus:ring-[#00474b]"
             }`}
-            autoFocus
           />
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {filtered.length > 0 ? (
               filtered.map((c) => (
                 <button
@@ -223,7 +226,7 @@ function SearchableCountrySelect({
                     setIsOpen(false);
                     setSearch("");
                   }}
-                  className={`w-full text-left px-2 py-1.5 text-xs rounded transition ${
+                  className={`w-full text-left px-2.5 py-2 sm:py-1.5 text-xs rounded-lg transition touch-manipulation ${
                     value === c.code
                       ? "bg-[#00474b] text-white font-bold"
                       : isDark
@@ -260,6 +263,7 @@ export function MarketerDashboard() {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isUpdatePassword, setIsUpdatePassword] = useState(false);
   const isUpdatePasswordRef = useRef(false);
+  const formSectionRef = useRef<HTMLDivElement>(null);
 
   const setUpdatePasswordMode = (val: boolean) => {
     isUpdatePasswordRef.current = val;
@@ -309,8 +313,8 @@ export function MarketerDashboard() {
   >("New");
   const [siteVisit, setSiteVisit] = useState<boolean>(false);
   const [officeVisit, setOfficeVisit] = useState<boolean>(false);
-  const [siteVisitDate, setSiteVisitDate] = useState<string | null>(null); // 👈 تقبل null
-  const [officeVisitDate, setOfficeVisitDate] = useState<string | null>(null); // 👈 تقبل null
+  const [siteVisitDate, setSiteVisitDate] = useState<string | null>(null);
+  const [officeVisitDate, setOfficeVisitDate] = useState<string | null>(null);
 
   // Negotiation & Closed Extra Fields State
   const [paymentType, setPaymentType] = useState<"full" | "progressive">(
@@ -318,7 +322,7 @@ export function MarketerDashboard() {
   );
   const [totalPayment, setTotalPayment] = useState<string>("");
   const [downPayment, setDownPayment] = useState<string>("");
-  const [installmentPlan, setInstallmentPlan] = useState<string>(""); // YYYY-MM-DD or schedule
+  const [installmentPlan, setInstallmentPlan] = useState<string>("");
   const [memo, setMemo] = useState<string>("");
 
   // CPO Image Upload State
@@ -356,7 +360,7 @@ export function MarketerDashboard() {
   const isPhoneDisabled =
     actionStatus === "Negotiation" || actionStatus === "Closed";
 
-  // 👇 دالة مساعدة لتوليد التاريخ والوقت تلقائياً
+  // دالة مساعدة لتوليد التاريخ والوقت تلقائياً
   const getCurrentDateTime = () => {
     const now = new Date();
     return now.toLocaleString("en-US", {
@@ -876,8 +880,8 @@ export function MarketerDashboard() {
     setActionStatus("New");
     setSiteVisit(false);
     setOfficeVisit(false);
-    setSiteVisitDate(null); // 👈 مسح التاريخ
-    setOfficeVisitDate(null); // 👈 مسح التاريخ
+    setSiteVisitDate(null);
+    setOfficeVisitDate(null);
     setSelectedUnits([]);
     setPaymentType("progressive");
     setTotalPayment("");
@@ -939,8 +943,8 @@ export function MarketerDashboard() {
     setActionStatus(normalizeStatus(lead.status));
     setSiteVisit(lead.site_visit || false);
     setOfficeVisit(lead.office_visit || false);
-    setSiteVisitDate(lead.site_visit_date || null); // 👈 جلب التاريخ
-    setOfficeVisitDate(lead.office_visit_date || null); // 👈 جلب التاريخ
+    setSiteVisitDate(lead.site_visit_date || null);
+    setOfficeVisitDate(lead.office_visit_date || null);
     setPaymentType(lead.payment_type || "progressive");
     setTotalPayment(lead.total_payment ? lead.total_payment.toString() : "");
     setDownPayment(lead.down_payment ? lead.down_payment.toString() : "");
@@ -978,7 +982,17 @@ export function MarketerDashboard() {
       setSelectedUnits([]);
     }
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // تمرير سلس مباشرة إلى نموذج التعديل في الآيفون والشاشات الصغيرة
+    setTimeout(() => {
+      if (formSectionRef.current) {
+        formSectionRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }, 100);
   };
 
   const handleDeleteLead = async (leadId: string) => {
@@ -1340,7 +1354,7 @@ export function MarketerDashboard() {
 
   if (loadingUser) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white p-4">
+      <div className="min-h-[100dvh] bg-slate-950 flex items-center justify-center text-white p-4">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
           <p className="text-xs font-semibold text-slate-400">
@@ -1355,7 +1369,7 @@ export function MarketerDashboard() {
   if (!currentMarketer || isUpdatePassword) {
     return (
       <div
-        className="min-h-screen w-full flex items-center justify-center bg-slate-950 p-3 sm:p-6 lg:p-8 font-sans"
+        className="min-h-[100dvh] w-full flex items-center justify-center bg-slate-950 p-3 sm:p-6 lg:p-8 pb-8 font-sans overflow-x-hidden"
         dir="ltr"
       >
         <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 bg-slate-900 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-800/80">
@@ -1401,9 +1415,9 @@ export function MarketerDashboard() {
             </div>
           </div>
 
-          <div className="lg:col-span-7 p-5 sm:p-8 lg:p-12 flex flex-col justify-center bg-slate-900">
-            <div className="mb-6 sm:mb-8">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <div className="lg:col-span-7 p-4 sm:p-8 lg:p-12 flex flex-col justify-center bg-slate-900">
+            <div className="mb-5 sm:mb-8">
+              <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">
                 {isUpdatePassword
                   ? "Set New Password"
                   : isForgotPassword
@@ -1424,7 +1438,7 @@ export function MarketerDashboard() {
             </div>
 
             {!isForgotPassword && !isUpdatePassword && (
-              <div className="grid grid-cols-2 gap-1 p-1 bg-slate-950 rounded-xl sm:rounded-2xl mb-6 sm:mb-8 border border-slate-800">
+              <div className="grid grid-cols-2 gap-1 p-1 bg-slate-950 rounded-xl sm:rounded-2xl mb-5 sm:mb-8 border border-slate-800">
                 <button
                   type="button"
                   onClick={() => {
@@ -1433,7 +1447,7 @@ export function MarketerDashboard() {
                     setAuthError("");
                     setAuthSuccess("");
                   }}
-                  className={`flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 ${
+                  className={`flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 touch-manipulation ${
                     !isSignUp
                       ? "bg-[#00474b] text-white shadow-lg shadow-teal-900/30"
                       : "text-slate-400 hover:text-white"
@@ -1450,7 +1464,7 @@ export function MarketerDashboard() {
                     setAuthError("");
                     setAuthSuccess("");
                   }}
-                  className={`flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 ${
+                  className={`flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 touch-manipulation ${
                     isSignUp
                       ? "bg-[#00474b] text-white shadow-lg shadow-teal-900/30"
                       : "text-slate-400 hover:text-white"
@@ -1488,12 +1502,12 @@ export function MarketerDashboard() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                      className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-base sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-1 touch-manipulation"
                     >
                       {showPassword ? (
                         <Eye className="w-4 h-4" />
@@ -1516,12 +1530,12 @@ export function MarketerDashboard() {
                       value={confirmNewPassword}
                       onChange={(e) => setConfirmNewPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                      className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-base sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-1 touch-manipulation"
                     >
                       {showConfirmPassword ? (
                         <Eye className="w-4 h-4" />
@@ -1535,7 +1549,7 @@ export function MarketerDashboard() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full mt-2 py-3.5 px-5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full mt-2 py-3.5 px-5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 disabled:opacity-50 touch-manipulation"
                 >
                   <KeyRound className="w-4 h-4" />
                   <span>
@@ -1559,7 +1573,7 @@ export function MarketerDashboard() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       placeholder="marketer@company.com"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-base sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
                     />
                   </div>
                 </div>
@@ -1567,7 +1581,7 @@ export function MarketerDashboard() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full py-3.5 px-5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3.5 px-5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 disabled:opacity-50 touch-manipulation"
                 >
                   <span>
                     {authLoading ? "Sending link..." : "Send Reset Link"}
@@ -1582,7 +1596,7 @@ export function MarketerDashboard() {
                     setAuthError("");
                     setAuthSuccess("");
                   }}
-                  className="w-full text-center text-xs font-bold text-slate-400 hover:text-teal-400 pt-2 transition"
+                  className="w-full text-center text-xs font-bold text-slate-400 hover:text-teal-400 pt-2 transition touch-manipulation"
                 >
                   ← Back to Sign In
                 </button>
@@ -1601,7 +1615,7 @@ export function MarketerDashboard() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       placeholder="marketer@company.com"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-base sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
                     />
                   </div>
                 </div>
@@ -1618,7 +1632,7 @@ export function MarketerDashboard() {
                         setAuthError("");
                         setAuthSuccess("");
                       }}
-                      className="text-xs text-teal-400 font-semibold hover:text-teal-300 transition-colors"
+                      className="text-xs text-teal-400 font-semibold hover:text-teal-300 transition-colors touch-manipulation"
                     >
                       Forgot Password?
                     </button>
@@ -1631,12 +1645,12 @@ export function MarketerDashboard() {
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                      className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-base sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-1 touch-manipulation"
                     >
                       {showPassword ? (
                         <Eye className="w-4 h-4" />
@@ -1650,7 +1664,7 @@ export function MarketerDashboard() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full mt-2 py-3.5 px-5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 group disabled:opacity-50"
+                  className="w-full mt-2 py-3.5 px-5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 group disabled:opacity-50 touch-manipulation"
                 >
                   <span>
                     {authLoading ? "Signing in..." : "Sign In to Workspace"}
@@ -1672,7 +1686,7 @@ export function MarketerDashboard() {
                       value={signupName}
                       onChange={(e) => setSignupName(e.target.value)}
                       placeholder="John Doe"
-                      className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                      className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-base sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
                     />
                   </div>
                 </div>
@@ -1686,7 +1700,7 @@ export function MarketerDashboard() {
                     <select
                       value={signupType}
                       onChange={(e) => setSignupType(e.target.value as any)}
-                      className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white text-xs sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all cursor-pointer"
+                      className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white text-base sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all cursor-pointer"
                       required
                     >
                       <option
@@ -1720,7 +1734,7 @@ export function MarketerDashboard() {
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
                       placeholder="name@company.com"
-                      className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                      className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-base sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
                     />
                   </div>
                 </div>
@@ -1729,7 +1743,7 @@ export function MarketerDashboard() {
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
                     Phone Number *
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-stretch">
                     <SearchableCountrySelect
                       value={signupCountryCode}
                       onChange={(code) => setSignupCountryCode(code)}
@@ -1743,7 +1757,7 @@ export function MarketerDashboard() {
                         value={signupPhone}
                         onChange={(e) => setSignupPhone(e.target.value)}
                         placeholder="9xxxxxxx"
-                        className="w-full pl-10 pr-3 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                        className="w-full pl-10 pr-3 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-base sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
                       />
                     </div>
                   </div>
@@ -1761,12 +1775,12 @@ export function MarketerDashboard() {
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                      className="w-full pl-10 pr-10 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-base sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-1 touch-manipulation"
                     >
                       {showPassword ? (
                         <Eye className="w-4 h-4" />
@@ -1789,12 +1803,12 @@ export function MarketerDashboard() {
                       value={signupConfirmPassword}
                       onChange={(e) => setSignupConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                      className="w-full pl-10 pr-10 py-2.5 sm:py-3 rounded-xl bg-slate-950/60 border border-slate-800 text-white placeholder-slate-500 text-base sm:text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-1 touch-manipulation"
                     >
                       {showConfirmPassword ? (
                         <Eye className="w-4 h-4" />
@@ -1808,7 +1822,7 @@ export function MarketerDashboard() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full mt-2 py-3.5 px-5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 group disabled:opacity-50"
+                  className="w-full mt-2 py-3.5 px-5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm tracking-wide transition-all shadow-lg shadow-amber-400/10 flex items-center justify-center gap-2 group disabled:opacity-50 touch-manipulation"
                 >
                   <span>
                     {authLoading
@@ -1828,11 +1842,11 @@ export function MarketerDashboard() {
   // SCREEN 2: MAIN DASHBOARD
   return (
     <div
-      className="p-2.5 sm:p-5 bg-[#eef2f5] min-h-screen text-left font-sans"
+      className="p-2 sm:p-5 pb-10 bg-[#eef2f5] min-h-[100dvh] text-left font-sans overflow-x-hidden"
       dir="ltr"
     >
       {/* 🟢 TOP HEADER BAR */}
-      <div className="bg-[#00474b] text-white p-3.5 sm:px-5 sm:py-3 rounded-lg shadow-sm mb-4 sm:mb-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="bg-[#00474b] text-white p-3 sm:px-5 sm:py-3 rounded-xl sm:rounded-lg shadow-sm mb-3.5 sm:mb-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
           <div className="flex items-center justify-between w-full sm:w-auto">
             <div className="flex items-center gap-2">
@@ -1847,7 +1861,7 @@ export function MarketerDashboard() {
 
             <button
               onClick={handleLogout}
-              className="sm:hidden bg-teal-900/80 hover:bg-teal-900 text-teal-100 border border-teal-600/60 px-2.5 py-1 rounded text-[11px] font-medium transition"
+              className="sm:hidden bg-teal-900/80 active:bg-teal-950 text-teal-100 border border-teal-600/60 px-3 py-1.5 rounded-lg text-xs font-semibold transition touch-manipulation"
             >
               Logout
             </button>
@@ -1867,7 +1881,7 @@ export function MarketerDashboard() {
             <span className="font-semibold text-white">
               {currentMarketer.name}
             </span>
-            <span className="text-teal-200/80 text-[11px] truncate max-w-[180px] sm:max-w-none">
+            <span className="text-teal-200/80 text-[11px] truncate max-w-[200px] sm:max-w-none">
               ({currentMarketer.email})
             </span>
           </div>
@@ -1885,7 +1899,7 @@ export function MarketerDashboard() {
                   setSelectedProjectId(e.target.value);
                   setSelectedUnits([]);
                 }}
-                className="px-2 py-1 bg-[#00383b] border border-teal-600/80 font-bold text-amber-300 rounded text-xs outline-none focus:ring-1 focus:ring-amber-400 flex-1 sm:flex-initial"
+                className="px-2.5 py-1.5 sm:py-1 bg-[#00383b] border border-teal-600/80 font-bold text-amber-300 rounded-lg sm:rounded text-base sm:text-xs outline-none focus:ring-1 focus:ring-amber-400 flex-1 sm:flex-initial"
               >
                 {projects.map((p) => (
                   <option
@@ -1910,14 +1924,14 @@ export function MarketerDashboard() {
       </div>
 
       {loadingProjects ? (
-        <div className="bg-white p-8 sm:p-12 rounded-lg shadow-sm text-center text-gray-500">
+        <div className="bg-white p-8 sm:p-12 rounded-xl shadow-sm text-center text-gray-500">
           <div className="w-8 h-8 border-4 border-[#00474b] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
           <p className="text-xs font-semibold">
             Loading projects from Database...
           </p>
         </div>
       ) : projects.length === 0 ? (
-        <div className="bg-white p-8 sm:p-12 rounded-lg shadow-sm text-center text-gray-500">
+        <div className="bg-white p-8 sm:p-12 rounded-xl shadow-sm text-center text-gray-500">
           <p className="text-base font-bold text-gray-700">
             No Projects Available
           </p>
@@ -1928,12 +1942,17 @@ export function MarketerDashboard() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
           {/* 📊 LEFT: AVAILABLE STOCKS TABLE */}
-          <div className="lg:col-span-7 xl:col-span-8 bg-white p-3.5 sm:p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center gap-2 mb-3 sm:mb-4">
-              <span className="text-amber-500 text-base sm:text-lg">🟡</span>
-              <h2 className="text-xs sm:text-sm font-black text-[#00474b] uppercase tracking-wider">
-                AVAILABLE STOCKS
-              </h2>
+          <div className="lg:col-span-7 xl:col-span-8 bg-white p-3 sm:p-4 rounded-xl sm:rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-500 text-base sm:text-lg">🟡</span>
+                <h2 className="text-xs sm:text-sm font-black text-[#00474b] uppercase tracking-wider">
+                  AVAILABLE STOCKS
+                </h2>
+              </div>
+              <span className="sm:hidden text-[10px] text-gray-400 font-medium">
+                ↔ Swipe table
+              </span>
             </div>
 
             {loadingDetails ? (
@@ -1942,13 +1961,13 @@ export function MarketerDashboard() {
                 <p className="text-xs">Loading matrix data...</p>
               </div>
             ) : (
-              <div className="overflow-x-auto -mx-1 sm:mx-0">
-                <table className="w-full border-collapse text-center text-xs font-sans border border-gray-300 min-w-[500px]">
-                  <thead>
+              <div className="overflow-x-auto overflow-y-auto max-h-[58vh] lg:max-h-none rounded-lg border border-gray-300 overscroll-contain [-webkit-overflow-scrolling:touch]">
+                <table className="w-full border-collapse text-center text-xs font-sans min-w-[460px]">
+                  <thead className="sticky top-0 z-20">
                     <tr className="bg-[#00474b] text-white">
                       <th
                         rowSpan={2}
-                        className="border border-teal-800 p-1.5 sm:p-2 font-bold min-w-[70px] sm:min-w-[80px]"
+                        className="sticky left-0 z-30 bg-[#00474b] border border-teal-800 p-1.5 sm:p-2 font-bold min-w-[78px] sm:min-w-[85px] shadow-[1px_0_0_0_#115e59]"
                       >
                         Floor
                       </th>
@@ -1960,7 +1979,7 @@ export function MarketerDashboard() {
                       </th>
                       <th
                         rowSpan={2}
-                        className="border border-teal-800 p-1.5 sm:p-2 font-bold min-w-[60px] sm:min-w-[70px]"
+                        className="border border-teal-800 p-1.5 sm:p-2 font-bold min-w-[55px] sm:min-w-[70px]"
                       >
                         Remark
                       </th>
@@ -1970,9 +1989,9 @@ export function MarketerDashboard() {
                       {unitTypes.map((ut) => (
                         <th
                           key={ut.id}
-                          className="border border-teal-800 p-1.5 sm:p-2 font-semibold"
+                          className="border border-teal-800 p-1.5 sm:p-2 font-semibold min-w-[85px]"
                         >
-                          <div>{ut.title}</div>
+                          <div className="leading-tight">{ut.title}</div>
                           <div className="font-medium text-[10px] text-teal-200">
                             {ut.area} m²
                           </div>
@@ -1989,7 +2008,7 @@ export function MarketerDashboard() {
                   <tbody>
                     {floors.map((floorObj) => (
                       <tr key={floorObj.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 bg-white text-gray-800 font-semibold p-1.5 sm:p-2 text-left px-2 sm:px-3 text-xs">
+                        <td className="sticky left-0 z-10 border border-gray-300 bg-white text-gray-800 font-bold p-2 text-left px-2.5 text-[11px] sm:text-xs shadow-[1px_0_3px_rgba(0,0,0,0.06)]">
                           {floorObj.floor_name}
                         </td>
 
@@ -2018,10 +2037,10 @@ export function MarketerDashboard() {
 
                           if (statusLower === "available") {
                             bgClass =
-                              "bg-[#00b050] hover:bg-emerald-600 cursor-pointer text-white";
+                              "bg-[#00b050] hover:bg-emerald-600 active:bg-emerald-700 cursor-pointer text-white";
                             if (isSelected) {
                               cellContent = (
-                                <span className="text-[9px] bg-black text-amber-300 px-1 py-0.5 rounded font-black shadow">
+                                <span className="text-[9px] bg-black text-amber-300 px-1.5 py-0.5 rounded font-black shadow inline-block">
                                   ✓ Selected
                                 </span>
                               );
@@ -2076,8 +2095,10 @@ export function MarketerDashboard() {
                                   rawStatus,
                                 )
                               }
-                              className={`border border-gray-300 p-2 sm:p-2.5 transition-all text-center ${bgClass} ${
-                                isSelected ? "ring-2 ring-blue-600" : ""
+                              className={`border border-gray-300 p-2.5 sm:p-2.5 min-h-[42px] transition-all text-center touch-manipulation select-none ${bgClass} ${
+                                isSelected
+                                  ? "ring-2 ring-inset ring-blue-600"
+                                  : ""
                               }`}
                               title={`Floor ${floorObj.floor_name} - ${ut.title} (${rawStatus.toUpperCase()})`}
                             >
@@ -2098,10 +2119,17 @@ export function MarketerDashboard() {
           </div>
 
           {/* 📝 RIGHT: ACTION FORM & LEADS SECTION */}
-          <div className="lg:col-span-5 xl:col-span-4 space-y-4 sm:space-y-5">
+          <div
+            ref={formSectionRef}
+            className="lg:col-span-5 xl:col-span-4 space-y-4 sm:space-y-5 scroll-mt-3"
+          >
             {/* 1. Add Lead & Take Action Card */}
             <div
-              className={`p-3.5 sm:p-4 rounded-lg shadow-sm border ${editingLeadId ? "bg-amber-50/70 border-amber-300" : "bg-white border-gray-200"}`}
+              className={`p-3.5 sm:p-4 rounded-xl sm:rounded-lg shadow-sm border ${
+                editingLeadId
+                  ? "bg-amber-50/70 border-amber-300"
+                  : "bg-white border-gray-200"
+              }`}
             >
               <div className="flex items-center justify-between mb-3 border-l-4 border-amber-400 pl-2.5">
                 <h2 className="font-bold text-gray-800 text-xs sm:text-sm">
@@ -2114,7 +2142,7 @@ export function MarketerDashboard() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="text-[10px] bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-2 py-0.5 rounded"
+                    className="text-xs sm:text-[10px] bg-gray-200 active:bg-gray-300 text-gray-700 font-bold px-2.5 py-1 rounded-lg touch-manipulation"
                   >
                     Cancel
                   </button>
@@ -2123,7 +2151,7 @@ export function MarketerDashboard() {
 
               <form
                 onSubmit={handleSaveLeadWithAction}
-                className="space-y-3 text-xs"
+                className="space-y-3.5 sm:space-y-3 text-xs"
               >
                 <div>
                   <label className="block font-semibold text-gray-700 mb-1">
@@ -2137,7 +2165,7 @@ export function MarketerDashboard() {
                         setSelectedUnits([]);
                       }
                     }}
-                    className="w-full p-2 bg-white border border-gray-300 rounded text-xs font-semibold text-gray-800 focus:ring-1 focus:ring-[#00474b] outline-none cursor-pointer"
+                    className="w-full p-2.5 sm:p-2 bg-white border border-gray-300 rounded-lg sm:rounded text-base sm:text-xs font-semibold text-gray-800 focus:ring-1 focus:ring-[#00474b] outline-none cursor-pointer"
                   >
                     <option value="New">New (Save Lead without Unit)</option>
                     <option value="Request for Qualification">
@@ -2150,10 +2178,10 @@ export function MarketerDashboard() {
                   </select>
 
                   {/* مربعات اختيار الزيارات مع تاريخ أوتوماتيكي */}
-                  <div className="flex flex-col gap-2 mt-2.5 px-1">
+                  <div className="flex flex-col gap-2 mt-2.5">
                     {/* زيارة الموقع */}
-                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 p-1.5 rounded">
-                      <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition">
+                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 p-2 sm:p-1.5 rounded-lg">
+                      <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition touch-manipulation">
                         <input
                           type="checkbox"
                           checked={siteVisit}
@@ -2161,12 +2189,12 @@ export function MarketerDashboard() {
                             const isChecked = e.target.checked;
                             setSiteVisit(isChecked);
                             if (isChecked) {
-                              setSiteVisitDate(getCurrentDateTime()); // توليد الوقت التلقائي
+                              setSiteVisitDate(getCurrentDateTime());
                             } else {
-                              setSiteVisitDate(null); // مسح الوقت عند إزالة التحديد
+                              setSiteVisitDate(null);
                             }
                           }}
-                          className="w-3.5 h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
+                          className="w-4 h-4 sm:w-3.5 sm:h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
                         />
                         📍 Site Visit
                       </label>
@@ -2178,8 +2206,8 @@ export function MarketerDashboard() {
                     </div>
 
                     {/* زيارة المكتب */}
-                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 p-1.5 rounded">
-                      <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition">
+                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 p-2 sm:p-1.5 rounded-lg">
+                      <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer hover:text-[#00474b] transition touch-manipulation">
                         <input
                           type="checkbox"
                           checked={officeVisit}
@@ -2187,12 +2215,12 @@ export function MarketerDashboard() {
                             const isChecked = e.target.checked;
                             setOfficeVisit(isChecked);
                             if (isChecked) {
-                              setOfficeVisitDate(getCurrentDateTime()); // توليد الوقت التلقائي
+                              setOfficeVisitDate(getCurrentDateTime());
                             } else {
-                              setOfficeVisitDate(null); // مسح الوقت عند إزالة التحديد
+                              setOfficeVisitDate(null);
                             }
                           }}
-                          className="w-3.5 h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
+                          className="w-4 h-4 sm:w-3.5 sm:h-3.5 rounded border-gray-300 text-[#00474b] focus:ring-[#00474b] cursor-pointer"
                         />
                         🏢 Office Visit
                       </label>
@@ -2211,21 +2239,19 @@ export function MarketerDashboard() {
                       Selected Units ({selectedUnits.length}) *
                     </label>
                     {selectedUnits.length === 0 ? (
-                      <div className="p-2 bg-amber-50 border border-amber-200 rounded text-amber-900 text-[11px] font-medium text-center">
-                        ← Click any GREEN cell in table to select
+                      <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-[11px] font-medium text-center">
+                        ↑ Tap any GREEN cell in the table to select
                       </div>
                     ) : (
-                      <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                      <div className="space-y-1.5 max-h-36 overflow-y-auto overscroll-contain">
                         {selectedUnits.map((u, idx) => (
                           <div
                             key={idx}
-                            className="bg-emerald-50 border border-emerald-300 rounded p-1.5 text-[11px] flex justify-between items-center"
+                            className="bg-emerald-50 border border-emerald-300 rounded-lg p-2 sm:p-1.5 text-[11px] flex justify-between items-center gap-2"
                           >
-                            <div>
-                              <span className="font-bold text-emerald-900">
-                                {u.label}
-                              </span>
-                            </div>
+                            <span className="font-bold text-emerald-900 break-words">
+                              {u.label}
+                            </span>
                             <button
                               type="button"
                               onClick={() =>
@@ -2233,7 +2259,7 @@ export function MarketerDashboard() {
                                   prev.filter((item) => item.key !== u.key),
                                 )
                               }
-                              className="text-red-500 font-bold hover:text-red-700 text-[10px] p-1"
+                              className="text-red-500 font-bold hover:text-red-700 text-xs p-1.5 touch-manipulation"
                             >
                               ✕
                             </button>
@@ -2253,7 +2279,7 @@ export function MarketerDashboard() {
                     placeholder="e.g. John Doe"
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded text-xs outline-none focus:ring-1 focus:ring-[#00474b]"
+                    className="w-full p-2.5 sm:p-2 border border-gray-300 rounded-lg sm:rounded text-base sm:text-xs outline-none focus:ring-1 focus:ring-[#00474b]"
                     required
                   />
                 </div>
@@ -2282,7 +2308,7 @@ export function MarketerDashboard() {
                       value={clientPhone}
                       disabled={isPhoneDisabled}
                       onChange={(e) => setClientPhone(e.target.value)}
-                      className={`flex-1 min-w-0 p-2 border rounded text-xs outline-none ${
+                      className={`flex-1 min-w-0 p-2.5 sm:p-2 border rounded-lg sm:rounded text-base sm:text-xs outline-none ${
                         isPhoneDisabled
                           ? "bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed font-medium"
                           : "border-gray-300 focus:ring-1 focus:ring-[#00474b]"
@@ -2304,7 +2330,7 @@ export function MarketerDashboard() {
                         setCustomSource("");
                       }
                     }}
-                    className="w-full p-2 border border-gray-300 rounded text-xs bg-white outline-none focus:ring-1 focus:ring-[#00474b]"
+                    className="w-full p-2.5 sm:p-2 border border-gray-300 rounded-lg sm:rounded text-base sm:text-xs bg-white outline-none focus:ring-1 focus:ring-[#00474b]"
                     required
                   >
                     <option value="Facebook boost">Facebook boost</option>
@@ -2327,7 +2353,7 @@ export function MarketerDashboard() {
                       placeholder="Please specify lead source..."
                       value={customSource}
                       onChange={(e) => setCustomSource(e.target.value)}
-                      className="w-full mt-2 p-2 border border-amber-300 bg-amber-50 rounded text-xs outline-none focus:ring-1 focus:ring-[#00474b]"
+                      className="w-full mt-2 p-2.5 sm:p-2 border border-amber-300 bg-amber-50 rounded-lg sm:rounded text-base sm:text-xs outline-none focus:ring-1 focus:ring-[#00474b]"
                       required
                     />
                   )}
@@ -2335,7 +2361,7 @@ export function MarketerDashboard() {
 
                 {/* 🖼️ CPO Image Upload Field */}
                 {actionStatus === "Request for Qualification" && (
-                  <div className="bg-amber-50/80 p-3 border border-amber-200 rounded space-y-2">
+                  <div className="bg-amber-50/80 p-3 border border-amber-200 rounded-lg space-y-2">
                     <label className="block font-bold text-amber-900 text-xs flex items-center gap-1.5">
                       <Upload className="w-3.5 h-3.5 text-amber-700" />
                       Upload CPO Image (CPO)
@@ -2348,10 +2374,10 @@ export function MarketerDashboard() {
                           setCpoFile(e.target.files[0]);
                         }
                       }}
-                      className="w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-2.5 file:rounded file:border-0 file:text-xs file:font-bold file:bg-[#00474b] file:text-white hover:file:bg-[#00383b] cursor-pointer bg-white border border-gray-300 rounded p-1"
+                      className="w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-[#00474b] file:text-white hover:file:bg-[#00383b] cursor-pointer bg-white border border-gray-300 rounded-lg p-1"
                     />
                     {cpoFile && (
-                      <p className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                      <p className="text-[11px] text-emerald-700 font-bold flex items-center gap-1 break-all">
                         ✓ Selected file: {cpoFile.name}
                       </p>
                     )}
@@ -2375,7 +2401,7 @@ export function MarketerDashboard() {
 
                 {/* 💳 Negotiation Details */}
                 {actionStatus === "Negotiation" && (
-                  <div className="bg-teal-50/60 p-3 border border-teal-200 rounded space-y-2.5">
+                  <div className="bg-teal-50/60 p-3 border border-teal-200 rounded-lg space-y-2.5">
                     <h3 className="font-bold text-[#00474b] text-[11px] border-b border-teal-200 pb-1">
                       📝 Negotiation Details
                     </h3>
@@ -2384,9 +2410,9 @@ export function MarketerDashboard() {
                       <label className="block text-[10px] font-bold text-gray-700 mb-1">
                         Payment Method *
                       </label>
-                      <div className="grid grid-cols-2 gap-1.5 bg-white p-1 border border-gray-300 rounded">
+                      <div className="grid grid-cols-2 gap-1.5 bg-white p-1 border border-gray-300 rounded-lg">
                         <label
-                          className={`flex items-center justify-center gap-1 p-1.5 text-[11px] font-bold rounded cursor-pointer transition ${
+                          className={`flex items-center justify-center gap-1 p-2 sm:p-1.5 text-[11px] font-bold rounded-md cursor-pointer transition touch-manipulation ${
                             paymentType === "full"
                               ? "bg-[#00474b] text-white"
                               : "text-gray-600 hover:bg-gray-100"
@@ -2403,7 +2429,7 @@ export function MarketerDashboard() {
                           Full Payment
                         </label>
                         <label
-                          className={`flex items-center justify-center gap-1 p-1.5 text-[11px] font-bold rounded cursor-pointer transition ${
+                          className={`flex items-center justify-center gap-1 p-2 sm:p-1.5 text-[11px] font-bold rounded-md cursor-pointer transition touch-manipulation ${
                             paymentType === "progressive"
                               ? "bg-[#00474b] text-white"
                               : "text-gray-600 hover:bg-gray-100"
@@ -2431,7 +2457,7 @@ export function MarketerDashboard() {
                         placeholder="Agreed Total Payment"
                         value={totalPayment}
                         onChange={(e) => setTotalPayment(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
+                        className="w-full p-2 sm:p-1.5 border border-gray-300 rounded-lg sm:rounded text-base sm:text-xs outline-none focus:border-teal-600"
                       />
                     </div>
 
@@ -2444,7 +2470,7 @@ export function MarketerDashboard() {
                         placeholder="Down Payment Amount"
                         value={downPayment}
                         onChange={(e) => setDownPayment(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
+                        className="w-full p-2 sm:p-1.5 border border-gray-300 rounded-lg sm:rounded text-base sm:text-xs outline-none focus:border-teal-600"
                       />
                     </div>
 
@@ -2458,7 +2484,7 @@ export function MarketerDashboard() {
                           type="date"
                           value={installmentPlan}
                           onChange={(e) => setInstallmentPlan(e.target.value)}
-                          className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600 bg-white cursor-pointer"
+                          className="w-full p-2 sm:p-1.5 min-h-[40px] sm:min-h-0 border border-gray-300 rounded-lg sm:rounded text-base sm:text-xs outline-none focus:border-teal-600 bg-white cursor-pointer appearance-none"
                         />
                       </div>
                     )}
@@ -2472,7 +2498,7 @@ export function MarketerDashboard() {
                         placeholder="Write extra details..."
                         value={memo}
                         onChange={(e) => setMemo(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none resize-none focus:border-teal-600"
+                        className="w-full p-2 sm:p-1.5 border border-gray-300 rounded-lg sm:rounded text-base sm:text-xs outline-none resize-none focus:border-teal-600"
                       />
                     </div>
                   </div>
@@ -2480,7 +2506,7 @@ export function MarketerDashboard() {
 
                 {/* 🔒 Closed Details */}
                 {actionStatus === "Closed" && (
-                  <div className="bg-emerald-50/70 p-3 border border-emerald-300 rounded space-y-2.5">
+                  <div className="bg-emerald-50/70 p-3 border border-emerald-300 rounded-lg space-y-2.5">
                     <h3 className="font-bold text-emerald-900 text-[11px] border-b border-emerald-200 pb-1 flex items-center gap-1.5">
                       <ReceiptIcon className="w-3.5 h-3.5 text-emerald-700" />
                       Closed Details
@@ -2491,9 +2517,9 @@ export function MarketerDashboard() {
                       <label className="block text-[10px] font-bold text-gray-700 mb-1">
                         Payment Method *
                       </label>
-                      <div className="grid grid-cols-2 gap-1.5 bg-white p-1 border border-gray-300 rounded">
+                      <div className="grid grid-cols-2 gap-1.5 bg-white p-1 border border-gray-300 rounded-lg">
                         <label
-                          className={`flex items-center justify-center gap-1 p-1.5 text-[11px] font-bold rounded cursor-pointer transition ${
+                          className={`flex items-center justify-center gap-1 p-2 sm:p-1.5 text-[11px] font-bold rounded-md cursor-pointer transition touch-manipulation ${
                             paymentType === "full"
                               ? "bg-[#00474b] text-white"
                               : "text-gray-600 hover:bg-gray-100"
@@ -2510,7 +2536,7 @@ export function MarketerDashboard() {
                           Full Payment
                         </label>
                         <label
-                          className={`flex items-center justify-center gap-1 p-1.5 text-[11px] font-bold rounded cursor-pointer transition ${
+                          className={`flex items-center justify-center gap-1 p-2 sm:p-1.5 text-[11px] font-bold rounded-md cursor-pointer transition touch-manipulation ${
                             paymentType === "progressive"
                               ? "bg-[#00474b] text-white"
                               : "text-gray-600 hover:bg-gray-100"
@@ -2539,7 +2565,7 @@ export function MarketerDashboard() {
                         placeholder="Agreed Total Payment"
                         value={totalPayment}
                         onChange={(e) => setTotalPayment(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
+                        className="w-full p-2 sm:p-1.5 border border-gray-300 rounded-lg sm:rounded text-base sm:text-xs outline-none focus:border-teal-600"
                       />
                     </div>
 
@@ -2553,7 +2579,7 @@ export function MarketerDashboard() {
                         placeholder="Down Payment Amount"
                         value={downPayment}
                         onChange={(e) => setDownPayment(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600"
+                        className="w-full p-2 sm:p-1.5 border border-gray-300 rounded-lg sm:rounded text-base sm:text-xs outline-none focus:border-teal-600"
                       />
                     </div>
 
@@ -2568,13 +2594,13 @@ export function MarketerDashboard() {
                           type="date"
                           value={installmentPlan}
                           onChange={(e) => setInstallmentPlan(e.target.value)}
-                          className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none focus:border-teal-600 bg-white cursor-pointer"
+                          className="w-full p-2 sm:p-1.5 min-h-[40px] sm:min-h-0 border border-gray-300 rounded-lg sm:rounded text-base sm:text-xs outline-none focus:border-teal-600 bg-white cursor-pointer appearance-none"
                         />
                       </div>
                     )}
 
                     {/* رفع الإيصال Upload Receipt */}
-                    <div className="bg-white p-2.5 border border-emerald-200 rounded space-y-1.5">
+                    <div className="bg-white p-2.5 border border-emerald-200 rounded-lg space-y-1.5">
                       <label className="block font-bold text-emerald-900 text-[10px] flex items-center gap-1">
                         <Upload className="w-3.5 h-3.5 text-emerald-700" />
                         Upload Receipt (To Admin for Approval)
@@ -2587,10 +2613,10 @@ export function MarketerDashboard() {
                             setReceiptFile(e.target.files[0]);
                           }
                         }}
-                        className="w-full text-xs text-gray-700 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[11px] file:font-bold file:bg-[#00474b] file:text-white hover:file:bg-[#00383b] cursor-pointer bg-gray-50 border border-gray-300 rounded p-1"
+                        className="w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-md file:border-0 file:text-[11px] file:font-bold file:bg-[#00474b] file:text-white hover:file:bg-[#00383b] cursor-pointer bg-gray-50 border border-gray-300 rounded-lg p-1"
                       />
                       {receiptFile && (
-                        <p className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                        <p className="text-[10px] text-emerald-700 font-bold flex items-center gap-1 break-all">
                           ✓ Selected receipt file: {receiptFile.name} (Will
                           record upload timestamp)
                         </p>
@@ -2607,7 +2633,7 @@ export function MarketerDashboard() {
                         placeholder="Write extra details for closed status..."
                         value={memo}
                         onChange={(e) => setMemo(e.target.value)}
-                        className="w-full p-1.5 border border-gray-300 rounded text-xs outline-none resize-none focus:border-teal-600"
+                        className="w-full p-2 sm:p-1.5 border border-gray-300 rounded-lg sm:rounded text-base sm:text-xs outline-none resize-none focus:border-teal-600"
                       />
                     </div>
                   </div>
@@ -2616,7 +2642,7 @@ export function MarketerDashboard() {
                 <button
                   type="submit"
                   disabled={uploadingCpo || uploadingReceipt}
-                  className="w-full font-bold py-3 sm:py-2.5 rounded text-xs text-white hover:text-white transition bg-[#00474b] hover:bg-[#00383b] shadow-sm mt-2 disabled:opacity-50"
+                  className="w-full font-bold py-3.5 sm:py-2.5 rounded-xl sm:rounded text-xs text-white hover:text-white transition bg-[#00474b] hover:bg-[#00383b] active:scale-[0.99] shadow-sm mt-2 disabled:opacity-50 touch-manipulation"
                   style={{ color: "#ffffff" }}
                 >
                   {uploadingCpo
@@ -2631,12 +2657,12 @@ export function MarketerDashboard() {
             </div>
 
             {/* 2. Your Recorded Leads Card with Tabs */}
-            <div className="bg-white p-3.5 sm:p-4 rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white p-3.5 sm:p-4 rounded-xl sm:rounded-lg shadow-sm border border-gray-200">
               <h2 className="font-bold text-gray-800 mb-2.5 text-xs sm:text-sm">
                 Your Recorded Leads ({leads.length})
               </h2>
 
-              <div className="flex border-b border-gray-200 mb-3 overflow-x-auto gap-2 text-[11px] pb-1 scrollbar-none">
+              <div className="flex border-b border-gray-200 mb-3 overflow-x-auto gap-3 sm:gap-2 text-xs sm:text-[11px] pb-1 [-webkit-overflow-scrolling:touch]">
                 {(
                   [
                     "All",
@@ -2658,7 +2684,7 @@ export function MarketerDashboard() {
                       key={tab}
                       type="button"
                       onClick={() => setLeadTab(tab)}
-                      className={`pb-1.5 font-semibold whitespace-nowrap border-b-2 transition-all flex-shrink-0 ${
+                      className={`pb-2 sm:pb-1.5 px-1 font-semibold whitespace-nowrap border-b-2 transition-all flex-shrink-0 touch-manipulation ${
                         leadTab === tab
                           ? "border-[#00474b] text-[#00474b]"
                           : "border-transparent text-gray-500 hover:text-gray-800"
@@ -2671,11 +2697,11 @@ export function MarketerDashboard() {
               </div>
 
               {filteredLeads.length === 0 ? (
-                <p className="text-gray-400 text-xs py-3 text-center">
+                <p className="text-gray-400 text-xs py-4 text-center">
                   No leads found in "{leadTab}".
                 </p>
               ) : (
-                <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                <div className="space-y-2.5 max-h-80 sm:max-h-72 overflow-y-auto pr-1 overscroll-contain [-webkit-overflow-scrolling:touch]">
                   {filteredLeads.map((lead) => {
                     const matchedProj =
                       projects.find((p) => p.id === lead.project_id) ||
@@ -2686,27 +2712,27 @@ export function MarketerDashboard() {
                     return (
                       <div
                         key={lead.id}
-                        className={`p-2.5 sm:p-3 border rounded-md flex flex-col gap-1 text-xs transition ${
+                        className={`p-3 border rounded-xl sm:rounded-md flex flex-col gap-1.5 text-xs transition ${
                           editingLeadId === lead.id
                             ? "bg-amber-50 border-amber-400"
                             : "bg-white border-gray-200"
                         }`}
                       >
                         <div className="flex justify-between items-start gap-2">
-                          <div>
-                            <p className="font-bold text-gray-900">
+                          <div className="min-w-0">
+                            <p className="font-bold text-gray-900 truncate">
                               {lead.name}
                             </p>
 
-                            <div className="flex items-center gap-1.5 mt-0.5">
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                               <span className="text-gray-600 text-[11px]">
                                 {lead.phone}
                               </span>
                               {rawDigits && (
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1.5">
                                   <a
                                     href={`tel:+${rawDigits}`}
-                                    className="text-[10px] p-0.5 text-gray-500 hover:text-black"
+                                    className="text-xs p-1 bg-gray-100 rounded text-gray-600 hover:text-black touch-manipulation"
                                     title="Call Phone"
                                   >
                                     📞
@@ -2715,7 +2741,7 @@ export function MarketerDashboard() {
                                     href={`https://wa.me/${rawDigits}`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-[10px] p-0.5 text-emerald-600 hover:text-emerald-800"
+                                    className="text-xs p-1 bg-emerald-50 rounded text-emerald-600 hover:text-emerald-800 touch-manipulation"
                                     title="WhatsApp"
                                   >
                                     💬
@@ -2726,7 +2752,7 @@ export function MarketerDashboard() {
                           </div>
 
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap ${
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap flex-shrink-0 ${
                               normalizedLeadStatus === "New"
                                 ? "bg-blue-50 text-blue-800 border border-blue-200"
                                 : normalizedLeadStatus ===
@@ -2762,7 +2788,7 @@ export function MarketerDashboard() {
                         )}
 
                         {lead.apartment_id && (
-                          <p className="text-[10px] text-amber-800 font-semibold">
+                          <p className="text-[10px] text-amber-800 font-semibold break-words">
                             Units: {lead.apartment_id}
                           </p>
                         )}
@@ -2795,7 +2821,7 @@ export function MarketerDashboard() {
                               href={lead.cpo}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200 transition"
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-1 rounded border border-teal-200 transition"
                             >
                               📎 View CPO Image
                             </a>
@@ -2813,7 +2839,7 @@ export function MarketerDashboard() {
                               {lead.receipts.map((rc) => (
                                 <div
                                   key={rc.id}
-                                  className="bg-gray-50 p-1.5 rounded border border-gray-200 flex items-center justify-between text-[10px]"
+                                  className="bg-gray-50 p-1.5 rounded border border-gray-200 flex items-center justify-between gap-2 text-[10px] flex-wrap"
                                 >
                                   <div className="flex items-center gap-1.5">
                                     <a
@@ -2857,18 +2883,18 @@ export function MarketerDashboard() {
                           </div>
                         )}
 
-                        <div className="mt-1 pt-1.5 border-t border-gray-100 flex justify-end gap-1.5">
+                        <div className="mt-1.5 pt-2 border-t border-gray-100 flex justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => handleDeleteLead(lead.id)}
-                            className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[10px] font-medium px-2.5 py-1 rounded transition"
+                            className="bg-red-50 active:bg-red-100 text-red-600 border border-red-200 text-[11px] sm:text-[10px] font-semibold px-3 py-1.5 sm:py-1 rounded-lg sm:rounded transition touch-manipulation"
                           >
                             Delete
                           </button>
                           <button
                             type="button"
                             onClick={() => handleEditLead(lead)}
-                            className="bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 text-[10px] font-medium px-2.5 py-1 rounded transition"
+                            className="bg-amber-100 active:bg-amber-200 text-amber-800 border border-amber-300 text-[11px] sm:text-[10px] font-semibold px-3 py-1.5 sm:py-1 rounded-lg sm:rounded transition touch-manipulation"
                           >
                             Edit Lead / Status
                           </button>
