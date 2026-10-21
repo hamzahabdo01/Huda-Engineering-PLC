@@ -330,8 +330,8 @@ export function MarketerDashboard() {
   const [cpoUrl, setCpoUrl] = useState<string>("");
   const [uploadingCpo, setUploadingCpo] = useState<boolean>(false);
 
-  // Receipt Upload State (For Closed Details)
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  // Receipt Upload State (For Closed Details - Multiple Files Support)
+  const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
   const [receiptUrl, setReceiptUrl] = useState<string>("");
   const [uploadingReceipt, setUploadingReceipt] = useState<boolean>(false);
 
@@ -890,7 +890,7 @@ export function MarketerDashboard() {
     setMemo("");
     setCpoFile(null);
     setCpoUrl("");
-    setReceiptFile(null);
+    setReceiptFiles([]); // 👈 تفريغ مصفوفة الإيصالات
     setReceiptUrl("");
   };
 
@@ -953,7 +953,7 @@ export function MarketerDashboard() {
     setCpoUrl(lead.cpo || "");
     setCpoFile(null);
     setReceiptUrl(lead.receipt_url || "");
-    setReceiptFile(null);
+    setReceiptFiles([]); // 👈 تفريغ الإيصالات الجديدة عند فتح التعديل
 
     if (lead.unit_key) {
       const keys = lead.unit_key.split(" | ");
@@ -1158,27 +1158,31 @@ export function MarketerDashboard() {
       }
     }
 
-    // 🧾 📤 رفع صورة/ملف الإيصال
-    let uploadedReceiptUrl = receiptUrl;
-    if (targetStatus === "Closed" && receiptFile) {
+    // 🧾 📤 رفع صور/ملفات الإيصالات المتعددة
+    const uploadedReceiptUrls: string[] = [];
+    if (targetStatus === "Closed" && receiptFiles.length > 0) {
       setUploadingReceipt(true);
       try {
-        const fileExt = receiptFile.name.split(".").pop();
-        const fileName = `receipt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-        const filePath = `receipts/${fileName}`;
+        for (const file of receiptFiles) {
+          const fileExt = file.name.split(".").pop();
+          const fileName = `receipt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+          const filePath = `receipts/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("cpo-files")
-          .upload(filePath, receiptFile);
-
-        if (uploadError) {
-          console.error("Receipt Upload Error:", uploadError);
-          alert(`⚠️ خطأ أثناء رفع الإيصال: ${uploadError.message}`);
-        } else {
-          const { data: publicUrlData } = supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from("cpo-files")
-            .getPublicUrl(filePath);
-          uploadedReceiptUrl = publicUrlData.publicUrl;
+            .upload(filePath, file);
+
+          if (uploadError) {
+            console.error("Receipt Upload Error:", uploadError);
+            alert(
+              `⚠️ خطأ أثناء رفع الإيصال (${file.name}): ${uploadError.message}`,
+            );
+          } else {
+            const { data: publicUrlData } = supabase.storage
+              .from("cpo-files")
+              .getPublicUrl(filePath);
+            uploadedReceiptUrls.push(publicUrlData.publicUrl);
+          }
         }
       } catch (err: any) {
         console.error("Receipt Upload Error:", err);
@@ -1186,6 +1190,12 @@ export function MarketerDashboard() {
         setUploadingReceipt(false);
       }
     }
+
+    // الاحتفاظ بآخر رابط إيصال في حقل الجدول الأساسي للتوافق
+    const primaryReceiptUrl =
+      uploadedReceiptUrls.length > 0
+        ? uploadedReceiptUrls[uploadedReceiptUrls.length - 1]
+        : receiptUrl;
 
     const apartmentLabels = selectedUnits.map((u) => u.label).join(" | ");
     const unitKeys = selectedUnits.map((u) => u.key).join(" | ");
@@ -1208,7 +1218,7 @@ export function MarketerDashboard() {
       site_visit_date: siteVisit ? siteVisitDate : null,
       office_visit_date: officeVisit ? officeVisitDate : null,
       cpo: uploadedCpoUrl || null,
-      receipt_url: uploadedReceiptUrl || null,
+      receipt_url: primaryReceiptUrl || null,
       payment_type:
         targetStatus === "Negotiation" || targetStatus === "Closed"
           ? paymentType
@@ -1261,7 +1271,11 @@ export function MarketerDashboard() {
 
         const savedLead = updatedData[0];
         setLeads((prev) =>
-          prev.map((l) => (l.id === editingLeadId ? savedLead : l)),
+          prev.map((l) =>
+            l.id === editingLeadId
+              ? { ...savedLead, receipts: l.receipts || [] }
+              : l,
+          ),
         );
       } else {
         const { data: leadData, error: leadError } = await supabase
@@ -1276,31 +1290,32 @@ export function MarketerDashboard() {
 
         if (leadData && leadData[0]) {
           savedLeadId = leadData[0].id;
-          setLeads((prev) => [leadData[0], ...prev]);
+          setLeads((prev) => [{ ...leadData[0], receipts: [] }, ...prev]);
         }
       }
 
-      if (uploadedReceiptUrl && savedLeadId) {
-        const receiptPayload = {
+      // 📜 حفظ جميع الإيصالات المرفوعة في جدول receipts دفعة واحدة
+      if (uploadedReceiptUrls.length > 0 && savedLeadId) {
+        const receiptsPayload = uploadedReceiptUrls.map((url) => ({
           lead_id: savedLeadId,
-          receipt_url: uploadedReceiptUrl,
+          receipt_url: url,
           upload_date: new Date().toISOString(),
           status: "pending",
           notes: memo || `Receipt uploaded for Closed Deal`,
-        };
+        }));
 
-        const { data: insertedReceipt, error: receiptDbError } = await supabase
+        const { data: insertedReceipts, error: receiptDbError } = await supabase
           .from("receipts")
-          .insert([receiptPayload])
+          .insert(receiptsPayload)
           .select();
 
-        if (!receiptDbError && insertedReceipt) {
+        if (!receiptDbError && insertedReceipts) {
           setLeads((prev) =>
             prev.map((l) => {
               if (l.id === savedLeadId) {
                 return {
                   ...l,
-                  receipts: [insertedReceipt[0], ...(l.receipts || [])],
+                  receipts: [...insertedReceipts, ...(l.receipts || [])],
                 };
               }
               return l;
@@ -2599,27 +2614,57 @@ export function MarketerDashboard() {
                       </div>
                     )}
 
-                    {/* رفع الإيصال Upload Receipt */}
-                    <div className="bg-white p-2.5 border border-emerald-200 rounded-lg space-y-1.5">
+                    {/* رفع الإيصالات المتعددة Upload Receipts */}
+                    <div className="bg-white p-2.5 border border-emerald-200 rounded-lg space-y-2">
                       <label className="block font-bold text-emerald-900 text-[10px] flex items-center gap-1">
                         <Upload className="w-3.5 h-3.5 text-emerald-700" />
-                        Upload Receipt (To Admin for Approval)
+                        Upload Receipts (You can select multiple files)
                       </label>
                       <input
                         type="file"
+                        multiple
                         accept="image/*,.pdf"
                         onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            setReceiptFile(e.target.files[0]);
+                          if (e.target.files && e.target.files.length > 0) {
+                            const selectedFiles = Array.from(e.target.files);
+                            setReceiptFiles((prev) => [
+                              ...prev,
+                              ...selectedFiles,
+                            ]);
+                            e.target.value = "";
                           }
                         }}
                         className="w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-md file:border-0 file:text-[11px] file:font-bold file:bg-[#00474b] file:text-white hover:file:bg-[#00383b] cursor-pointer bg-gray-50 border border-gray-300 rounded-lg p-1"
                       />
-                      {receiptFile && (
-                        <p className="text-[10px] text-emerald-700 font-bold flex items-center gap-1 break-all">
-                          ✓ Selected receipt file: {receiptFile.name} (Will
-                          record upload timestamp)
-                        </p>
+
+                      {receiptFiles.length > 0 && (
+                        <div className="space-y-1 max-h-32 overflow-y-auto pt-1">
+                          <p className="text-[10px] text-emerald-800 font-bold">
+                            Selected Receipts ({receiptFiles.length}):
+                          </p>
+                          {receiptFiles.map((file, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between bg-emerald-50/80 border border-emerald-200 px-2 py-1 rounded text-[10px]"
+                            >
+                              <span className="text-emerald-900 font-medium truncate max-w-[200px]">
+                                {idx + 1}. {file.name}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setReceiptFiles((prev) =>
+                                    prev.filter((_, i) => i !== idx),
+                                  )
+                                }
+                                className="text-red-500 hover:text-red-700 font-bold px-1.5 py-0.5 touch-manipulation"
+                                title="Remove file"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
 
@@ -2648,7 +2693,7 @@ export function MarketerDashboard() {
                   {uploadingCpo
                     ? "Uploading CPO..."
                     : uploadingReceipt
-                      ? "Uploading Receipt..."
+                      ? `Uploading ${receiptFiles.length} Receipt(s)...`
                       : editingLeadId
                         ? `Update Lead Record`
                         : `Save Lead as "${actionStatus}"`}
