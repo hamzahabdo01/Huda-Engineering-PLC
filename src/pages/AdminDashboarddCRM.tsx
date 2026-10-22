@@ -1550,12 +1550,28 @@ export function AdminDashboardd() {
                 className="p-1.5 bg-white border border-gray-300 font-bold text-gray-800 text-xs rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
               >
                 <option value="all">
-                  -- All Marketers ({marketerClients.length}) --
+                  -- All Marketers (
+                  {
+                    marketerClients.filter((c) => {
+                      const s = (c.status || "").toLowerCase();
+                      return s === "negotiation" || s === "closed";
+                    }).length
+                  }
+                  ) --
                 </option>
                 {marketerOptions.map((name) => {
-                  const count = marketerClients.filter(
-                    (c) => (c.marketer_name || c.marketerName) === name,
-                  ).length;
+                  // حساب العملاء لهذا المسوق الذين في حالة تفاوض أو إغلاق فقط
+                  const count = marketerClients.filter((c) => {
+                    const s = (c.status || "").toLowerCase();
+                    return (
+                      (c.marketer_name || c.marketerName) === name &&
+                      (s === "negotiation" || s === "closed")
+                    );
+                  }).length;
+
+                  // إذا كنت تريد إخفاء المسوق الذي لديه (0) عملاء في هذا القسم، قم بإزالة التعليق عن السطر التالي:
+                  // if (count === 0) return null;
+
                   return (
                     <option key={name} value={name}>
                       👤 {name} ({count})
@@ -1564,8 +1580,6 @@ export function AdminDashboardd() {
                 })}
               </select>
             </div>
-
-            
 
             {(pricingSearch ||
               pricingMarketerFilter !== "all" ||
