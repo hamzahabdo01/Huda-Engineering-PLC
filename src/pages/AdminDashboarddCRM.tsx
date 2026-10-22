@@ -1758,11 +1758,10 @@ export function AdminDashboardd() {
             0,
           );
           const currentEnteredAmount = Number(newPaymentAmount) || 0;
+
+          // الحساب الصحيح: السعر الكلي ناقص المدفوعات المسجلة فعلياً ناقص المبلغ الجاري إدخاله
           const leftPayment =
-            totalPaymentVal -
-            downPaymentVal -
-            totalSavedPayments -
-            currentEnteredAmount;
+            totalPaymentVal - totalSavedPayments - currentEnteredAmount;
 
           return (
             <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
