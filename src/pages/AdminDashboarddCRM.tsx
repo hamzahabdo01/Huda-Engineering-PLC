@@ -869,64 +869,74 @@ export function AdminDashboardd() {
   );
 
   // 👇 دالة فلترة قائمة الـ Pricing مع دعم الفلتر الجديد (البحث، الماركتر، الحالة)
-  const pricingFilteredClients = useMemo(() => {
-    return marketerClients.filter((client) => {
-      const paymentTypeStr = (
-        client.payment_type ||
-        (client.installment_plan ? "progressive payment" : "full payment")
-      ).toLowerCase();
+ const pricingFilteredClients = useMemo(() => {
+   return marketerClients.filter((client) => {
+     // 1. 👇 تصفية الحالة: إظهار فقط العملاء في حالة التفاوض أو الإغلاق
+     const clientStatus = (client.status || "").toLowerCase();
+     if (clientStatus !== "negotiation" && clientStatus !== "closed") {
+       return false;
+     }
 
-      const isFull = paymentTypeStr.includes("full");
-      if (pricingSubTab === "full" && !isFull) return false;
-      if (pricingSubTab === "progressive" && isFull) return false;
+     // 2. الفلترة حسب نوع الدفع
+     const paymentTypeStr = (
+       client.payment_type ||
+       (client.installment_plan ? "progressive payment" : "full payment")
+     ).toLowerCase();
 
-      if (pricingMarketerFilter !== "all") {
-        const mName = client.marketer_name || client.marketerName || "";
-        if (mName !== pricingMarketerFilter) return false;
-      }
+     const isFull = paymentTypeStr.includes("full");
+     if (pricingSubTab === "full" && !isFull) return false;
+     if (pricingSubTab === "progressive" && isFull) return false;
 
-      if (pricingStatusFilter !== "all") {
-        const status = client.status || "Reserved";
-        if (status.toLowerCase() !== pricingStatusFilter.toLowerCase())
-          return false;
-      }
+     // 3. فلترة الماركتر
+     if (pricingMarketerFilter !== "all") {
+       const mName = client.marketer_name || client.marketerName || "";
+       if (mName !== pricingMarketerFilter) return false;
+     }
 
-      if (pricingSearch.trim() !== "") {
-        const query = pricingSearch.toLowerCase();
-        const mName = (
-          client.marketer_name ||
-          client.marketerName ||
-          ""
-        ).toLowerCase();
-        const cName = (client.name || client.client_name || "").toLowerCase();
-        const phone = (client.phone || "").toLowerCase();
-        const projName = getProjectName(client).toLowerCase();
-        const unit = (
-          client.apartment_id ||
-          client.apartmentId ||
-          ""
-        ).toLowerCase();
+     // 4. فلترة الحالة من القائمة المنسدلة (اختياري)
+     if (pricingStatusFilter !== "all") {
+       const status = client.status || "Reserved";
+       if (status.toLowerCase() !== pricingStatusFilter.toLowerCase())
+         return false;
+     }
 
-        const matches =
-          mName.includes(query) ||
-          cName.includes(query) ||
-          phone.includes(query) ||
-          projName.includes(query) ||
-          unit.includes(query);
+     // 5. مربع البحث
+     if (pricingSearch.trim() !== "") {
+       const query = pricingSearch.toLowerCase();
+       const mName = (
+         client.marketer_name ||
+         client.marketerName ||
+         ""
+       ).toLowerCase();
+       const cName = (client.name || client.client_name || "").toLowerCase();
+       const phone = (client.phone || "").toLowerCase();
+       const projName = getProjectName(client).toLowerCase();
+       const unit = (
+         client.apartment_id ||
+         client.apartmentId ||
+         ""
+       ).toLowerCase();
 
-        if (!matches) return false;
-      }
+       const matches =
+         mName.includes(query) ||
+         cName.includes(query) ||
+         phone.includes(query) ||
+         projName.includes(query) ||
+         unit.includes(query);
 
-      return true;
-    });
-  }, [
-    marketerClients,
-    pricingSubTab,
-    pricingMarketerFilter,
-    pricingStatusFilter,
-    pricingSearch,
-    getProjectName,
-  ]);
+       if (!matches) return false;
+     }
+
+     return true;
+   });
+ }, [
+   marketerClients,
+   pricingSubTab,
+   pricingMarketerFilter,
+   pricingStatusFilter,
+   pricingSearch,
+   getProjectName,
+ ]);
 
   const handleClientSortToggle = (field: typeof clientSortField) => {
     if (clientSortField === field) {
