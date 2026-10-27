@@ -1352,37 +1352,63 @@ export function MarketerDashboard() {
         await fetchMatrixData(selectedProjectId);
       }
 
-      // 👇 استدعاء Edge Function لإرسال الإيميل للأدمن 👇
+      // ========================================================
+      // 👇 إرسال الإشعار للأدمن بعد نجاح حفظ البيانات 👇
+      // ========================================================
       if (
         (targetStatus === "Request for Qualification" && uploadedCpoUrl) ||
         (targetStatus === "Closed" && uploadedReceiptUrls.length > 0)
       ) {
+        console.log("Triggering Admin Notification Edge Function...");
+
         try {
           const filesToSend =
             targetStatus === "Request for Qualification"
               ? [uploadedCpoUrl]
               : uploadedReceiptUrls;
 
-          await supabase.functions.invoke("notify-admin", {
-            body: {
-              leadId: savedLeadId,
-              marketerName: currentMarketer?.name || "Unknown Marketer",
-              clientName: clientName,
-              actionType:
-                targetStatus === "Request for Qualification"
-                  ? "CPO"
-                  : "RECEIPT",
-              status: targetStatus,
-              project:
-                projects.find((p) => p.id === selectedProjectId)?.name || "N/A",
-              unit: apartmentLabels || "N/A",
-              files: filesToSend,
-            },
-          });
-        } catch (notifyError) {
+          const { data: invokeData, error: invokeError } =
+            await supabase.functions.invoke("notify-admin", {
+              body: {
+                leadId: savedLeadId,
+                marketerName: currentMarketer?.name || "Unknown Marketer",
+                clientName: clientName,
+                actionType:
+                  targetStatus === "Request for Qualification"
+                    ? "CPO"
+                    : "RECEIPT",
+                status: targetStatus,
+                project:
+                  projects.find((p) => p.id === selectedProjectId)?.name ||
+                  "N/A",
+                unit: apartmentLabels || "N/A",
+                files: filesToSend,
+              },
+            });
+
+          if (invokeError) {
+            console.error("Supabase Invoke Error:", invokeError);
+            // 🔴 عرض رسالة تنبيه واضحة لك لمعرفة نوع الخطأ الذي يمنع وصول الإيميل
+            alert(
+              `⚠️ Warning: Lead saved, but failed to send email notification to Admin. Error: ${invokeError.message}`,
+            );
+          } else {
+            console.log("Edge Function Response:", invokeData);
+            // إذا فشلت Edge Function داخلياً دون أن ترمي خطأ (مثال: خطأ من Resend)
+            if (invokeData && invokeData.error) {
+              alert(
+                `⚠️ Warning: Email notification failed at Resend API. Error: ${invokeData.error.message || invokeData.error}`,
+              );
+            }
+          }
+        } catch (notifyError: any) {
           console.error("Failed to send admin notification:", notifyError);
+          alert(
+            `⚠️ Critical Error calling Edge Function: ${notifyError.message}`,
+          );
         }
       }
+      // ========================================================
 
       alert(
         `✅ Lead successfully ${editingLeadId ? "updated" : "saved"} as "${targetStatus}"!`,
