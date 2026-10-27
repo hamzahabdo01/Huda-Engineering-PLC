@@ -1352,6 +1352,42 @@ export function MarketerDashboard() {
         await fetchMatrixData(selectedProjectId);
       }
 
+      // 👇 استدعاء Edge Function لإرسال الإيميل للأدمن 👇
+      if (
+        (targetStatus === "Request for Qualification" && uploadedCpoUrl) ||
+        (targetStatus === "Closed" && uploadedReceiptUrls.length > 0)
+      ) {
+        try {
+          const filesToSend =
+            targetStatus === "Request for Qualification"
+              ? [uploadedCpoUrl]
+              : uploadedReceiptUrls;
+
+          await supabase.functions.invoke("notify-admin", {
+            body: {
+              leadId: savedLeadId,
+              marketerName: currentMarketer?.name || "Unknown Marketer",
+              clientName: clientName,
+              actionType:
+                targetStatus === "Request for Qualification"
+                  ? "CPO"
+                  : "RECEIPT",
+              status: targetStatus,
+              project:
+                projects.find((p) => p.id === selectedProjectId)?.name || "N/A",
+              unit: apartmentLabels || "N/A",
+              files: filesToSend,
+            },
+          });
+        } catch (notifyError) {
+          console.error("Failed to send admin notification:", notifyError);
+        }
+      }
+
+      alert(
+        `✅ Lead successfully ${editingLeadId ? "updated" : "saved"} as "${targetStatus}"!`,
+      );
+
       alert(
         `✅ Lead successfully ${editingLeadId ? "updated" : "saved"} as "${targetStatus}"!`,
       );
